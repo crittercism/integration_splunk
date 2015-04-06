@@ -1,0 +1,15 @@
+<nav>
+  <collection label="Dashboards">
+    <view name="crittercism_overview" />
+    <view name="application_browser" default="true"/>
+    <view name="crash_browser" />
+    <view name="crittercism_trends" />
+    <view name="portfolio_overview" />
+    <view name="crashsearch" />
+  </collection>
+  <collection label="Crittercism Home">
+    <view name="mysearchview" />
+    <a href="http://crittercism.com">Crittercism Homepage</a>
+  </collection>
+<view name="flashtimeline" />
+</nav>

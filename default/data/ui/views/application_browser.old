@@ -1,0 +1,212 @@
+<form>
+  <label>Application Dashboard </label>
+  <description>Choose an application to view available crash data</description>
+  <fieldset autoRun="true" submitButton="false">
+    <input type="dropdown" token="appName" searchWhenChanged="true">
+      <label>Select an Application:</label>
+      <prefix>"</prefix>
+      <suffix>"</suffix>
+      <populatingSearch fieldForValue="appName" fieldForLabel="appName" earliest="-24h" latest="now">
+        <![CDATA[index=crittercism sourcetype=crittercism | stats dc by appName, appId]]>
+      </populatingSearch>
+      <selectFirstChoice>true</selectFirstChoice>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <html>
+   <a href="crash_browser?form.appName=$appName$">Crash Browser</a> 
+             
+ </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single>
+        <title>Crash Rate</title>
+        <search>
+          <query>index=crittercism sourcetype=crittercism MessageType=AppSummary appName=$appName$| table crashPercent | head 1</query>
+          <earliest>@d</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Total Crashes</title>
+        <search>
+          <query>index=crittercism sourcetype="crittercism"  "MessageType=DailyCrashes" appName=$appName$ | head 1 | fields + dailyCrashes</query>
+          <earliest>@d</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>App Loads</title>
+        <search>
+          <query>index=crittercism sourcetype="crittercism"  "MessageType=DailyAppLoads" appName=$appName$ | head 1 | fields dailyAppLoads</query>
+          <earliest>@d</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="count">10</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Daily Users</title>
+        <search>
+          <query>index=crittercism sourcetype=crittercism MessageType=AppSummary appName=$appName$ | table dau | head 1</query>
+          <earliest>@d</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Monthly Users</title>
+        <search>
+          <query>index=crittercism sourcetype=crittercism MessageType=AppSummary appName=$appName$ | table mau | head 1</query>
+          <earliest>@d</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>AppStore Rating</title>
+        <search>
+          <query>index=crittercism sourcetype=crittercism MessageType=AppSummary appName=$appName$ | table rating | head 1</query>
+          <earliest>@d</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Crash by OS</title>
+        <search>
+          <query>index=crittercism sourcetype="crittercism"  "MessageType=DailyCrashesByOS" appName=$appName$ | head 1| rex "\((?&lt;os&gt;\".*?\")\,(?&lt;val&gt;\d+)" max_match=30 | eval fields=mvzip(os,val) | mvexpand fields | rex field=fields "\"(?&lt;OS&gt;.*?)\",(?&lt;CRASHES&gt;\d+)"| sort -CRASHES | table OS, CRASHES</query>
+          <earliest>-7d@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>App Loads by Device</title>
+        <search>
+          <query>index=crittercism sourcetype="crittercism"  "MessageType=DailyAppLoadsByDevice" appName=$appName$ | head 1| rex "\((?&lt;os&gt;\".*?\")\,(?&lt;val&gt;\d+)" max_match=30 | eval fields=mvzip(os,val) | mvexpand fields | rex field=fields "\"(?&lt;OS&gt;.*?)\",(?&lt;COUNT&gt;\d+)"| sort -COUNT |  table OS, COUNT</query>
+          <earliest>-7d@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>App Service Error Rates</title>
+        <search>
+          <query> index=crittercism sourcetype="crittercism"  "MessageType=DailyServiceErrorRates" appName=$appName$  | head 1| rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;SERVICE&gt;.*?)\",(?&lt;RATE&gt;\d+\.\d{2})"|sort -RATE |  table SERVICE,RATE</query>
+          <earliest>-7d@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Daily Active Users</title>
+        <search>
+          <query>index=crittercism sourcetype=crittercism appName=$appName$| timechart avg(dau)</query>
+          <earliest>@mon</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Application Crashes (Daily) over Time</title>
+        <search>
+          <query> index=crittercism sourcetype="crittercism"  "MessageType=CrashCounts" appName=$appName$ | head 1| rex "\((?&lt;xdate&gt;\d{4}\-\d{2}\-\d{2}?)\,(?&lt;val&gt;\d+)" max_match=32 | eval fields=mvzip(xdate,val)  | mvexpand fields | rex field=fields "(?&lt;CrashDate&gt;\d{4}\-\d{2}\-\d{2}?),(?&lt;CRASHES&gt;\d+)" | chart values(CRASHES) as CrashCount by  CrashDate</query>
+          <earliest>-7d@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+  </row>
+</form>

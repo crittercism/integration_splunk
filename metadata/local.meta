@@ -1,0 +1,162 @@
+[app/ui]
+version = 6.2.1
+modtime = 1422457432.465035000
+
+[app/launcher]
+version = 6.2.1
+modtime = 1422457432.468136000
+
+[savedsearches/Number%20of%20%22from%22%20messages]
+version = 6.2.1
+modtime = 1420333610.365742000
+
+[savedsearches/Message%20size%20by%20relay]
+version = 6.2.1
+modtime = 1420333616.219740000
+
+[savedsearches/Mail%20delivery%20time]
+version = 6.2.1
+modtime = 1420333618.381380000
+
+[savedsearches/Histogram%20of%20delay%20in%20seconds]
+version = 6.2.1
+modtime = 1420333620.589409000
+
+[savedsearches/Number%20of%20%22to%22%20messages]
+version = 6.2.1
+modtime = 1420333624.390989000
+
+[savedsearches/Number%20of%20reject%20events%20by%20relay]
+version = 6.2.1
+modtime = 1420333626.395363000
+
+[savedsearches/Sendmail%20transactions]
+version = 6.2.1
+modtime = 1420333627.755171000
+
+[savedsearches/Top%20recipients]
+version = 6.2.1
+modtime = 1420333629.158740000
+
+[savedsearches/Top%20recipients%20-%20pie%20chart]
+version = 6.2.1
+modtime = 1420333630.681144000
+
+[savedsearches/Top%20recipients%20by%20mailer]
+version = 6.2.1
+modtime = 1420333632.521844000
+
+[savedsearches/Top%20recipients%20by%20mailer%20-%20area%20chart]
+version = 6.2.1
+modtime = 1420333634.622643000
+
+[app/package/check_for_updates]
+version = 6.2.1
+modtime = 1422457432.469343000
+
+[views/crittercism_overview]
+access = read : [ * ], write : [ admin, power ]
+export = none
+owner = admin
+version = 6.0.3
+modtime = 1427559171.000463000
+
+[nav/default]
+version = 6.2.1
+modtime = 1422305309.588709000
+
+[inputs/script%3A%2F%2F%2F%24SPLUNK_HOME%2Fetc%2Fapps%2Fcrittercism%2Fbin%2Fcritterget.py]
+version = 6.2.1
+modtime = 1421029594.549360000
+
+[props/crittercism/EXTRACT-device]
+access = read : [ * ], write : [ admin ]
+export = none
+owner = admin
+version = 6.2.1
+modtime = 1421177051.708206000
+
+[views/simple_form_dropdown]
+access = read : [ * ], write : [ admin, power ]
+export = none
+owner = nobody
+version = 6.2.1
+modtime = 1422300222.740831000
+
+[views/crash_browser]
+version = 6.0.3
+modtime = 1428276167.861806000
+
+[app/credential%3A%3Abfox%3A]
+owner = admin
+version = 6.2.1
+modtime = 1423096057.376742000
+
+[app/install/is_configured]
+version = 6.0.3
+modtime = 1427929059.542600000
+
+[app/credential%3A%3Abob%40pensivetech.com%3A]
+owner = admin
+version = 6.0.3
+modtime = 1427929059.534682000
+
+[app/credential%3A%3Abob%40pensivetech%2Ccom%3A]
+owner = admin
+version = 6.2.1
+modtime = 1423493851.945895000
+
+[crittercism/api]
+version = 6.0.3
+modtime = 1427929059.529042000
+
+[inputs/script%3A%2F%2F%2F%24SPLUNK_HOME%2Fetc%2Fapps%2Fcrittercism%2Fbin%2Fpwtest.py]
+version = 6.2.1
+modtime = 1423502513.109343000
+
+[views/crashdetails]
+version = 6.0.3
+modtime = 1428276248.362513000
+
+[views/application_browser]
+version = 6.0.3
+modtime = 1427566653.918265000
+
+[views/user_details]
+owner = admin
+version = 6.0.3
+modtime = 1427567513.586986000
+
+[views/crashsearch]
+owner = admin
+version = 6.0.3
+modtime = 1427563520.900294000
+
+[app/install/install_source_checksum]
+version = 6.2.2
+modtime = 1424999927.802091000
+
+[views/application_dashboard_2]
+owner = admin
+version = 6.0.3
+modtime = 1427289247.248227000
+
+[views/crash_bowser_2]
+owner = admin
+version = 6.0.3
+modtime = 1427315942.054141000
+
+[views/data_drilldown]
+owner = admin
+version = 6.0.3
+modtime = 1427566090.211676000
+
+[views/crittercism_trends]
+owner = admin
+version = 6.0.3
+modtime = 1428276093.209798000
+
+[views/portfolio_overview]
+owner = admin
+version = 6.0.3
+modtime = 1428077673.167434000

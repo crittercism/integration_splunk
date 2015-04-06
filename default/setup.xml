@@ -1,0 +1,22 @@
+<setup>
+<block title="Add Account Info" endpoint="storage/passwords" entity="_new" >
+  <input field="name">
+    <label>Crittercism Username</label>
+    <type>text</type>
+  </input>
+  <input field="password">
+    <label>Crittercism Password</label>
+    <type>password</type>
+  </input>
+</block>
+<block title="Crittercism API Info" endpoint="configs/conf-crittercism" entity="api">
+  <input field="clientID">
+    <label>This is the Client ID that you received from Crittercism Support</label>
+    <type>text</type>
+  </input>
+<text> Notes:</text> 
+<text> - To change the Credentials or Crittercism API Key later, first remove the entry from SPLUNK_HOME/etc/apps/crittercism/local/app.conf and restart Splunk.
+</text><text> - The script may take up to 10 minutes to start getting data into the Crittercism dashboards.
+    </text>
+</block>
+</setup>
