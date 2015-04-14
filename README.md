@@ -1,6 +1,6 @@
 Notes on the Crittercism Splunk App
 ===================================
-Version 0.9
+Version 0.91
 
 Rationale
 ---------
@@ -20,7 +20,9 @@ Operational notes
 Installation and Configuration
 ------------------------------
 This app is installed via Splunkbase or Splunk's standard app install process.
-
+For multi-tiered Splunk installations, the app should be installed on all search heads and
+either one indexer or one persistant forwarder.  On the search heads, disable the running
+of the critterget.py scripted input in Settings->DataInputs->Scripts. 
     
 
     
@@ -156,6 +158,45 @@ associated MessageType.
 - CrashDiagsAffectedVersions
     One event per crash 'hash' assuming a crash has occurred since the last run.
     Tracks crashes per app version.
+
+- DailyVolumeByDevice
+    One event per crash 'hash' assuming a crash has occurred since the last run.
+    Tracks volume per device.
+- DailyVolumeByOS       
+    One event per crash 'hash' assuming a crash has occurred since the last run.
+    Tracks volume per OS version.
+- CrashesByDevice
+    One event per crash 'hash' assuming a crash has occurred since the last run.
+    Tracks crashes per Device.
+- CrashPerByDevice
+    One event per crash 'hash' assuming a crash has occurred since the last run.
+    Tracks percent of crashes per device.
+- ApploadsByOs
+    One event per crash 'hash' assuming a crash has occurred since the last run.
+    Tracks app loads by OS.
+- CrashPerByOs
+    One event per crash 'hash' assuming a crash has occurred since the last run.
+    Tracks crash percentage per OS.
+- VolumeByAppVersion
+    One event per crash 'hash' assuming a crash has occurred since the last run.
+    Tracks volume per app version.
+- CrashPerByAppVersion
+    One event per crash 'hash' assuming a crash has occurred since the last run.
+    Tracks crash percentage by app version.
+- CrashByAppVersion
+    One event per crash 'hash' assuming a crash has occurred since the last run.
+    Tracks crashes per app version.
+- LoadsByAppVersion
+    One event per crash 'hash' assuming a crash has occurred since the last run.
+    Tracks loads per app version.
+- DauByAppVersion
+    One event per crash 'hash' assuming a crash has occurred since the last run.
+    Tracks dau per app version.
+- ApploadsByDevice
+    One event per crash 'hash' assuming a crash has occurred since the last run.
+    Tracks app loads by device 
+
+
 
 
 
