@@ -1,10 +1,10 @@
 Notes on the Crittercism Splunk App
 ===================================
-Version 0.91
+Version 1.0
 
 Rationale
 ---------
-     Make Crittercism data accessable and useful to Splunk users
+     Make Crittercism mobile app performance data accessable and useful to Splunk users and provide end to end visibility into performance issues.
 
 Design goals
 ------------
