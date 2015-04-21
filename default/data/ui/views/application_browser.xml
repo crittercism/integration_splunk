@@ -76,7 +76,7 @@
     </table>
     <table>
       <title>App Loads by Device</title>
-      <searchString>index=crittercism sourcetype="crittercism"  "MessageType=DailyAppLoadsByDevice" appName=$appName$ | head 1| rex "\((?&lt;os&gt;\".*?\")\,(?&lt;val&gt;\d+)" max_match=30 | eval fields=mvzip(os,val) | mvexpand fields | rex field=fields "\"(?&lt;OS&gt;.*?)\",(?&lt;COUNT&gt;\d+)"| sort -COUNT |  table OS, COUNT</searchString>
+      <searchString>index=crittercism sourcetype="crittercism"  "MessageType=AppLoadsByDevice" appName=$appName$ | head 1| rex "\((?&lt;os&gt;\".*?\")\,(?&lt;val&gt;\d+)" max_match=30 | eval fields=mvzip(os,val) | mvexpand fields | rex field=fields "\"(?&lt;OS&gt;.*?)\",(?&lt;COUNT&gt;\d+)"| sort -COUNT |  table OS, COUNT</searchString>
       <earliestTime>-7d@h</earliestTime>
       <latestTime>now</latestTime>
       <option name="wrap">true</option>
