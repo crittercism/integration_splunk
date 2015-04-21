@@ -1,6 +1,6 @@
 Notes on the Crittercism Splunk App
 ===================================
-Version 1.1
+Version 1.2
 
 Rationale
 ---------
