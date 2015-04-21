@@ -9,7 +9,7 @@
     <type>password</type>
   </input>
 </block>
-<block title="Crittercism API Info" endpoint="configs/conf-crittercism" entity="api">
+<block title="Crittercism API Info" endpoint="configs/conf-crittercism_integration" entity="api">
   <input field="clientID">
     <label>This is the Client ID that you received from Crittercism Support</label>
     <type>text</type>
