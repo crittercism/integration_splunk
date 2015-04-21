@@ -7,7 +7,7 @@ import datetime, base64
 import splunk.entity as entity
 
 #The splunk name for the app.  Needed for the autho storage
-myapp = 'crittercism'
+myapp = 'crittercism_integration'
 access_token = ''
 baseurl = "https://developers.crittercism.com:443/v1.0/"
 authbaseurl = "https://developers.crittercism.com/v1.0/"
@@ -504,7 +504,7 @@ def getClientID(sessionKey):
 
     try:
         # list all credentials
-        entities = entity.getEntities(['properties', 'crittercism','api'], namespace=myapp,
+        entities = entity.getEntities(['properties', 'crittercism_integration','api'], namespace=myapp,
                                     owner='nobody', sessionKey=sessionKey)
     except Exception, e:
         print '%s MessageType=\"CritterDebug\" Could not get %s api information from splunk. Error: %s' % (myruntime, myapp, str(e))
