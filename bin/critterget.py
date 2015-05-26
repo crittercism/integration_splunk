@@ -16,8 +16,8 @@ authbaseurl = "https://developers.crittercism.com/v1.0/"
 # If you are using Crittercism through its EU data center presence,
 # uncomment the following two lines for baseurl and authbaseurl and 
 # comment out the previous two lines for baseurl and authbaseurl
-# baseurl = "https://developer.eu.crittercism.com:443/v1.0/"
-# authbaseurl = "https://developer.eu.crittercism.com/v1.0/“
+# baseurl = "https://developers.eu.crittercism.com:443/v1.0/"
+# authbaseurl = "https://developers.eu.crittercism.com/v1.0/“
 
 debug = 0
 DUMP_DIAGS = 1
