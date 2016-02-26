@@ -50,7 +50,7 @@ def apicall (uri, attribs=''):
         data = json.loads(resptext)
     
     except urllib2.URLError, e:
-        print 'Crittercism API retuned an error code:', e
+        print 'Crittercism API returned an error code:', e
         sys.exit(0)
   
     return data
@@ -76,7 +76,7 @@ def apipost (uri, postdata='',keyget=''):
         data = json.loads(resptext)
     
     except urllib2.URLError, e:
-        print '%s MessageType=\"CrittercismError\" Crittercism API retuned an error code: %s for the call to %s.  Maybe an ENTERPRISE feature?' %( myruntime, e, reqstring)
+        print '%s MessageType=\"CrittercismError\" Crittercism API returned an error code: %s for the call to %s.  Maybe an ENTERPRISE feature?' %( myruntime, e, reqstring)
         data = "ERROR"
 #        sys.exit(0)
   
@@ -110,7 +110,7 @@ def authpost (postdata='',keyget=''):
         data = json.loads(resptext)
     
     except urllib2.URLError, e:
-        print '%s MessageType=\"CrittercismError\" Crittercism Auth API retuned an error code: %s for the call to %s.  Maybe an ENTERPRISE feature?' %( myruntime, e, reqstring)
+        print '%s MessageType=\"CrittercismError\" Crittercism Auth API returned an error code: %s for the call to %s.  Maybe an ENTERPRISE feature?' %( myruntime, e, reqstring)
         data = "ERROR"
         sys.exit(0)
   
