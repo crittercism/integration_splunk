@@ -193,14 +193,18 @@ def getStacktrace(stacktrace,hash) :
 
 def diag_geo(data,hash):
     if (debug) : print "into diag_geo"
-    for country in data.keys():
-        for city in data[country].keys():
-            if city == '--NAME--': 
-                continue
-            (lat,lon,crashes) = (str(data[country][city][0]),
-                                str(data[country][city][1]),
-                                str(data[country][city][2])  )
-            print "%s MessageType=\"CrashDiagsGeo\"  hash=%s country=\"%s\" city=\"%s\" lat=%s lon=%s crashes=\"%s\" " % (myruntime, hash,country,city,lat,lon,crashes) 
+    try:
+        for country in data.keys():
+            for city in data[country].keys():
+                if city == '--NAME--':
+                    continue
+                (lat,lon,crashes) = (str(data[country][city][0]),
+                                    str(data[country][city][1]),
+                                    str(data[country][city][2])  )
+                print "%s MessageType=\"CrashDiagsGeo\"  hash=%s country=\"%s\" city=\"%s\" lat=%s lon=%s crashes=\"%s\" " % (myruntime, hash,country,city,lat,lon,crashes)
+    except AttributeError, e:
+        print '%s MessageType=\"CrittercismError\" CrashDiagsGeo returned an error code: %s for the call to %s.' %( myruntime, e, reqstring)
+        data = "ERROR"
 
 def diag_discrete(data, hash):
     datastring= ""
