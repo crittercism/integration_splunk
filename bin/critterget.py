@@ -43,6 +43,7 @@ def apicall (uri, attribs=''):
     request = urllib2.Request(reqstring)
     request.add_header('Content-Type','application/json')
     request.add_header('Authorization', "Bearer %s" % access_token)
+    request.add_header('CR-source', 'integration_splunk')
 
     try:
         response = urllib2.urlopen(request)
