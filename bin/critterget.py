@@ -70,6 +70,7 @@ def apipost (uri, postdata='',keyget=''):
     if (keyget==''):
         request.add_header('Content-Type','application/json')
         request.add_header('Authorization', "Bearer %s" % access_token)
+        request.add_header('CR-source', 'integration-splunk')
 
     try:
         response = urllib2.urlopen(request)
