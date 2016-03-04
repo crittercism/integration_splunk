@@ -126,6 +126,8 @@ def getAccessToken(username,password,myApiKey):
 
     accessToken = authpost(params,myApiKey)
     if (debug) : print "apipost returns ",accessToken
+    entity["accessToken"] = accessToken
+    print u'{} MessageType="CritterDebug" Stored access token = {}'.format(entity["accessToken"])
     return accessToken
 
 
