@@ -5,8 +5,8 @@
     <type>text</type>
   </input>
   <input field="password">
-    <label>Crittercism Password</label>
-    <type>password</type>
+    <label>Crittercism OAuth Token</label>
+    <type>text</type>
   </input>
 </block>
 <block title="Crittercism API Info" endpoint="configs/conf-crittercism_integration" entity="api">
@@ -14,9 +14,12 @@
     <label>This is the Client ID that you received from Crittercism Support</label>
     <type>text</type>
   </input>
-<text> Notes:</text> 
-<text> - To change the Credentials or Crittercism API Key later, first remove the entry from SPLUNK_HOME/etc/apps/crittercism/local/app.conf and restart Splunk.
-</text><text> - The script may take up to 10 minutes to start getting data into the Crittercism dashboards.
+<text> Notes:</text>
+    <text> - To generate your Crittercism OAuth Token, please visit
+        <url xlink:href="https://app.crittercism.com/developers/user-settings">https://app.crittercism.com/developers/user-settings</url>
+        and follow the instructions on the page.</text>
+    <text> - To change the Credentials or Crittercism API Key later, first remove the entry from SPLUNK_HOME/etc/apps/crittercism/local/app.conf and restart Splunk.
     </text>
+    <text> - The script may take up to 10 minutes to start getting data into the Crittercism dashboards.</text>
 </block>
 </setup>
