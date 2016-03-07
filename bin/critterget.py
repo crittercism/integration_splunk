@@ -547,8 +547,8 @@ def main():
     (Cusername, Cpassword) = getCredentials(sessionKey)
     if (debug) : print u'{} MessageType="CritterDebug" username is {} password is {}'.format(myruntime, Cusername, Cpassword)
 
-    myClientID = getClientID(sessionKey)
-    if (debug) : print u'{} MessageType="CritterDebug" ClientID is {}'.format(myruntime, myClientID)
+    # myClientID = getClientID(sessionKey)
+    # if (debug) : print u'{} MessageType="CritterDebug" ClientID is {}'.format(myruntime, myClientID)
 
     # now get crittercism credentials - might exit if no creds are available
     global access_token
