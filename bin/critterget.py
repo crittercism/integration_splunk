@@ -487,7 +487,6 @@ def getCredentials(sessionKey):
     # return first set of credentials
     if (debug) : print "Entities is ", entities
     for i, c in entities.items():
-        print c['username'], c['clear_password']
         return c['clear_password']
 
     print u'{} MessageType="CritterDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(myruntime, myapp)
