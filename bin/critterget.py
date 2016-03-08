@@ -19,7 +19,7 @@ authbaseurl = "https://developers.crittercism.com/v1.0/"
 # baseurl = "https://developers.eu.crittercism.com:443/v1.0/"
 # authbaseurl = "https://developers.eu.crittercism.com/v1.0/“
 
-debug = 0
+debug = 1
 DUMP_DIAGS = 1
 interval = 10 #minutes between runs of theis script as performed by Splunk
 
@@ -117,22 +117,6 @@ def authpost (postdata='',keyget=''):
         sys.exit(0)
 
     return data['access_token']
-
-# def getAccessToken(username,password,myApiKey):
-# # auth a session key from crittercism
-#     if (debug) : print u'{} MessageType="CritterDebug" Into getAccessTokenuser = {} pass = {} apikey = {}'.format(myruntime, username, password, myApiKey)
-#
-#     params = dict([('grant_type', "password"), ('username', username), ('password', password)])
-#
-#     accessToken = authpost(params,myApiKey)
-#     if (debug) : print "apipost returns ",accessToken
-#     entity["accessToken"] = accessToken
-#     print u'{} MessageType="CritterDebug" Stored access token = {}'.format(entity["accessToken"])
-#     return accessToken
-
-
-
-
 
 def scopetime():
     # return an ISO8601 timestring based on NOW - Interval
@@ -503,6 +487,7 @@ def getCredentials(sessionKey):
     # return first set of credentials
     if (debug) : print "Entities is ", entities
     for i, c in entities.items():
+        print c['username'], c['clear_password']
         return c['clear_password']
 
     print u'{} MessageType="CritterDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(myruntime, myapp)
