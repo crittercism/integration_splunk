@@ -118,20 +118,6 @@ def authpost (postdata='',keyget=''):
 
     return data['access_token']
 
-def getAccessToken(username,password,myApiKey):
-# auth a session key from crittercism
-    if (debug) : print u'{} MessageType="CritterDebug" Into getAccessTokenuser = {} pass = {} apikey = {}'.format(myruntime, username, password, myApiKey)
-
-    params = dict([('grant_type', "password"), ('username', username), ('password', password)])
-
-    accessToken = authpost(params,myApiKey)
-    if (debug) : print "apipost returns ",accessToken
-    return accessToken
-
-
-
-
-
 def scopetime():
     # return an ISO8601 timestring based on NOW - Interval
     newtime=(datetime.datetime.utcnow() - datetime.timedelta(minutes=interval))
@@ -501,7 +487,7 @@ def getCredentials(sessionKey):
     # return first set of credentials
     if (debug) : print "Entities is ", entities
     for i, c in entities.items():
-        return c['username'], c['clear_password']
+        return c['clear_password']
 
     print u'{} MessageType="CritterDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(myruntime, myapp)
 
@@ -541,16 +527,10 @@ def main():
     if len(sessionKey) == 0:
         print u'{} MessageType="CrittercismError" Did not receive a session key from splunk. '.format(myruntime)
         exit(2)
-        
-    (Cusername, Cpassword) = getCredentials(sessionKey)
-    if (debug) : print u'{} MessageType="CritterDebug" username is {} password is {}'.format(myruntime, Cusername, Cpassword)
 
-    myClientID = getClientID(sessionKey)
-    if (debug) : print u'{} MessageType="CritterDebug" ClientID is {}'.format(myruntime, myClientID)
-
-    # now get crittercism credentials - might exit if no creds are available
+    # now get crittercism oauth token
     global access_token
-    access_token = getAccessToken(Cusername,Cpassword,myClientID)
+    access_token = getCredentials(sessionKey)
 
 # Get application summary information.   
     apps = getAppSummary()
