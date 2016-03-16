@@ -12,13 +12,6 @@ access_token = ''
 baseurl = "https://developers.crittercism.com:443/v1.0/"
 authbaseurl = "https://developers.crittercism.com/v1.0/"
 
-# FOR EU PoP USERS ONLY:
-# If you are using Crittercism through its EU data center presence,
-# uncomment the following two lines for baseurl and authbaseurl and
-# comment out the previous two lines for baseurl and authbaseurl
-# baseurl = "https://developers.eu.crittercism.com:443/v1.0/"
-# authbaseurl = "https://developers.eu.crittercism.com/v1.0/“
-
 debug = 1
 DUMP_DIAGS = 1
 interval = 10 #minutes between runs of theis script as performed by Splunk
