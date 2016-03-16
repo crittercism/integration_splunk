@@ -148,7 +148,7 @@ def getAppSummary():
         printstring = u'{} MessageType="AppSummary" appId={} '.format(myruntime, appId)
         slist = summattrs.split(",")
         for atname in slist:
-            printstring += "%s=\"%s\" " %(atname,gdata[appId][atname])
+            printstring += u'{}="{}" '.format(atname,gdata[appId][atname])
             if atname == "appName" : AppDict[appId]= gdata[appId][atname]
         print printstring
 
@@ -163,10 +163,10 @@ def getCrashSummary(appId, appName):
     crashdata = apicall("app/%s/crash/summaries" % appId, "lastOccurredStart=%s" % mystime)
     CrashDict = {}
     for x,y in enumerate(crashdata):
-        printstring = "%s MessageType=\"CrashSummary\" appId=%s appName=\"%s\" " % (myruntime, appId, appName)
+        printstring = u'{} MessageType="CrashSummary" appId={} appName="{}" '.format(myruntime, appId, appName)
         slist = crashattrs.split(",")
         for atname in slist:
-            printstring += "%s=\"%s\" " %(atname,crashdata[x][atname])
+            printstring += u'{}="{}" '.format(atname, crashdata[x][atname])
             if atname == "hash" : CrashDict[crashdata[x][atname]]= appName
         print printstring
         
@@ -176,13 +176,13 @@ def getBreadcrumbs(crumbs, hash, appName) :
 #breadcrumbs come in as a list.  need to ennumerate
     for i,key in enumerate(crumbs):
         #print "BREADCRUMB i %s key %s" % (i, key)
-        printstring = "%s MessageType=\"CrashDetailBreadcrumbs\" hash=%s " % (myruntime, hash)
+        printstring = u'{} MessageType="CrashDetailBreadcrumbs" hash={} '.format(myruntime, hash)
         for bkey in key.keys():
                         
             if bkey in ("current_session", "previous_session", "crashed_session") :
-               printstring += " \nsession=%s " % (bkey ) + pretty(key[bkey]) + "\n"
+               printstring += u' \nsession={} '.format(bkey ) + pretty(key[bkey]) + u'\n'
             else:
-                printstring += " %s=\"%s\" " % (bkey, key[bkey])
+                printstring += u' {}="{}" '.format(bkey, key[bkey])
         print printstring        
             
 def getStacktrace(stacktrace,hash) :
