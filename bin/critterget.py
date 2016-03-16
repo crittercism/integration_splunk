@@ -288,7 +288,7 @@ def getDiagnostics(diags,hash) :
         elif (key=='discrete_bar_diagnostic_data'):
             continue    
         else:
-            print "--UNPROCESSED----%s - %s" % (key,diags[key])
+            print u'--UNPROCESSED----{} - {}'.format(key,diags[key])
             
 def getDOBV(stacktrace, hash) :
 # handle the DailyOccurrencesByVersion coming back from a crashdetail
@@ -312,7 +312,7 @@ def getCrashDetail(hash, appName):
 # given a crashhash, get all of the detail about that crash 
 
     crashdetail = apicall("crash/%s" % hash, "diagnostics=True")
-    printstring = "%s MessageType=\"CrashDetail\"  appName=\"%s\" " % (myruntime, appName)
+    printstring = u'{} MessageType="CrashDetail"  appName="{}" '.format(myruntime, appName)
     for dkey in crashdetail.keys():
         if dkey == "breadcrumbs" :
             getBreadcrumbs(crashdetail[dkey], hash, appName)
@@ -329,7 +329,7 @@ def getCrashDetail(hash, appName):
         elif dkey == "symbolizedStacktrace" :
             getSymStacktrace(crashdetail[dkey],hash)
         else:
-            printstring += "%s=\"%s\" " % (dkey, crashdetail[dkey])
+            printstring += u'{}="{}" '.format(dkey, crashdetail[dkey])
             
     print printstring            
  
