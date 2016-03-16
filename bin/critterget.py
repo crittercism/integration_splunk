@@ -12,7 +12,7 @@ access_token = ''
 baseurl = "https://developers.crittercism.com:443/v1.0/"
 authbaseurl = "https://developers.crittercism.com/v1.0/"
 
-debug = 1
+debug = 0
 DUMP_DIAGS = 1
 interval = 10 #minutes between runs of theis script as performed by Splunk
 
