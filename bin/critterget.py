@@ -12,14 +12,7 @@ access_token = ''
 baseurl = "https://developers.crittercism.com:443/v1.0/"
 authbaseurl = "https://developers.crittercism.com/v1.0/"
 
-# FOR EU PoP USERS ONLY:
-# If you are using Crittercism through its EU data center presence,
-# uncomment the following two lines for baseurl and authbaseurl and 
-# comment out the previous two lines for baseurl and authbaseurl
-# baseurl = "https://developers.eu.crittercism.com:443/v1.0/"
-# authbaseurl = "https://developers.eu.crittercism.com/v1.0/“
-
-debug = 0
+debug = 1
 DUMP_DIAGS = 1
 interval = 10 #minutes between runs of theis script as performed by Splunk
 
@@ -29,21 +22,19 @@ myruntime = today.strftime('%Y-%m-%d %H:%M:%S %Z')
 # a quick command to forman quasi json output nicely
 pretty=(lambda a:lambda v,t="\t",n="\n",i=0:a(a,v,t,n,i))(lambda f,v,t,n,i:"{%s%s%s}"%(",".join(["%s%s%s: %s"%(n,t*(i+1),repr(k),f(f,v[k],t,n,i+1))for k in v]),n,(t*i)) if type(v)in[dict] else (type(v)in[list]and"[%s%s%s]"or"(%s%s%s)")%(",".join(["%s%s%s"%(n,t*(i+1),f(f,k,t,n,i+1))for k in v]),n,(t*i)) if type(v)in[list,tuple] else repr(v))
 
-
-
 def apicall (uri, attribs=''):
-    # perform an API call
+    # perform an API call 
     if (debug) : print u'access token is {}'.format(access_token)
     reqstring = baseurl + uri
     
     if ( attribs ) : reqstring += "?"+attribs
 
-    if (debug) : print u'reqstring is {}'.format(reqstring)
+    if (debug) : print "reqstring is {}".format(reqstring)
     
     request = urllib2.Request(reqstring)
     request.add_header('Content-Type','application/json')
     request.add_header('Authorization', "Bearer %s" % access_token)
-    request.add_header('CR-source', 'integration-splunk')
+    request.add_header('CR-source', 'integration_splunk')
 
     try:
         response = urllib2.urlopen(request)
@@ -53,15 +44,15 @@ def apicall (uri, attribs=''):
     except urllib2.URLError, e:
         print 'Crittercism API retuned an error code:', e
         sys.exit(0)
-
+  
     return data
-
+ 
 def apipost (uri, postdata='',keyget=''):
-    # perform an API POST
+    # perform an API POST 
     if (debug) : print u'access token is {}'.format(access_token)
     reqstring = baseurl + uri
     data = ""
-
+    
     if (debug) : print u'reqstring is {}'.format(reqstring)
 
     pdata = json.dumps(postdata)
@@ -70,18 +61,17 @@ def apipost (uri, postdata='',keyget=''):
     if (keyget==''):
         request.add_header('Content-Type','application/json')
         request.add_header('Authorization', "Bearer %s" % access_token)
-        request.add_header('CR-source', 'integration-splunk')
 
     try:
         response = urllib2.urlopen(request)
         resptext = response.read()
         data = json.loads(resptext)
-
+    
     except urllib2.URLError, e:
-        print u'{} MessageType=\"CrittercismError\" Crittercism API retuned an error code: {} for the call to {}.  Maybe an ENTERPRISE feature?'.format(myruntime, e, reqstring)
+        print u'{} MessageType="CrittercismError" Crittercism API retuned an error code: {} for the call to {}.  Maybe an ENTERPRISE feature?'.format(myruntime, e, reqstring)
         data = "ERROR"
 #        sys.exit(0)
-
+  
     return data
 
 def authpost (postdata='',keyget=''):
@@ -104,26 +94,40 @@ def authpost (postdata='',keyget=''):
             handler=urllib2.HTTPSHandler(debuglevel=1)
         else :
             handler=urllib2.HTTPSHandler(debuglevel=0)
-
+            
         opener = urllib2.build_opener(handler)
         urllib2.install_opener(opener)
 
         resptext=urllib2.urlopen(request).read()
         data = json.loads(resptext)
-
+    
     except urllib2.URLError, e:
         print u'{} MessageType="CrittercismError" Crittercism Auth API retuned an error code: {} for the call to {}.  Maybe an ENTERPRISE feature?'.format( myruntime, e, reqstring)
         data = "ERROR"
         sys.exit(0)
-
+  
     return data['access_token']
+    
+def getAccessToken(username,password,myApiKey):
+# auth a session key from crittercism
+    if (debug) : print u'{} MessageType="CritterDebug" Into getAccessTokenuser = {} pass = {} apikey = {}'.format(myruntime,username,password,myApiKey)
+        
+    params = dict([('grant_type', "password"), ('username', username), ('password', password)])        
+        	
+    accessToken = authpost(params,myApiKey)
+    if (debug) : print "apipost returns ",accessToken
+    return accessToken
 
+
+
+
+    
 def scopetime():
     # return an ISO8601 timestring based on NOW - Interval
     newtime=(datetime.datetime.utcnow() - datetime.timedelta(minutes=interval))
 
     return (newtime.isoformat())
-
+       
 def getAppSummary():
 # read app summary information.  Print out in Splunk KV format.  Return a dict with appId and appName.
 
@@ -134,10 +138,10 @@ def getAppSummary():
 
     AppDict = {}
     for appId in gdata.keys():
-        printstring = u'{} MessageType="AppSummary" appId={} '.format(myruntime, appId)
+        printstring = "%s MessageType=\"AppSummary\" appId=%s " % (myruntime, appId)
         slist = summattrs.split(",")
         for atname in slist:
-            printstring += u'{}="{}" '.format(atname, gdata[appId][atname])
+            printstring += "%s=\"%s\" " %(atname,gdata[appId][atname])
             if atname == "appName" : AppDict[appId]= gdata[appId][atname]
         print printstring
 
@@ -147,43 +151,43 @@ def getAppSummary():
 def getCrashSummary(appId, appName):
 # given an appID and an appName, produce a Splunk KV summary of the crashes for a given timeframe
     mystime = scopetime()
-
+    
     crashattrs = "hash,lastOccurred,sessionCount,uniqueSessionCount,reason,status,displayReason,name"
     crashdata = apicall("app/%s/crash/summaries" % appId, "lastOccurredStart=%s" % mystime)
     CrashDict = {}
     for x,y in enumerate(crashdata):
-        printstring = u'{} MessageType="CrashSummary" appId={} appName="{}" '.format(myruntime, appId, appName)
+        printstring = "%s MessageType=\"CrashSummary\" appId=%s appName=\"%s\" " % (myruntime, appId, appName)
         slist = crashattrs.split(",")
         for atname in slist:
-            printstring += u'{}="{}" '.format(atname, crashdata[x][atname])
+            printstring += "%s=\"%s\" " %(atname,crashdata[x][atname])
             if atname == "hash" : CrashDict[crashdata[x][atname]]= appName
         print printstring
-
+        
     return CrashDict
-
+    
 def getBreadcrumbs(crumbs, hash, appName) :
 #breadcrumbs come in as a list.  need to ennumerate
     for i,key in enumerate(crumbs):
         #print "BREADCRUMB i %s key %s" % (i, key)
-        printstring = u'{} MessageType="CrashDetailBreadcrumbs" hash={} '.format(myruntime, hash)
+        printstring = "%s MessageType=\"CrashDetailBreadcrumbs\" hash=%s " % (myruntime, hash)
         for bkey in key.keys():
-
+                        
             if bkey in ("current_session", "previous_session", "crashed_session") :
-               printstring += u' \nsession={} ' % (bkey ) + pretty(key[bkey]) + "\n"
+               printstring += " \nsession=%s " % (bkey ) + pretty(key[bkey]) + "\n"
             else:
-                printstring += u' {}="%s" '.format(bkey, key[bkey])
-        print printstring
-
+                printstring += " %s=\"%s\" " % (bkey, key[bkey])
+        print printstring        
+            
 def getStacktrace(stacktrace,hash) :
-    print u'{} MessageType="CrashDetailStacktrace" hash={}'.format(myruntime, hash), pretty(stacktrace)
+    print u'{} MessageType="CrashDetailStacktrace"  hash={} '.format(myruntime, hash),pretty(stacktrace)
 
-
+    
 
 def diag_geo(data,hash):
     if (debug) : print "into diag_geo"
     for country in data.keys():
         for city in data[country].keys():
-            if city == '--NAME--':
+            if city == '--NAME--': 
                 continue
             (lat,lon,crashes) = (str(data[country][city][0]),
                                 str(data[country][city][1]),
@@ -277,7 +281,7 @@ def getDiagnostics(diags,hash) :
         elif (key=='discrete_bar_diagnostic_data'):
             continue    
         else:
-            print u'--UNPROCESSED----{} - {}'.format(key,diags[key])
+            print "--UNPROCESSED----%s - %s" % (key,diags[key])
             
 def getDOBV(stacktrace, hash) :
 # handle the DailyOccurrencesByVersion coming back from a crashdetail
@@ -301,7 +305,7 @@ def getCrashDetail(hash, appName):
 # given a crashhash, get all of the detail about that crash 
 
     crashdetail = apicall("crash/%s" % hash, "diagnostics=True")
-    printstring = u'{} MessageType="CrashDetail"  appName="%s" '.format(myruntime, appName)
+    printstring = "%s MessageType=\"CrashDetail\"  appName=\"%s\" " % (myruntime, appName)
     for dkey in crashdetail.keys():
         if dkey == "breadcrumbs" :
             getBreadcrumbs(crashdetail[dkey], hash, appName)
@@ -318,7 +322,7 @@ def getCrashDetail(hash, appName):
         elif dkey == "symbolizedStacktrace" :
             getSymStacktrace(crashdetail[dkey],hash)
         else:
-            printstring += u'{}="{}" '.format(dkey, crashdetail[dkey])
+            printstring += "%s=\"%s\" " % (dkey, crashdetail[dkey])
             
     print printstring            
  
@@ -354,7 +358,7 @@ def getCrashesByOS(appId,appName):
     mystring = ""
     try:
         for series in crashesos['data']['slices']:	
-            mystring += u'("{}",{}),'.format(series['label'], series['value'])
+            mystring += "(\"%s\",%s)," % (series['label'], series['value'])
 
         print u'{} MessageType=DailyCrashesByOS appName="{}" appId="{}" DATA {}'.format(myruntime, appName,appId,mystring)
         return	
@@ -383,7 +387,7 @@ def getGenericPerfMgmt(appId, appName,graph,groupby,messagetype):
     mystring = ""
     try:
         for series in serverrors['data']['slices']:
-		    mystring += u'("{}",{}),'.format(series['label'], series['value'])
+		    mystring += "(\"%s\",%s)," % (series['label'], series['value'])
 
         print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(myruntime, messagetype, appName, appId, mystring)
         
@@ -409,7 +413,7 @@ def getGenericErrorMon(appId, appName,graph,groupby,messagetype):
     mystring = ""
     try:
         for series in serverrors['data']['slices']:
-		    mystring += u'("{}",{}),'.format(series['label'], series['value'])
+		    mystring += "(\"%s\",%s)," % (series['label'], series['value'])
 
         print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(myruntime, messagetype, appName, appId, mystring)
         
@@ -430,7 +434,7 @@ def getDailyAppLoads(appId,appName):
         "appId": appId,
         }}
         
-    apploadsD = apipost("errorMonitoring/graph", params)
+    apploadsD = apipost("errorMonitoring/graph",params)
     
     try:
         print u'{} MessageType=DailyAppLoads appName="{}" appId="{}" dailyAppLoads={}'.format(myruntime,appName, appId, apploadsD['data']['series'][0]['points'][0])
@@ -462,7 +466,7 @@ def getCrashCounts(appId,appName):
    
     try:
         for series in crashdata:
-		    mystring += u'({},{}),'.format(series['date'], series['value'])
+		    mystring += "(%s,%s)," % (series['date'], series['value'])
 
         print u'{} MessageType=CrashCounts appName="{}" appId="{}" DATA {}'.format(myruntime, appName,appId,mystring)
 
@@ -475,7 +479,7 @@ def getCrashCounts(appId,appName):
 def getCredentials(sessionKey):
 # access the credentials in /servicesNS/nobody/<MyApp>/admin/passwords
 
-    if (debug) : print u' MessageType="CritterDebug" Into getCredentials'.format(myruntime)
+    if (debug) : print u'{} MessageType="CritterDebug"  Into getCredentials'.format(myruntime)
     
     try:
         # list all credentials
@@ -487,7 +491,7 @@ def getCredentials(sessionKey):
     # return first set of credentials
     if (debug) : print "Entities is ", entities
     for i, c in entities.items():
-        return c['clear_password']
+        return c['username'], c['clear_password']
 
     print u'{} MessageType="CritterDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(myruntime, myapp)
 
@@ -527,10 +531,16 @@ def main():
     if len(sessionKey) == 0:
         print u'{} MessageType="CrittercismError" Did not receive a session key from splunk. '.format(myruntime)
         exit(2)
+        
+    (Cusername, Cpassword) = getCredentials(sessionKey)
+    if (debug) : print u'{} MessageType="CritterDebug" username is {} password is {}'.format(myruntime, Cusername, Cpassword)
 
-    # now get crittercism oauth token
+    myClientID = getClientID(sessionKey)
+    if (debug) : print u'{} MessageType="CritterDebug" ClientID is {}'.format(myruntime, myClientID)
+
+    # now get crittercism credentials - might exit if no creds are available
     global access_token
-    access_token = getCredentials(sessionKey)
+    access_token = getAccessToken(Cusername,Cpassword,myClientID)
 
 # Get application summary information.   
     apps = getAppSummary()
