@@ -36,7 +36,7 @@ def apicall (uri, attribs=''):
     
     if ( attribs ) : reqstring += "?"+attribs
 
-    if (debug) : print "reqstring is {}".format(reqstring)
+    if (debug) : print u'reqstring is {}'.format(reqstring)
     
     request = urllib2.Request(reqstring)
     request.add_header('Content-Type','application/json')
@@ -115,15 +115,15 @@ def authpost (postdata='',keyget=''):
   
     return data['access_token']
     
-def getAccessToken(username,password,myApiKey):
-# auth a session key from crittercism
-    if (debug) : print u'{} MessageType="CritterDebug" Into getAccessTokenuser = {} pass = {} apikey = {}'.format(myruntime,username,password,myApiKey)
-        
-    params = dict([('grant_type', "password"), ('username', username), ('password', password)])        
-        	
-    accessToken = authpost(params,myApiKey)
-    if (debug) : print "apipost returns ",accessToken
-    return accessToken
+# def getAccessToken(username,password,myApiKey):
+# # auth a session key from crittercism
+#     if (debug) : print u'{} MessageType="CritterDebug" Into getAccessTokenuser = {} pass = {} apikey = {}'.format(myruntime,username,password,myApiKey)
+#
+#     params = dict([('grant_type', "password"), ('username', username), ('password', password)])
+#
+#     accessToken = authpost(params,myApiKey)
+#     if (debug) : print "apipost returns ",accessToken
+#     return accessToken
 
 
 
@@ -441,7 +441,7 @@ def getDailyAppLoads(appId,appName):
         "appId": appId,
         }}
         
-    apploadsD = apipost("errorMonitoring/graph",params)
+    apploadsD = apipost("errorMonitoring/graph", params)
     
     try:
         print u'{} MessageType=DailyAppLoads appName="{}" appId="{}" dailyAppLoads={}'.format(myruntime,appName, appId, apploadsD['data']['series'][0]['points'][0])
@@ -498,31 +498,31 @@ def getCredentials(sessionKey):
     # return first set of credentials
     if (debug) : print "Entities is ", entities
     for i, c in entities.items():
-        return c['username'], c['clear_password']
+        return c['clear_password']
 
     print u'{} MessageType="CritterDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(myruntime, myapp)
 
-def getClientID(sessionKey):
-# access the clientID entered in setup.  It should be 
-# in $SPLUNK_HOME/etc/apps/crittercism/local/crittercism.conf 
-
-    if (debug) : print u'{} MessageType="CritterDebug"  Into getAPI'.format(myruntime)
-
-    try:
-        # list all credentials
-        entities = entity.getEntities(['properties', 'crittercism_integration','api'], namespace=myapp,
-                                    owner='nobody', sessionKey=sessionKey)
-    except Exception, e:
-        print u'{} MessageType="CritterDebug" Could not get {} api information from splunk. Error: {}'.format(myruntime, myapp, str(e))
-
-    # return first set of credentials
-    if (debug) : print "Entities is ", entities
- # for i, c in entities.items():
-    try:
-        return entities['clientID']
-
-    except Exception, e:
-            print u'{} MessageType="CritterDebug" {} No credentials have been found for app {} . Maybe a setup issue?'.format(myruntime, e, myapp)
+# def getClientID(sessionKey):
+# # access the clientID entered in setup.  It should be
+# # in $SPLUNK_HOME/etc/apps/crittercism/local/crittercism.conf
+#
+#     if (debug) : print u'{} MessageType="CritterDebug"  Into getAPI'.format(myruntime)
+#
+#     try:
+#         # list all credentials
+#         entities = entity.getEntities(['properties', 'crittercism_integration','api'], namespace=myapp,
+#                                     owner='nobody', sessionKey=sessionKey)
+#     except Exception, e:
+#         print u'{} MessageType="CritterDebug" Could not get {} api information from splunk. Error: {}'.format(myruntime, myapp, str(e))
+#
+#     # return first set of credentials
+#     if (debug) : print "Entities is ", entities
+#  # for i, c in entities.items():
+#     try:
+#         return entities['clientID']
+#
+#     except Exception, e:
+#             print u'{} MessageType="CritterDebug" {} No credentials have been found for app {} . Maybe a setup issue?'.format(myruntime, e, myapp)
 
 
 
@@ -538,16 +538,15 @@ def main():
     if len(sessionKey) == 0:
         print u'{} MessageType="CrittercismError" Did not receive a session key from splunk. '.format(myruntime)
         exit(2)
-        
-    (Cusername, Cpassword) = getCredentials(sessionKey)
-    if (debug) : print u'{} MessageType="CritterDebug" username is {} password is {}'.format(myruntime, Cusername, Cpassword)
 
-    myClientID = getClientID(sessionKey)
-    if (debug) : print u'{} MessageType="CritterDebug" ClientID is {}'.format(myruntime, myClientID)
+    # myClientID = getClientID(sessionKey)
+    # if (debug) : print u'{} MessageType="CritterDebug" ClientID is {}'.format(myruntime, myClientID)
 
     # now get crittercism credentials - might exit if no creds are available
     global access_token
-    access_token = getAccessToken(Cusername,Cpassword,myClientID)
+    access_token = getCredentials(sessionKey)
+
+    if (debug) : print u'{} MessageType="CritterDebug" OAuth token is {}'.format(myruntime, access_token)
 
 # Get application summary information.   
     apps = getAppSummary()
