@@ -30,7 +30,7 @@ myruntime = today.strftime('%Y-%m-%d %H:%M:%S %Z')
 pretty=(lambda a:lambda v,t="\t",n="\n",i=0:a(a,v,t,n,i))(lambda f,v,t,n,i:"{%s%s%s}"%(",".join(["%s%s%s: %s"%(n,t*(i+1),repr(k),f(f,v[k],t,n,i+1))for k in v]),n,(t*i)) if type(v)in[dict] else (type(v)in[list]and"[%s%s%s]"or"(%s%s%s)")%(",".join(["%s%s%s"%(n,t*(i+1),f(f,k,t,n,i+1))for k in v]),n,(t*i)) if type(v)in[list,tuple] else repr(v))
 
 def apicall (uri, attribs=''):
-    # perform an API call 
+    # perform an API call
     if (debug) : print u'access token is {}'.format(access_token)
     reqstring = baseurl + uri
     
@@ -55,7 +55,7 @@ def apicall (uri, attribs=''):
     return data
  
 def apipost (uri, postdata='',keyget=''):
-    # perform an API POST 
+    # perform an API POST
     if (debug) : print u'access token is {}'.format(access_token)
     reqstring = baseurl + uri
     data = ""
@@ -114,21 +114,7 @@ def authpost (postdata='',keyget=''):
         sys.exit(0)
   
     return data['access_token']
-    
-# def getAccessToken(username,password,myApiKey):
-# # auth a session key from crittercism
-#     if (debug) : print u'{} MessageType="CritterDebug" Into getAccessTokenuser = {} pass = {} apikey = {}'.format(myruntime,username,password,myApiKey)
-#
-#     params = dict([('grant_type', "password"), ('username', username), ('password', password)])
-#
-#     accessToken = authpost(params,myApiKey)
-#     if (debug) : print "apipost returns ",accessToken
-#     return accessToken
 
-
-
-
-    
 def scopetime():
     # return an ISO8601 timestring based on NOW - Interval
     newtime=(datetime.datetime.utcnow() - datetime.timedelta(minutes=interval))
@@ -188,8 +174,6 @@ def getBreadcrumbs(crumbs, hash, appName) :
 def getStacktrace(stacktrace,hash) :
     print u'{} MessageType="CrashDetailStacktrace"  hash={} '.format(myruntime, hash),pretty(stacktrace)
 
-    
-
 def diag_geo(data,hash):
     if (debug) : print "into diag_geo"
     for country in data.keys():
@@ -224,8 +208,8 @@ def diag_affected_versions(data,hash):
         datastring += " \"%s\"=%s" % (str(x).replace(" ","_"),str(vpair))
       
     print u'{} MessageType="CrashDiagsAffectedVersions"  hash={} {} '.format(myruntime, hash,datastring)
-   
-   
+
+
 def diag_cont_bar(data, hash):
 # The continuous_bar_diagnostic_data data comes back as two arrays per datapoint
 # we Zip them back together to make them KV for Splunk
@@ -502,30 +486,6 @@ def getCredentials(sessionKey):
 
     print u'{} MessageType="CritterDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(myruntime, myapp)
 
-# def getClientID(sessionKey):
-# # access the clientID entered in setup.  It should be
-# # in $SPLUNK_HOME/etc/apps/crittercism/local/crittercism.conf
-#
-#     if (debug) : print u'{} MessageType="CritterDebug"  Into getAPI'.format(myruntime)
-#
-#     try:
-#         # list all credentials
-#         entities = entity.getEntities(['properties', 'crittercism_integration','api'], namespace=myapp,
-#                                     owner='nobody', sessionKey=sessionKey)
-#     except Exception, e:
-#         print u'{} MessageType="CritterDebug" Could not get {} api information from splunk. Error: {}'.format(myruntime, myapp, str(e))
-#
-#     # return first set of credentials
-#     if (debug) : print "Entities is ", entities
-#  # for i, c in entities.items():
-#     try:
-#         return entities['clientID']
-#
-#     except Exception, e:
-#             print u'{} MessageType="CritterDebug" {} No credentials have been found for app {} . Maybe a setup issue?'.format(myruntime, e, myapp)
-
-
-
 ###########
 # 
 
@@ -538,9 +498,6 @@ def main():
     if len(sessionKey) == 0:
         print u'{} MessageType="CrittercismError" Did not receive a session key from splunk. '.format(myruntime)
         exit(2)
-
-    # myClientID = getClientID(sessionKey)
-    # if (debug) : print u'{} MessageType="CritterDebug" ClientID is {}'.format(myruntime, myClientID)
 
     # now get crittercism oauth token
     global access_token
