@@ -145,7 +145,7 @@ def getAppSummary():
 
     AppDict = {}
     for appId in gdata.keys():
-        printstring = "%s MessageType=\"AppSummary\" appId=%s " % (myruntime, appId)
+        printstring = u'{} MessageType="AppSummary" appId={} '.format(myruntime, appId)
         slist = summattrs.split(",")
         for atname in slist:
             printstring += "%s=\"%s\" " %(atname,gdata[appId][atname])
