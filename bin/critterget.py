@@ -362,10 +362,10 @@ def getCrashesByOS(appId,appName):
     # is user does not have pro access for a given application, this fails.
     if (crashesos == "ERROR") : return (None,None) 
  
-    mystring = ""
+    mystring = u''
     try:
         for series in crashesos['data']['slices']:	
-            mystring += "(\"%s\",%s)," % (series['label'], series['value'])
+            mystring += u'("{}",{}),'.format(series['label'], series['value'])
 
         print u'{} MessageType=DailyCrashesByOS appName="{}" appId="{}" DATA {}'.format(myruntime, appName,appId,mystring)
         return	
@@ -391,10 +391,10 @@ def getGenericPerfMgmt(appId, appName,graph,groupby,messagetype):
     
 #    print "%s DEBUG Into getGenericPerfMgmt appId = %s  appName = %s graph= %s groupby = %s messagetype = %s" %(myruntime, appId, appName,graph,groupby,messagetype)
 			
-    mystring = ""
+    mystring = u''
     try:
         for series in serverrors['data']['slices']:
-		    mystring += "(\"%s\",%s)," % (series['label'], series['value'])
+		    mystring += u'("{}",{}),'.format(series['label'], series['value'])
 
         print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(myruntime, messagetype, appName, appId, mystring)
         
@@ -417,10 +417,10 @@ def getGenericErrorMon(appId, appName,graph,groupby,messagetype):
     
 #    print "%s DEBUG Into getGenericErrorMon appId = %s  appName = %s graph= %s groupby = %s messagetype = %s" %(myruntime, appId, appName,graph,groupby,messagetype)
 		
-    mystring = ""
+    mystring = u''
     try:
         for series in serverrors['data']['slices']:
-		    mystring += "(\"%s\",%s)," % (series['label'], series['value'])
+		    mystring += u'("{}",{}),'.format(series['label'], series['value'])
 
         print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(myruntime, messagetype, appName, appId, mystring)
         
@@ -469,11 +469,11 @@ def getCrashCounts(appId,appName):
 
     crashdata = apicall("app/%s/crash/counts" % appId)
     
-    mystring = ""
+    mystring = u''
    
     try:
         for series in crashdata:
-		    mystring += "(%s,%s)," % (series['date'], series['value'])
+		    mystring += u'({},{}),'.format(series['date'], series['value'])
 
         print u'{} MessageType=CrashCounts appName="{}" appId="{}" DATA {}'.format(myruntime, appName,appId,mystring)
 
