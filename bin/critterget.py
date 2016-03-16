@@ -542,7 +542,7 @@ def main():
     # myClientID = getClientID(sessionKey)
     # if (debug) : print u'{} MessageType="CritterDebug" ClientID is {}'.format(myruntime, myClientID)
 
-    # now get crittercism credentials - might exit if no creds are available
+    # now get crittercism oauth token
     global access_token
     access_token = getCredentials(sessionKey)
 
