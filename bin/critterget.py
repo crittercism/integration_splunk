@@ -1,10 +1,15 @@
 #!/usr/bin/python
-import urllib2
-import urllib
+import base64
+import datetime
 import json
 import sys
-import datetime, base64
-import splunk.entity as entity
+import urllib
+import urllib2
+
+try:
+    import splunk.entity as entity
+except ImportError:
+    import mock.entity as entity
 
 #The splunk name for the app.  Needed for the autho storage
 myapp = 'crittercism_integration'
@@ -19,7 +24,7 @@ authbaseurl = "https://developers.crittercism.com/v1.0/"
 # baseurl = "https://developers.eu.crittercism.com:443/v1.0/"
 # authbaseurl = "https://developers.eu.crittercism.com/v1.0/"
 
-debug = 0
+debug = 1
 DUMP_DIAGS = 1
 interval = 10 #minutes between runs of theis script as performed by Splunk
 
