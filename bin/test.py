@@ -27,11 +27,3 @@ class TestSplunk(unittest.TestCase):
         mock_get.assert_called_once_with('uri')
         self.assertEqual(1, mock_response.json.call_count)
         self.assertEqual(response_dict, expected_dict)
-
-    # def testApi(self):
-    #     atstring = "attributes=appName,appType,crashPercent,dau,latency,latestAppStoreReleaseDate,latestVersionString,linkToAppStore,iconURL,mau,rating,role"
-    #
-    #     self.critterget.access_token = '0a6DQFU66hg9VE2l4I3rSxK5C1ffCj6F'
-    #     gdata = self.critterget.apicall("apps",atstring)
-    #
-    #     print gdata
