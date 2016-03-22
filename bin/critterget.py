@@ -9,7 +9,7 @@ import urllib2
 try:
     import splunk.entity as entity
 except ImportError:
-    import mock.entity as entity
+    import splunk_mock.entity as entity
 
 #The splunk name for the app.  Needed for the autho storage
 myapp = 'crittercism_integration'

@@ -1,26 +1,37 @@
 import unittest
+import mock
+import critterget
 
 class TestSplunk(unittest.TestCase):
     def setUp(self):
-        import critterget
-        self.critterget = critterget
+        self.debug = 1
 
     def tearDown(self):
         pass
 
-    def testBasic(self):
-        cred = self.critterget.getCredentials('session_key')
-        print cred
-        self.assertEqual(cred, 'onepass')
+    def testGetCredentials(self):
+        credentials = critterget.getCredentials('session_key')
+        self.assertEqual(credentials, 'boguspassword')
 
+    @mock.patch('critterget.apicall.request')
+    def testGetOk(self, mock_get):
+        mock_response = mock.Mock()
+        expected_dict = {'appID': {'bogusresponse': 'bogusdata'}}
 
+        mock_response.json.return_value = expected_dict
 
-# import splunk.entity as entity
-# entities = entity.getEntities(['admin', 'passwords'], namespace=myapp,
-#                             owner='nobody', sessionKey=sessionKey)
+        mock_get.return_value = mock_response
 
-# entities = entity.getEntities(['properties', 'crittercism_integration','api'], namespace=myapp,
-#                          owner='nobody', sessionKey=sessionKey)
+        response_dict = critterget.apicall('uri', 'attribs')
 
-# for i, c in entities.items():
-#     return c['username'], c['clear_password']
+        mock_get.assert_called_once_with('uri')
+        self.assertEqual(1, mock_response.json.call_count)
+        self.assertEqual(response_dict, expected_dict)
+
+    # def testApi(self):
+    #     atstring = "attributes=appName,appType,crashPercent,dau,latency,latestAppStoreReleaseDate,latestVersionString,linkToAppStore,iconURL,mau,rating,role"
+    #
+    #     self.critterget.access_token = '0a6DQFU66hg9VE2l4I3rSxK5C1ffCj6F'
+    #     gdata = self.critterget.apicall("apps",atstring)
+    #
+    #     print gdata
