@@ -1,4 +1,6 @@
 import unittest
+import sys
+import StringIO
 import mock
 import datetime
 
@@ -6,12 +8,20 @@ import critterget
 
 class TestSplunk(unittest.TestCase):
     def setUp(self):
+        # Turn on critterget's debug messages
         critterget.debug = 1
+
+        # By default, critterget's access_token variable is an empty string
+        # The access_token must be NOT an empty string for critterget to run properly
         critterget.access_token = "bogustoken"
 
+        # patch out requests
         get_patcher = mock.patch.object(critterget.requests, 'get')
+        post_patcher = mock.patch.object(critterget.requests, 'post')
 
+        # patcher will start and stop automatically when these tests are run
         self.mock_get = get_patcher.start()
+        self.mock_post = post_patcher.start()
         self.addCleanup(get_patcher.stop)
 
     def tearDown(self):
@@ -75,5 +85,13 @@ class TestSplunk(unittest.TestCase):
                                                                    )
                                      ]
         crashes = critterget.getCrashSummary('bogusappID', 'bogusName')
-        print "CRASHES", crashes
         self.assertEqual(crashes, {'bogusHash': 'bogusName'})
+
+    def test_getDailyAppLoads(self):
+        mock.patch('sys.stdout', new_callable=StringIO.StringIO)
+        self.mock_post.side_effect = [self._response_with_json_data(200, [{}
+                                                                          ]
+                                                                    )
+                                      ]
+        appLoads = critterget.getDailyAppLoads('appId', 'appName')
+        self.assertIsNone(appLoads)

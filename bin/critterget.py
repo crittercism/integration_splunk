@@ -91,6 +91,10 @@ def scopetime():
 
     return (newtime.isoformat())
 
+# consider replacing 'print' statements with optional 'out' parameters, e.g.:
+# def foo(out=sys.stdout):
+#     out.write("hello, world!")
+
 def getAppSummary():
 # read app summary information.  Print out in Splunk KV format.  Return a dict with appId and appName.
 
