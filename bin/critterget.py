@@ -79,7 +79,7 @@ def apipost (uri, postdata='', keyget=''):
         data = response.json()
 
     except requests.exceptions.RequestException as e:
-        print 'Crittercism API retuned an error code:', e
+        print u'{} MessageType="CrittercismError" Crittercism API retuned an error code: {} for the call to {}.  Maybe an ENTERPRISE feature?'.format(myruntime, e, reqstring)
         data = "ERROR"
 
     return data
