@@ -1,15 +1,18 @@
 #!/usr/bin/python
-import urllib2
-import urllib
+import datetime
 import json
 import sys
-import datetime, base64
-import splunk.entity as entity
+import requests
+
+try:
+    import splunk.entity as entity
+except ImportError:
+    import splunk_mock.entity as entity
 
 #The splunk name for the app.  Needed for the autho storage
 myapp = 'crittercism_integration'
 access_token = ''
-baseurl = "https://developers.crittercism.com:443/v1.0/"
+baseurl = "https://developers.crittercism.com/v1.0/"
 authbaseurl = "https://developers.crittercism.com/v1.0/"
 
 # FOR EU PoP USERS ONLY:
@@ -26,100 +29,64 @@ interval = 10 #minutes between runs of theis script as performed by Splunk
 today = datetime.datetime.now() # calculate this for a common time for all summary data
 myruntime = today.strftime('%Y-%m-%d %H:%M:%S %Z')
 
-# a quick command to forman quasi json output nicely
+# a quick command to format quasi json output nicely
 pretty=(lambda a:lambda v,t="\t",n="\n",i=0:a(a,v,t,n,i))(lambda f,v,t,n,i:"{%s%s%s}"%(",".join(["%s%s%s: %s"%(n,t*(i+1),repr(k),f(f,v[k],t,n,i+1))for k in v]),n,(t*i)) if type(v)in[dict] else (type(v)in[list]and"[%s%s%s]"or"(%s%s%s)")%(",".join(["%s%s%s"%(n,t*(i+1),f(f,k,t,n,i+1))for k in v]),n,(t*i)) if type(v)in[list,tuple] else repr(v))
 
-def apicall (uri, attribs=''):
+def apicall (uri, attribs=None):
     # perform an API call
-    if (debug) : print u'access token is {}'.format(access_token)
+    if (debug): print u'access token is {}'.format(access_token)
     reqstring = baseurl + uri
 
-    if ( attribs ) : reqstring += "?"+attribs
+    if (attribs): reqstring += "?"+attribs
 
-    if (debug) : print u'reqstring is {}'.format(reqstring)
+    if (debug): print u'reqstring is {}'.format(reqstring)
 
-    request = urllib2.Request(reqstring)
-    request.add_header('Content-Type','application/json')
-    request.add_header('Authorization', "Bearer %s" % access_token)
-    request.add_header('CR-source', 'integration_splunk')
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': "Bearer {}".format(access_token),
+        'CR-source': 'integration_splunk'
+    }
 
     try:
-        response = urllib2.urlopen(request)
-        resptext = response.read()
-        data = json.loads(resptext)
+        response = requests.get(reqstring, headers=headers)
+        return response.json()
 
-    except urllib2.URLError, e:
+    except requests.exceptions.RequestException as e:
         print 'Crittercism API retuned an error code:', e
         sys.exit(0)
 
-    return data
 
-def apipost (uri, postdata='',keyget=''):
+def apipost (uri, postdata='', keyget=None):
     # perform an API POST
-    if (debug) : print u'access token is {}'.format(access_token)
+    if (debug): print u'access token is {}'.format(access_token)
     reqstring = baseurl + uri
-    data = ""
 
-    if (debug) : print u'reqstring is {}'.format(reqstring)
+    if (debug): print u'reqstring is {}'.format(reqstring)
 
     pdata = json.dumps(postdata)
 
-    request = urllib2.Request(reqstring,pdata)
-    if (keyget==''):
-        request.add_header('Content-Type','application/json')
-        request.add_header('Authorization', "Bearer %s" % access_token)
+    if not keyget:
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': "Bearer {}".format(access_token),
+            'CR-source': 'integration_splunk'
+        }
 
     try:
-        response = urllib2.urlopen(request)
-        resptext = response.read()
-        data = json.loads(resptext)
+        response = requests.post(reqstring, headers=headers, data=pdata)
+        return response.json()
 
-    except urllib2.URLError, e:
+    except requests.exceptions.RequestException as e:
         print u'{} MessageType="CrittercismError" Crittercism API retuned an error code: {} for the call to {}.  Maybe an ENTERPRISE feature?'.format(myruntime, e, reqstring)
-        data = "ERROR"
-#        sys.exit(0)
+        return "ERROR"
 
-    return data
-
-def authpost (postdata='',keyget=''):
-    # perform an API POST to get the auth_token
-
-    reqstring = authbaseurl + "token"
-
-    data = ""
-
-    if (debug) : print u'reqstring is {}'.format(reqstring)
-
-    params = urllib.urlencode(postdata)
-    request = urllib2.Request(reqstring,params)
-    authstr = base64.encodestring('%s' % (keyget)).replace('\n', '')
-    request.add_header('Authorization', "Basic %s" % authstr)
-
-    try:
-
-        if (debug) :
-            handler=urllib2.HTTPSHandler(debuglevel=1)
-        else :
-            handler=urllib2.HTTPSHandler(debuglevel=0)
-
-        opener = urllib2.build_opener(handler)
-        urllib2.install_opener(opener)
-
-        resptext=urllib2.urlopen(request).read()
-        data = json.loads(resptext)
-
-    except urllib2.URLError, e:
-        print u'{} MessageType="CrittercismError" Crittercism Auth API retuned an error code: {} for the call to {}.  Maybe an ENTERPRISE feature?'.format( myruntime, e, reqstring)
-        data = "ERROR"
-        sys.exit(0)
-
-    return data['access_token']
 
 def scopetime():
     # return an ISO8601 timestring based on NOW - Interval
     newtime=(datetime.datetime.utcnow() - datetime.timedelta(minutes=interval))
 
     return (newtime.isoformat())
+
 
 def getAppSummary():
 # read app summary information.  Print out in Splunk KV format.  Return a dict with appId and appName.
@@ -378,7 +345,7 @@ def getGenericPerfMgmt(appId, appName,graph,groupby,messagetype):
     mystring = u''
     try:
         for series in serverrors['data']['slices']:
-		    mystring += u'("{}",{}),'.format(series['label'], series['value'])
+            mystring += u'("{}",{}),'.format(series['label'], series['value'])
 
         print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(myruntime, messagetype, appName, appId, mystring)
 
@@ -404,7 +371,7 @@ def getGenericErrorMon(appId, appName,graph,groupby,messagetype):
     mystring = u''
     try:
         for series in serverrors['data']['slices']:
-		    mystring += u'("{}",{}),'.format(series['label'], series['value'])
+            mystring += u'("{}",{}),'.format(series['label'], series['value'])
 
         print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(myruntime, messagetype, appName, appId, mystring)
 
@@ -457,7 +424,7 @@ def getCrashCounts(appId,appName):
 
     try:
         for series in crashdata:
-		    mystring += u'({},{}),'.format(series['date'], series['value'])
+            mystring += u'({},{}),'.format(series['date'], series['value'])
 
         print u'{} MessageType=CrashCounts appName="{}" appId="{}" DATA {}'.format(myruntime, appName,appId,mystring)
 
@@ -490,7 +457,6 @@ def getCredentials(sessionKey):
 #
 
 def main():
-#NEED test auth and fix keys if needed
     #read session key sent from splunkd
     sessionKey = sys.stdin.readline().strip()
     if (debug) : print u'{} MessageType="CritterDebug" sessionKey is {}'.format(myruntime, sessionKey)
