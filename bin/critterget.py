@@ -32,57 +32,53 @@ myruntime = today.strftime('%Y-%m-%d %H:%M:%S %Z')
 # a quick command to format quasi json output nicely
 pretty=(lambda a:lambda v,t="\t",n="\n",i=0:a(a,v,t,n,i))(lambda f,v,t,n,i:"{%s%s%s}"%(",".join(["%s%s%s: %s"%(n,t*(i+1),repr(k),f(f,v[k],t,n,i+1))for k in v]),n,(t*i)) if type(v)in[dict] else (type(v)in[list]and"[%s%s%s]"or"(%s%s%s)")%(",".join(["%s%s%s"%(n,t*(i+1),f(f,k,t,n,i+1))for k in v]),n,(t*i)) if type(v)in[list,tuple] else repr(v))
 
-def apicall (uri, attribs=''):
+def apicall (uri, attribs=None):
     # perform an API call
-    if (debug) : print u'access token is {}'.format(access_token)
+    if (debug): print u'access token is {}'.format(access_token)
     reqstring = baseurl + uri
 
-    if ( attribs ) : reqstring += "?"+attribs
+    if (attribs): reqstring += "?"+attribs
 
-    if (debug) : print u'reqstring is {}'.format(reqstring)
+    if (debug): print u'reqstring is {}'.format(reqstring)
 
     headers = {
         'Content-Type': 'application/json',
-        'Authorization': "Bearer %s" % access_token,
+        'Authorization': "Bearer {}".format(access_token),
         'CR-source': 'integration_splunk'
     }
 
     try:
         response = requests.get(reqstring, headers=headers)
-        data = response.json()
+        return response.json()
 
     except requests.exceptions.RequestException as e:
         print 'Crittercism API retuned an error code:', e
         sys.exit(0)
 
-    return data
 
-def apipost (uri, postdata='', keyget=''):
+def apipost (uri, postdata='', keyget=None):
     # perform an API POST
-    if (debug) : print u'access token is {}'.format(access_token)
+    if (debug): print u'access token is {}'.format(access_token)
     reqstring = baseurl + uri
-    data = ""
 
-    if (debug) : print u'reqstring is {}'.format(reqstring)
+    if (debug): print u'reqstring is {}'.format(reqstring)
 
     pdata = json.dumps(postdata)
 
-    if (keyget==''):
+    if not keyget:
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': "Bearer %s" % access_token,
+            'Authorization': "Bearer {}".format(access_token),
             'CR-source': 'integration_splunk'
         }
 
     try:
         response = requests.post(reqstring, headers=headers, data=pdata)
-        data = response.json()
+        return response.json()
 
     except requests.exceptions.RequestException as e:
         print u'{} MessageType="CrittercismError" Crittercism API retuned an error code: {} for the call to {}.  Maybe an ENTERPRISE feature?'.format(myruntime, e, reqstring)
-        data = "ERROR"
-
-    return data
+        return "ERROR"
 
 
 def scopetime():
@@ -91,9 +87,6 @@ def scopetime():
 
     return (newtime.isoformat())
 
-# consider replacing 'print' statements with optional 'out' parameters, e.g.:
-# def foo(out=sys.stdout):
-#     out.write("hello, world!")
 
 def getAppSummary():
 # read app summary information.  Print out in Splunk KV format.  Return a dict with appId and appName.
