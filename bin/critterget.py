@@ -35,11 +35,11 @@ pretty=(lambda a:lambda v,t="\t",n="\n",i=0:a(a,v,t,n,i))(lambda f,v,t,n,i:"{%s%
 def apicall (uri, attribs=None):
     # perform an API call
     if (debug): print u'access token is {}'.format(access_token)
-    reqstring = baseurl + uri
+    url = baseurl + uri
 
-    if (attribs): reqstring += "?"+attribs
+    if (attribs): url += "?"+attribs
 
-    if (debug): print u'reqstring is {}'.format(reqstring)
+    if (debug): print u'reqstring is {}'.format(url)
 
     headers = {
         'Content-Type': 'application/json',
@@ -48,7 +48,7 @@ def apicall (uri, attribs=None):
     }
 
     try:
-        response = requests.get(reqstring, headers=headers)
+        response = requests.get(url, headers=headers)
         return response.json()
 
     except requests.exceptions.RequestException as e:
@@ -59,9 +59,9 @@ def apicall (uri, attribs=None):
 def apipost (uri, postdata='', keyget=None):
     # perform an API POST
     if (debug): print u'access token is {}'.format(access_token)
-    reqstring = baseurl + uri
+    url = baseurl + uri
 
-    if (debug): print u'reqstring is {}'.format(reqstring)
+    if (debug): print u'reqstring is {}'.format(url)
 
     pdata = json.dumps(postdata)
 
@@ -73,11 +73,11 @@ def apipost (uri, postdata='', keyget=None):
         }
 
     try:
-        response = requests.post(reqstring, headers=headers, data=pdata)
+        response = requests.post(url, headers=headers, data=pdata)
         return response.json()
 
     except requests.exceptions.RequestException as e:
-        print u'{} MessageType="CrittercismError" Crittercism API retuned an error code: {} for the call to {}.  Maybe an ENTERPRISE feature?'.format(myruntime, e, reqstring)
+        print u'{} MessageType="CrittercismError" Crittercism API retuned an error code: {} for the call to {}.  Maybe an ENTERPRISE feature?'.format(myruntime, e, url)
         return "ERROR"
 
 
