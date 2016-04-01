@@ -10,13 +10,13 @@ except ImportError:
     import splunk_mock.entity as entity
 
 #The splunk name for the app.  Needed for the autho storage
-myapp = 'crittercism_integration'
+myapp = 'apteligent_integration'
 access_token = ''
 baseurl = "https://developers.crittercism.com/v1.0/"
 authbaseurl = "https://developers.crittercism.com/v1.0/"
 
 # FOR EU PoP USERS ONLY:
-# If you are using Crittercism through its EU data center presence,
+# If you are using Apteligent through its EU data center presence,
 # uncomment the following two lines for baseurl and authbaseurl and
 # comment out the previous two lines for baseurl and authbaseurl
 # baseurl = "https://developers.eu.crittercism.com:443/v1.0/"
@@ -50,9 +50,17 @@ def apicall (uri, attribs=None):
     try:
         response = requests.get(url, headers=headers)
         return response.json()
-
+    except requests.exceptions.Timeout as e:
+        print 'Connection timeout. Apteligent API returned an error code:', e
+        sys.exit(0)
+    except requests.exceptions.ConnectionError as e:
+        print 'Connection error. Apteligent API returned an error code:', e
+        sys.exit(0)
+    except requests.exceptions.HTTPError as e:
+        print 'HTTP error. Apteligent API returned an error code:', e
+        sys.exit(0)
     except requests.exceptions.RequestException as e:
-        print 'Crittercism API retuned an error code:', e
+        print 'Apteligent API retuned an error code:', e
         sys.exit(0)
 
 
@@ -77,7 +85,7 @@ def apipost (uri, postdata='', keyget=None):
         return response.json()
 
     except requests.exceptions.RequestException as e:
-        print u'{} MessageType="CrittercismError" Crittercism API retuned an error code: {} for the call to {}.  Maybe an ENTERPRISE feature?'.format(myruntime, e, url)
+        print u'{} MessageType="ApteligentError" Apteligent API retuned an error code: {} for the call to {}.  Maybe an ENTERPRISE feature?'.format(myruntime, e, url)
         return "ERROR"
 
 
@@ -91,7 +99,7 @@ def scopetime():
 def getAppSummary():
 # read app summary information.  Print out in Splunk KV format.  Return a dict with appId and appName.
 
-    # list of the attributes we'll hand to Crittercism, also the list we will create as Splunk Keys
+    # list of the attributes we'll hand to Apteligent, also the list we will create as Splunk Keys
     summattrs = "appName,appType,crashPercent,dau,latency,latestAppStoreReleaseDate,latestVersionString,linkToAppStore,iconURL,mau,rating,role"
     atstring = "attributes=%s"%summattrs
     gdata = apicall("apps",atstring)
@@ -196,7 +204,7 @@ def diag_cont_bar(data, hash):
 
 
 def diag_cont(data, hash):
-# Grab all of the continuous data from Crittercism and format into a splunk event
+# Grab all of the continuous data from Apteligent and format into a splunk event
     datastring= ""
     for uhash in data.keys():
 
@@ -322,7 +330,7 @@ def getCrashesByOS(appId,appName):
         return
 
     except KeyError as e:
-        print u'{} MessageType="CrittercismError" Error: Could not access {} in {}.'.format(myruntime, str(e), 'get_crashes_by_os')
+        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(myruntime, str(e), 'get_crashes_by_os')
         return (None, None)
 
 
@@ -350,7 +358,7 @@ def getGenericPerfMgmt(appId, appName,graph,groupby,messagetype):
         print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(myruntime, messagetype, appName, appId, mystring)
 
     except KeyError as e:
-        print u'{} MessageType="CrittercismError" Error: Could not access {} in {}.'.format(myruntime, str(e), messagetype)
+        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(myruntime, str(e), messagetype)
         return (None, None)
 
 """--------------------------------------------------------------"""
@@ -376,7 +384,7 @@ def getGenericErrorMon(appId, appName,graph,groupby,messagetype):
         print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(myruntime, messagetype, appName, appId, mystring)
 
     except KeyError as e:
-        print u'{} MessageType="CrittercismError" Error: Could not access {} in {}.'.format(myruntime, str(e), messagetype)
+        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(myruntime, str(e), messagetype)
         return (None, None)
 
 """--------------------------------------------------------------"""
@@ -397,7 +405,7 @@ def getDailyAppLoads(appId,appName):
     try:
         print u'{} MessageType=DailyAppLoads appName="{}" appId="{}" dailyAppLoads={}'.format(myruntime,appName, appId, apploadsD['data']['series'][0]['points'][0])
     except KeyError as e:
-        print u'{} MessageType="CrittercismError" Error: Could not access {} in {}.'.format(myruntime, str(e), 'get_daily_app_loads')
+        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(myruntime, str(e), 'get_daily_app_loads')
         return None
 
 def getDailyCrashes(appId,appName):
@@ -409,7 +417,7 @@ def getDailyCrashes(appId,appName):
     try:
         print u'{} MessageType=DailyCrashes appName="{}" appId="{}" dailyCrashes={}'.format(myruntime,appName, appId, crashdata[len(crashdata)-1]['value'])
     except KeyError as e:
-        print u'{} MessageType="CrittercismError" Error: Could not access {} in {}.'.format(myruntime, str(e), 'get_daily_crashes')
+        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(myruntime, str(e), 'get_daily_crashes')
         return None
 
     return
@@ -429,7 +437,7 @@ def getCrashCounts(appId,appName):
         print u'{} MessageType=CrashCounts appName="{}" appId="{}" DATA {}'.format(myruntime, appName,appId,mystring)
 
     except KeyError as e:
-        print u'{} MessageType="CrittercismError" Error: Could not access {} in {}.'.format(myruntime, str(e), 'get_crash_counts')
+        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(myruntime, str(e), 'get_crash_counts')
         return None
 
     return
@@ -437,21 +445,21 @@ def getCrashCounts(appId,appName):
 def getCredentials(sessionKey):
 # access the credentials in /servicesNS/nobody/<MyApp>/admin/passwords
 
-    if (debug) : print u'{} MessageType="CritterDebug"  Into getCredentials'.format(myruntime)
+    if (debug) : print u'{} MessageType="ApteligentDebug"  Into getCredentials'.format(myruntime)
 
     try:
         # list all credentials
         entities = entity.getEntities(['admin', 'passwords'], namespace=myapp,
                                     owner='nobody', sessionKey=sessionKey)
     except Exception, e:
-        print u'{} MessageType="CritterDebug" Could not get {} credentials from splunk. Error: {}'.format(myruntime, myapp, str(e))
+        print u'{} MessageType="ApteligentDebug" Could not get {} credentials from splunk. Error: {}'.format(myruntime, myapp, str(e))
 
     # return first set of credentials
     if (debug) : print "Entities is ", entities
     for i, c in entities.items():
         return c['clear_password']
 
-    print u'{} MessageType="CritterDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(myruntime, myapp)
+    print u'{} MessageType="ApteligentDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(myruntime, myapp)
 
 ###########
 #
@@ -459,17 +467,17 @@ def getCredentials(sessionKey):
 def main():
     #read session key sent from splunkd
     sessionKey = sys.stdin.readline().strip()
-    if (debug) : print u'{} MessageType="CritterDebug" sessionKey is {}'.format(myruntime, sessionKey)
+    if (debug) : print u'{} MessageType="ApteligentDebug" sessionKey is {}'.format(myruntime, sessionKey)
 
     if len(sessionKey) == 0:
-        print u'{} MessageType="CrittercismError" Did not receive a session key from splunk. '.format(myruntime)
+        print u'{} MessageType="ApteligentError" Did not receive a session key from splunk. '.format(myruntime)
         exit(2)
 
     # now get crittercism oauth token
     global access_token
     access_token = getCredentials(sessionKey)
 
-    if (debug) : print u'{} MessageType="CritterDebug" OAuth token is {}'.format(myruntime, access_token)
+    if (debug) : print u'{} MessageType="ApteligentDebug" OAuth token is {}'.format(myruntime, access_token)
 
 # Get application summary information.
     apps = getAppSummary()

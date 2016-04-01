@@ -1,4 +1,4 @@
-Copyright 2015 Crittercism, Inc.
+Copyright 2015 Apteligent, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

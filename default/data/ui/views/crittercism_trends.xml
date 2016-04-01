@@ -1,5 +1,5 @@
 <form>
-  <label>Crittercism Trends</label>
+  <label>Apteligent Trends</label>
   <fieldset autoRun="true" submitButton="false">
     <input type="dropdown" token="appName" searchWhenChanged="true">
       <label>Select an Application:</label>

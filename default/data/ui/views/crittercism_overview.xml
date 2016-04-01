@@ -1,12 +1,12 @@
 <dashboard>
-  <label>Crittercism Overview</label>
+  <label>Apteligent Overview</label>
   <row>
-    
+
       <table>
         <title>Apps Found</title>
         <searchString>
           index=crittercism sourcetype="crittercism" MessageType=AppSummary| dedup appName | table appName, appId
-          
+
         </searchString>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
@@ -28,8 +28,8 @@
         <option name="drilldown">cell</option>
         <option name="count">10</option>
       </table>
-   
-  
+
+
       <chart>
         <title>CrashPercentage</title>
         <searchString>
@@ -59,7 +59,7 @@
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">right</option>
       </chart>
-  
+
   </row>
   <row>
 
@@ -86,9 +86,9 @@
   <row>
 
       <event>
-        <title>Crittercism App Errors</title>
+        <title>Apteligent App Errors</title>
         <searchString>
-          index=crittercism sourcetype=crittercism MessageType=CrittercismError
+          index=crittercism sourcetype=crittercism MessageType=ApteligentError
           <earliest>rt-10m</earliest>
           <latest>rtnow</latest>
         </searchString>
