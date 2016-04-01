@@ -10,7 +10,7 @@ except ImportError:
     import splunk_mock.entity as entity
 
 #The splunk name for the app.  Needed for the autho storage
-myapp = 'crittercism_integration'
+myapp = 'apteligent_integration'
 access_token = ''
 baseurl = "https://developers.crittercism.com/v1.0/"
 authbaseurl = "https://developers.crittercism.com/v1.0/"
@@ -22,7 +22,7 @@ authbaseurl = "https://developers.crittercism.com/v1.0/"
 # baseurl = "https://developers.eu.crittercism.com:443/v1.0/"
 # authbaseurl = "https://developers.eu.crittercism.com/v1.0/"
 
-debug = 0
+debug = 1
 DUMP_DIAGS = 1
 interval = 10 #minutes between runs of theis script as performed by Splunk
 
@@ -50,7 +50,15 @@ def apicall (uri, attribs=None):
     try:
         response = requests.get(url, headers=headers)
         return response.json()
-
+    except requests.exceptions.Timeout as e:
+        print 'Connection timeout. Apteligent API returned an error code:', e
+        sys.exit(0)
+    except requests.exceptions.ConnectionError as e:
+        print 'Connection error. Apteligent API returned an error code:', e
+        sys.exit(0)
+    except requests.exceptions.HTTPError as e:
+        print 'HTTP error. Apteligent API returned an error code:', e
+        sys.exit(0)
     except requests.exceptions.RequestException as e:
         print 'Apteligent API retuned an error code:', e
         sys.exit(0)
@@ -437,21 +445,21 @@ def getCrashCounts(appId,appName):
 def getCredentials(sessionKey):
 # access the credentials in /servicesNS/nobody/<MyApp>/admin/passwords
 
-    if (debug) : print u'{} MessageType="CritterDebug"  Into getCredentials'.format(myruntime)
+    if (debug) : print u'{} MessageType="ApteligentDebug"  Into getCredentials'.format(myruntime)
 
     try:
         # list all credentials
         entities = entity.getEntities(['admin', 'passwords'], namespace=myapp,
                                     owner='nobody', sessionKey=sessionKey)
     except Exception, e:
-        print u'{} MessageType="CritterDebug" Could not get {} credentials from splunk. Error: {}'.format(myruntime, myapp, str(e))
+        print u'{} MessageType="ApteligentDebug" Could not get {} credentials from splunk. Error: {}'.format(myruntime, myapp, str(e))
 
     # return first set of credentials
     if (debug) : print "Entities is ", entities
     for i, c in entities.items():
         return c['clear_password']
 
-    print u'{} MessageType="CritterDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(myruntime, myapp)
+    print u'{} MessageType="ApteligentDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(myruntime, myapp)
 
 ###########
 #
@@ -459,7 +467,7 @@ def getCredentials(sessionKey):
 def main():
     #read session key sent from splunkd
     sessionKey = sys.stdin.readline().strip()
-    if (debug) : print u'{} MessageType="CritterDebug" sessionKey is {}'.format(myruntime, sessionKey)
+    if (debug) : print u'{} MessageType="ApteligentDebug" sessionKey is {}'.format(myruntime, sessionKey)
 
     if len(sessionKey) == 0:
         print u'{} MessageType="ApteligentError" Did not receive a session key from splunk. '.format(myruntime)
@@ -469,7 +477,7 @@ def main():
     global access_token
     access_token = getCredentials(sessionKey)
 
-    if (debug) : print u'{} MessageType="CritterDebug" OAuth token is {}'.format(myruntime, access_token)
+    if (debug) : print u'{} MessageType="ApteligentDebug" OAuth token is {}'.format(myruntime, access_token)
 
 # Get application summary information.
     apps = getAppSummary()
