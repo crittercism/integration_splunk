@@ -22,7 +22,7 @@ authbaseurl = "https://developers.crittercism.com/v1.0/"
 # baseurl = "https://developers.eu.crittercism.com:443/v1.0/"
 # authbaseurl = "https://developers.eu.crittercism.com/v1.0/"
 
-debug = 0
+debug = True
 DUMP_DIAGS = 1
 interval = 10 #minutes between runs of theis script as performed by Splunk
 
@@ -86,11 +86,16 @@ def apipost (uri, postdata='', keyget=None):
     if (debug): print u'access token is {}'.format(access_token)
     url = baseurl + uri
 
-    if (debug): print u'reqstring is {}'.format(url)
+    if (debug):
+        print u'reqstring is {}'.format(url)
+        print u'postdata is {}'.format(postdata)
+
 
     pdata = json.dumps(postdata)
 
-    if not keyget:
+    if keyget:
+        headers = None
+    else:
         headers = {
             'Content-Type': 'application/json',
             'Authorization': "Bearer {}".format(access_token),
@@ -99,6 +104,8 @@ def apipost (uri, postdata='', keyget=None):
 
     try:
         response = requests.post(url, headers=headers, data=pdata)
+        if debug:
+            print 'response is {}'.format(response)
         return response.json()
 
     except requests.exceptions.RequestException as e:
@@ -394,10 +401,11 @@ def getAPMEndpoints(app_id, app_name, sort, message_type):
 
     response = apipost("apm/endpoints", params)
 
-    messages = u','.join([u'("{}{}",{})'.format(ep[D], ep[U], ep[S]) for ep in
-                          response[DATA][ENDPOINTS]])
-    print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(
-        DATETIME_OF_RUN, message_type, app_name, messages)
+    try:
+        messages = u','.join([u'("{}{}",{})'.format(ep[D], ep[U], ep[S]) for ep in
+                              response[DATA][ENDPOINTS]])
+        print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(
+            DATETIME_OF_RUN, message_type, app_name, messages)
 
     except KeyError as e:
         print (u'{} MessageType="ApteligentError" Error: Could not access {} '
