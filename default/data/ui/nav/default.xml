@@ -6,6 +6,7 @@
     <view name="crittercism_trends" />
     <view name="portfolio_overview" />
     <view name="crashsearch" />
+    <view name="performance_management_browser" />
   </collection>
   <collection label="Apteligent Home">
     <view name="mysearchview" />

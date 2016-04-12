@@ -36,6 +36,9 @@ PARAMS = 'params'
 APPID = 'appId'
 SORT = 'sort'
 LATENCY = 'latency'
+VOLUME = 'volume'
+ERRORS = 'errors'
+DATA = 'data'
 LIMIT = 'limit'
 DURATION = 'duration'
 GEOMODE = 'geoMode'
@@ -563,6 +566,9 @@ def main():
         apploadsbydev = getGenericErrorMon(key,apps[key],"appLoads","device","ApploadsByDevice")
 
         apmbylatency = getAPMEndpoints(key, apps[key], LATENCY, "ApmEndpointsLatency")
+        apmbyvolume = getAPMEndpoints(key, apps[key], VOLUME, "ApmEndpointsVolume")
+        apmbyerrors = getAPMEndpoints(key, apps[key], ERRORS, "ApmEndpointsErrors")
+        apmbydata = getAPMEndpoints(key, apps[key], DATA, "ApmEndpointsData")
 
 
 
