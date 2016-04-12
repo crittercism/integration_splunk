@@ -37,7 +37,7 @@
       <table>
         <title>Volume</title>
         <search>
-          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmEndpointsVolume" appName=$appName$ | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;ENDPOINTS&gt;.*?)\",(?&lt;LATENCY&gt;\d+\.\d{2})"|sort -LATENCY | table ENDPOINTS, LATENCY</query>
+          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmEndpointsVolume" appName=$appName$ | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;ENDPOINTS&gt;.*?)\",(?&lt;LATENCY&gt;\d+\.\d)"|sort -LATENCY | table ENDPOINTS, LATENCY</query>
           <earliest>0</earliest>
           <latest>now</latest>
         </search>
