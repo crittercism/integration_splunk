@@ -20,7 +20,7 @@
   <row>
     <panel>
       <table>
-        <title>Latency</title>
+        <title>Endpoints by Latency</title>
         <search>
           <query>index=crittercism sourcetype="crittercism" "MessageType=ApmEndpointsLatency" appName=$appName$ | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;ENDPOINTS&gt;.*?)\",(?&lt;LATENCY&gt;\d+\.\d{2})"|sort -LATENCY | table ENDPOINTS, LATENCY</query>
           <earliest>0</earliest>
@@ -35,9 +35,9 @@
     </panel>
     <panel>
       <table>
-        <title>Volume</title>
+        <title>Endpoints by Volume</title>
         <search>
-          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmEndpointsVolume" appName=$appName$ | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;ENDPOINTS&gt;.*?)\",(?&lt;LATENCY&gt;\d+\.\d)"|sort -LATENCY | table ENDPOINTS, LATENCY</query>
+          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmEndpointsVolume" appName=$appName$ | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;ENDPOINTS&gt;.*?)\",(?&lt;VOLUME&gt;\d+\.\d)"|sort -VOLUME | table ENDPOINTS, VOLUME</query>
           <earliest>0</earliest>
           <latest>now</latest>
         </search>
@@ -52,9 +52,9 @@
   <row>
     <panel>
       <table>
-        <title>Errors</title>
+        <title>Endpoints by Errors</title>
         <search>
-          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmEndpointsErrors" appName=$appName$ | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;ENDPOINTS&gt;.*?)\",(?&lt;LATENCY&gt;\d+\.\d{2})"|sort -LATENCY | table ENDPOINTS, LATENCY</query>
+          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmEndpointsErrors" appName=$appName$ | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;ENDPOINTS&gt;.*?)\",(?&lt;ERRORS&gt;\d+\.\d{2})"|sort -ERRORS | table ENDPOINTS, ERRORS</query>
           <earliest>0</earliest>
           <latest>now</latest>
         </search>
@@ -67,9 +67,73 @@
     </panel>
     <panel>
       <table>
-        <title>Data</title>
+        <title>Endpoints by Data</title>
         <search>
-          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmEndpointsData" appName=$appName$ | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;ENDPOINTS&gt;.*?)\",(?&lt;LATENCY&gt;\d+\.\d{2})"|sort -LATENCY | table ENDPOINTS, LATENCY</query>
+          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmEndpointsData" appName=$appName$ | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;ENDPOINTS&gt;.*?)\",(?&lt;DATA&gt;\d+\.\d{2})"|sort -DATA | table ENDPOINTS, DATA</query>
+          <earliest>0</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Services by Latency</title>
+        <search>
+          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmServicesLatency" appName=$appName$ | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;SERVICES&gt;.*?)\",(?&lt;LATENCY&gt;\d+\.\d{2})"|sort -LATENCY | table SERVICES, LATENCY</query>
+          <earliest>0</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Services by Volume</title>
+        <search>
+          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmServicesVolume" appName=$appName$ | rex "\((?<serv>\".*?\")\,(?<val>\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?<SERVICES>.*?)\",(?<VOLUME>\d+)"|sort -VOLUME | table SERVICES, VOLUME</query>
+          <earliest>0</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Services by Errors</title>
+        <search>
+          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmServicesErrors" appName=$appName$ | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;SERVICES&gt;.*?)\",(?&lt;ERRORS&gt;\d+\.\d{2})"|sort -ERRORS | table SERVICES, ERRORS</query>
+          <earliest>0</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Services by Data</title>
+        <search>
+          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmServicesData" appName=$appName$ | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;SERVICES&gt;.*?)\",(?&lt;DATA&gt;\d+\.\d{2})"|sort -DATA | table SERVICES, DATA</query>
           <earliest>0</earliest>
           <latest>now</latest>
         </search>

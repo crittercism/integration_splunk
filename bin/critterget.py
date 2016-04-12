@@ -40,6 +40,7 @@ VOLUME = 'volume'
 ERRORS = 'errors'
 DATA = 'data'
 LIMIT = 'limit'
+GRAPH = 'graph'
 DURATION = 'duration'
 GEOMODE = 'geoMode'
 FILTERS = 'filters'
@@ -160,6 +161,7 @@ def getCrashSummary(appId, appName):
 
     return CrashDict
 
+
 def getBreadcrumbs(crumbs, hash, appName) :
 #breadcrumbs come in as a list.  need to ennumerate
     for i,key in enumerate(crumbs):
@@ -173,8 +175,10 @@ def getBreadcrumbs(crumbs, hash, appName) :
                 printstring += u' {}="{}" '.format(bkey, key[bkey])
         print printstring
 
+
 def getStacktrace(stacktrace,hash) :
     print u'{} MessageType="CrashDetailStacktrace"  hash={} '.format(DATETIME_OF_RUN, hash),pretty(stacktrace)
+
 
 def diag_geo(data,hash):
     if (debug) : print "into diag_geo"
@@ -186,6 +190,7 @@ def diag_geo(data,hash):
                                 str(data[country][city][1]),
                                 str(data[country][city][2])  )
             print u'{} MessageType="CrashDiagsGeo" hash={} country="{}" city="{}" lat={} lon={} crashes="{}"'.format(DATETIME_OF_RUN, hash, country, city, lat, lon, crashes)
+
 
 def diag_discrete(data, hash):
     datastring= ""
@@ -203,6 +208,7 @@ def diag_affected_users(data,hash) :
             datastring += " %s=\"%s\"" % (str(vhash).replace(" ","_"),str(data[uhash][vhash]))
 
         print u'{} MessageType="CrashDiagsAffectedUser"  hash={}  userhash={} {} '.format(DATETIME_OF_RUN, hash, uhash, datastring)
+
 
 def diag_affected_versions(data,hash):
     datastring = ""
@@ -276,9 +282,11 @@ def getDiagnostics(diags,hash) :
         else:
             print u'--UNPROCESSED----{} - {}'.format(key,diags[key])
 
+
 def getDOBV(stacktrace, hash) :
 # handle the DailyOccurrencesByVersion coming back from a crashdetail
     print u'{} MessageType="CrashDetailDailyOccurrencesByVersion"  hash={} '.format(DATETIME_OF_RUN, hash), pretty(stacktrace)
+
 
 def getUSCBV(stacktrace,hash) :
 # handle the UniqueSessionCountsByVersion coming back from a crashdetail
@@ -293,6 +301,7 @@ def getSCBV(stacktrace, hash) :
 def getSymStacktrace(stacktrace,hash) :
 # handle the lSymbolizedStacktrace coming back from a crashdetail
     print u'{} MessageType="CrashDetailSymbolizedStacktrace"  hash={} '.format(DATETIME_OF_RUN, hash), pretty(stacktrace)
+
 
 def getCrashDetail(hash, appName):
 # given a crashhash, get all of the detail about that crash
@@ -361,7 +370,6 @@ def getCrashesByOS(appId,appName):
         return (None, None)
 
 
-
 """--------------------------------------------------------------"""
 def getGenericPerfMgmt(appId, appName,graph,groupby,messagetype):
     """Generic data return for performanceManagement/pie end point."""
@@ -415,6 +423,55 @@ def getAPMEndpoints(app_id, app_name, sort, message_type):
                u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
         return None, None
 
+def getAPMServices(app_id, app_name, sort, message_type):
+    """Get APM services data"""
+
+    params = {
+        PARAMS: {
+            APPID: app_id,
+            SORT: sort,
+            LIMIT: 10,
+            DURATION: 240,
+            GEOMODE: True,
+        }
+    }
+
+    response = apipost("apm/services", params)
+
+    try:
+        messages = u','.join([u'("{}",{})'.format(service['name'], service['sort']) for service in
+                              response['data']['services']])
+        print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(
+            DATETIME_OF_RUN, message_type, app_name, app_id, messages)
+
+    except KeyError as e:
+        print (u'{} MessageType="ApteligentError" Error: Could not access {} '
+               u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
+        return None, None
+
+def getAPMErrordetail():
+    pass
+
+
+def getAPMTrends():
+    pass
+
+
+def getAPMGraphdetail():
+    pass
+
+
+def getAPMGeo():
+    pass
+
+
+def getAPMLocations():
+    pass
+
+
+def getAPMGraph(app_id, app_name, graph, message_type):
+    pass
+
 
 def getGenericErrorMon(appId, appName,graph,groupby,messagetype):
     """Generic data return for errorMonitoring/pie end point."""
@@ -441,8 +498,8 @@ def getGenericErrorMon(appId, appName,graph,groupby,messagetype):
         print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), messagetype)
         return (None, None)
 
-"""--------------------------------------------------------------"""
 
+"""--------------------------------------------------------------"""
 
 
 def getDailyAppLoads(appId,appName):
@@ -462,6 +519,7 @@ def getDailyAppLoads(appId,appName):
         print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), 'get_daily_app_loads')
         return None
 
+
 def getDailyCrashes(appId,appName):
     """Get the number of daily app crashes for a given app."""
     """good candidate for 'backfill' data if needed"""
@@ -475,6 +533,7 @@ def getDailyCrashes(appId,appName):
         return None
 
     return
+
 
 def getCrashCounts(appId,appName):
     """Get the number of daily app crashes for a given app."""
@@ -495,6 +554,7 @@ def getCrashCounts(appId,appName):
         return None
 
     return
+
 
 def getCredentials(sessionKey):
 # access the credentials in /servicesNS/nobody/<MyApp>/admin/passwords
@@ -565,10 +625,15 @@ def main():
 #        userbyos = getGenericErrorMon(key,apps[key],"affectedUsers","os","UserbaseByOs")
         apploadsbydev = getGenericErrorMon(key,apps[key],"appLoads","device","ApploadsByDevice")
 
-        apmbylatency = getAPMEndpoints(key, apps[key], LATENCY, "ApmEndpointsLatency")
-        apmbyvolume = getAPMEndpoints(key, apps[key], VOLUME, "ApmEndpointsVolume")
-        apmbyerrors = getAPMEndpoints(key, apps[key], ERRORS, "ApmEndpointsErrors")
-        apmbydata = getAPMEndpoints(key, apps[key], DATA, "ApmEndpointsData")
+        getAPMEndpoints(key, apps[key], LATENCY, "ApmEndpointsLatency")
+        getAPMEndpoints(key, apps[key], VOLUME, "ApmEndpointsVolume")
+        getAPMEndpoints(key, apps[key], ERRORS, "ApmEndpointsErrors")
+        getAPMEndpoints(key, apps[key], DATA, "ApmEndpointsData")
+
+        getAPMServices(key, apps[key], LATENCY, "ApmServicesLatency")
+        getAPMServices(key, apps[key], VOLUME, "ApmServicesVolume")
+        getAPMServices(key, apps[key], ERRORS, "ApmServicesErrors")
+        getAPMServices(key, apps[key], DATA, "ApmServicesData")
 
 
 

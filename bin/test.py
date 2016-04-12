@@ -244,3 +244,37 @@ class TestSplunk(unittest.TestCase):
         output = self._catch_stdout(critterget.getGenericPerfMgmt, 'appId', 'appName', 'bogusGraph', 'bogusGroup', 'bogusMessageType')
 
         self.assertIn('MessageType=bogusMessageType appName="appName" appId="appId"  DATA ("bogusLabel",bogusValue)', output)
+
+    def test_getAPMEndpoints(self):
+        pass
+        # self.mock_post.side_effect = [self._response_with_json_data(200, )]
+        #
+        # output = self._catch_stdout(critterget.getAPMEndpoints, 'appId', 'appName', 'bogusMetric', 'bogusMessageType')
+        #
+        # self.assertIn('', output)
+
+    def test_getAPMGraph(self):
+        pass
+        # self.mock_post.side_effect = [self._response_with_json_data(200, )]
+        #
+        # output = self._catch_stdout(critterget.getAPMEndpoints, 'appId', 'appName', 'bogusMetric', 'bogusMessageType')
+        #
+        # self.assertIn('', output)
+
+    def test_getAPMServices(self):
+        pass
+
+    def test_getAPMErrordetail(self):
+        pass
+
+    def test_getAPMTrends(self):
+        pass
+
+    def test_getAPMGraphdetail(self):
+        pass
+
+    def test_getAPMGeo(self):
+        pass
+
+    def test_getAPMLocations(self):
+        pass
