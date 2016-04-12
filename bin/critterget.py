@@ -22,7 +22,7 @@ authbaseurl = "https://developers.crittercism.com/v1.0/"
 # baseurl = "https://developers.eu.crittercism.com:443/v1.0/"
 # authbaseurl = "https://developers.eu.crittercism.com/v1.0/"
 
-debug = True
+debug = 0
 DUMP_DIAGS = 1
 interval = 10 #minutes between runs of theis script as performed by Splunk
 
@@ -105,7 +105,7 @@ def apipost (uri, postdata='', keyget=None):
     try:
         response = requests.post(url, headers=headers, data=pdata)
         if debug:
-            print 'response is {}'.format(response)
+            print 'response is {}'.format(response.text)
         return response.json()
 
     except requests.exceptions.RequestException as e:
@@ -405,7 +405,7 @@ def getAPMEndpoints(app_id, app_name, sort, message_type):
         messages = u','.join([u'("{}{}",{})'.format(ep[D], ep[U], ep[S]) for ep in
                               response[DATA][ENDPOINTS]])
         print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(
-            DATETIME_OF_RUN, message_type, app_name, messages)
+            DATETIME_OF_RUN, message_type, app_name, app_id, messages)
 
     except KeyError as e:
         print (u'{} MessageType="ApteligentError" Error: Could not access {} '
@@ -562,8 +562,7 @@ def main():
 #        userbyos = getGenericErrorMon(key,apps[key],"affectedUsers","os","UserbaseByOs")
         apploadsbydev = getGenericErrorMon(key,apps[key],"appLoads","device","ApploadsByDevice")
 
-
-        getAPMEndpoints(key, apps[key], LATENCY, "ApmEndpointsLatency")
+        apmbylatency = getAPMEndpoints(key, apps[key], LATENCY, "ApmEndpointsLatency")
 
 
 

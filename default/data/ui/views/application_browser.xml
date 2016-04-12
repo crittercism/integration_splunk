@@ -1,14 +1,14 @@
 <form>
   <label>Application Browser</label>
   <description>Choose an application to view available crash data</description>
-  
+
   <html>
     <p>Test
       <a href="/app/crittercism/crash_browser">Crash Browser</a>
     </p>
   </html>
-  
-  
+
+
   <fieldset autoRun="true" submitButton="false">
     <input type="dropdown" token="appName" searchWhenChanged="true">
       <label>Select an Application:</label>
@@ -18,12 +18,12 @@
         <![CDATA[index=crittercism sourcetype=crittercism | stats dc by appName, appId]]>
       </populatingSearch>
       <selectFirstChoice>true</selectFirstChoice>
-      
+
     </input>
   </fieldset>
-  
-   
-  
+
+
+
   <row>
     <single>
       <title>Crash Rate</title>
@@ -138,7 +138,7 @@
   <row>
     <table>
       <title>APM Data</title>
-      <searchString>index=crittercism sourcetype="crittercism" "MessageType=ApmEndpointsLatency" app_name=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;ENDPOINTS&gt;.*?)\",(?&lt;LATENCY&gt;\d+\.\d{2})"|sort -LATENCY | table ENDPOINTS, LATENCY</searchString>
+      <searchString>index=crittercism sourcetype="crittercism" "MessageType=ApmEndpointsLatency" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;ENDPOINTS&gt;.*?)\",(?&lt;LATENCY&gt;\d+\.\d{2})"|sort -LATENCY | table ENDPOINTS, LATENCY</searchString>
       <earliestTime>0</earliestTime>
       <latestTime>now</latestTime>
       <option name="wrap">true</option>
