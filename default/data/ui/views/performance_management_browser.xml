@@ -161,7 +161,7 @@
         <option name="count">10</option>
         <option name="mapping.choroplethLayer.colorBins">8</option>
         <option name="mapping.choroplethLayer.colorMode">auto</option>
-        <option name="mapping.choroplethLayer.maximumColor">0xDB5800</option>
+        <option name="mapping.choroplethLayer.maximumColor">0x2EA79E</option>
         <option name="mapping.choroplethLayer.minimumColor">0x2F25BA</option>
         <option name="mapping.choroplethLayer.neutralPoint">0</option>
         <option name="mapping.choroplethLayer.shapeOpacity">0.75</option>
@@ -191,7 +191,7 @@
         </search>
         <option name="mapping.choroplethLayer.colorBins">8</option>
         <option name="mapping.choroplethLayer.colorMode">auto</option>
-        <option name="mapping.choroplethLayer.maximumColor">0xDB5800</option>
+        <option name="mapping.choroplethLayer.maximumColor">0x2EA79E</option>
         <option name="mapping.choroplethLayer.minimumColor">0x2F25BA</option>
         <option name="mapping.choroplethLayer.neutralPoint">0</option>
         <option name="mapping.choroplethLayer.shapeOpacity">0.75</option>
@@ -224,7 +224,7 @@
         </search>
         <option name="mapping.choroplethLayer.colorBins">8</option>
         <option name="mapping.choroplethLayer.colorMode">auto</option>
-        <option name="mapping.choroplethLayer.maximumColor">0xDB5800</option>
+        <option name="mapping.choroplethLayer.maximumColor">0x2EA79E</option>
         <option name="mapping.choroplethLayer.minimumColor">0x2F25BA</option>
         <option name="mapping.choroplethLayer.neutralPoint">0</option>
         <option name="mapping.choroplethLayer.shapeOpacity">0.75</option>
@@ -255,7 +255,7 @@
         </search>
         <option name="mapping.choroplethLayer.colorBins">8</option>
         <option name="mapping.choroplethLayer.colorMode">auto</option>
-        <option name="mapping.choroplethLayer.maximumColor">0xDB5800</option>
+        <option name="mapping.choroplethLayer.maximumColor">0x2EA79E</option>
         <option name="mapping.choroplethLayer.minimumColor">0x2F25BA</option>
         <option name="mapping.choroplethLayer.neutralPoint">0</option>
         <option name="mapping.choroplethLayer.shapeOpacity">0.75</option>
