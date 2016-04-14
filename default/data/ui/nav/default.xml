@@ -7,6 +7,8 @@
     <view name="portfolio_overview" />
     <view name="crashsearch" />
     <view name="performance_management_browser" />
+    <view name="latency_browser" />
+    <view name="error_browser" />
   </collection>
   <collection label="Apteligent Home">
     <view name="mysearchview" />
