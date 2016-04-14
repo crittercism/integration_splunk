@@ -22,7 +22,7 @@ authbaseurl = "https://developers.crittercism.com/v1.0/"
 # baseurl = "https://developers.eu.crittercism.com:443/v1.0/"
 # authbaseurl = "https://developers.eu.crittercism.com/v1.0/"
 
-debug = 0
+debug = False
 DUMP_DIAGS = 1
 interval = 10 #minutes between runs of theis script as performed by Splunk
 
@@ -449,17 +449,6 @@ def getAPMServices(app_id, app_name, sort, message_type):
                u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
         return None, None
 
-def getAPMErrordetail():
-    pass
-
-
-def getAPMTrends():
-    pass
-
-
-def getAPMGraphdetail():
-    pass
-
 
 def getAPMGeo(app_id, app_name, graph, message_type):
     """Get APM geographical data"""
@@ -484,13 +473,6 @@ def getAPMGeo(app_id, app_name, graph, message_type):
         print (u'{} MessageType="ApteligentError" Error: Could not access {} '
                u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
         return None, None
-
-def getAPMLocations():
-    pass
-
-
-def getAPMGraph(app_id, app_name, graph, message_type):
-    pass
 
 
 def getGenericErrorMon(appId, appName,graph,groupby,messagetype):

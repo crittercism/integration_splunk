@@ -247,34 +247,24 @@ class TestSplunk(unittest.TestCase):
 
     def test_getAPMEndpoints(self):
         pass
-        # self.mock_post.side_effect = [self._response_with_json_data(200, )]
-        #
-        # output = self._catch_stdout(critterget.getAPMEndpoints, 'appId', 'appName', 'bogusMetric', 'bogusMessageType')
-        #
-        # self.assertIn('', output)
+        self.mock_post.side_effect = [self._response_with_json_data(200, {'data': {'endpoints': [{'d': 'bogusD', 'u': 'bogusU', 's': 'bogusS'}]}})]
 
-    def test_getAPMGraph(self):
-        pass
-        # self.mock_post.side_effect = [self._response_with_json_data(200, )]
-        #
-        # output = self._catch_stdout(critterget.getAPMEndpoints, 'appId', 'appName', 'bogusMetric', 'bogusMessageType')
-        #
-        # self.assertIn('', output)
+        output = self._catch_stdout(critterget.getAPMEndpoints, 'appId', 'appName', 'bogusMetric', 'bogusMessageType')
+
+        self.assertIn('MessageType=bogusMessageType appName="appName" appId="appId"  DATA ("bogusDbogusU",bogusS)', output)
 
     def test_getAPMServices(self):
         pass
+        self.mock_post.side_effect = [self._response_with_json_data(200, {'data': {'services': [{'name': 'bogusName', 'sort': 'bogusSort'}]}})]
 
-    def test_getAPMErrordetail(self):
-        pass
+        output = self._catch_stdout(critterget.getAPMServices, 'appId', 'appName', 'bogusMetric', 'bogusMessageType')
 
-    def test_getAPMTrends(self):
-        pass
-
-    def test_getAPMGraphdetail(self):
-        pass
+        self.assertIn('MessageType=bogusMessageType appName="appName" appId="appId"  DATA ("bogusName",bogusSort)', output)
 
     def test_getAPMGeo(self):
         pass
+        self.mock_post.side_effect = [self._response_with_json_data(200, {'data': {'series': [{'geo': {'BogusCountry': 'bogusStat'}}]}})]
 
-    def test_getAPMLocations(self):
-        pass
+        output = self._catch_stdout(critterget.getAPMGeo, 'appId', 'appName', 'bogusMetric', 'bogusMessageType')
+
+        self.assertIn('MessageType=bogusMessageType appName="appName" appId="appId"  DATA ("BogusCountry",bogusStat)', output)
