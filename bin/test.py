@@ -244,3 +244,27 @@ class TestSplunk(unittest.TestCase):
         output = self._catch_stdout(critterget.getGenericPerfMgmt, 'appId', 'appName', 'bogusGraph', 'bogusGroup', 'bogusMessageType')
 
         self.assertIn('MessageType=bogusMessageType appName="appName" appId="appId"  DATA ("bogusLabel",bogusValue)', output)
+
+    def test_getAPMEndpoints(self):
+        pass
+        self.mock_post.side_effect = [self._response_with_json_data(200, {'data': {'endpoints': [{'d': 'bogusD', 'u': 'bogusU', 's': 'bogusS'}]}})]
+
+        output = self._catch_stdout(critterget.getAPMEndpoints, 'appId', 'appName', 'bogusMetric', 'bogusMessageType')
+
+        self.assertIn('MessageType=bogusMessageType appName="appName" appId="appId"  DATA ("bogusDbogusU",bogusS)', output)
+
+    def test_getAPMServices(self):
+        pass
+        self.mock_post.side_effect = [self._response_with_json_data(200, {'data': {'services': [{'name': 'bogusName', 'sort': 'bogusSort'}]}})]
+
+        output = self._catch_stdout(critterget.getAPMServices, 'appId', 'appName', 'bogusMetric', 'bogusMessageType')
+
+        self.assertIn('MessageType=bogusMessageType appName="appName" appId="appId"  DATA ("bogusName",bogusSort)', output)
+
+    def test_getAPMGeo(self):
+        pass
+        self.mock_post.side_effect = [self._response_with_json_data(200, {'data': {'series': [{'geo': {'BogusCountry': 'bogusStat'}}]}})]
+
+        output = self._catch_stdout(critterget.getAPMGeo, 'appId', 'appName', 'bogusMetric', 'bogusMessageType')
+
+        self.assertIn('MessageType=bogusMessageType appName="appName" appId="appId"  DATA ("BogusCountry",bogusStat)', output)

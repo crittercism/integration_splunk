@@ -1,0 +1,85 @@
+<form>
+  <label>Network Insight Volume Browser</label>
+  <description>Choose an application to view network volume as seen by mobile users</description>
+  <html>
+    <p>Test
+      <a href="/app/crittercism/performance_management_browser">Performance Management Browser</a>
+    </p>
+  </html>
+  <fieldset autoRun="true" submitButton="false">
+    <input type="dropdown" token="appName" searchWhenChanged="true">
+      <label>Select an Application:</label>
+      <prefix>"</prefix>
+      <suffix>"</suffix>
+      <populatingSearch fieldForValue="appName" fieldForLabel="appName" earliest="-24h" latest="now">
+        <![CDATA[index=crittercism sourcetype=crittercism | stats dc by appName, appId]]>
+      </populatingSearch>
+      <selectFirstChoice>true</selectFirstChoice>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <table>
+        <title>Services by Volume</title>
+        <search>
+          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmServicesVolume" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;SERVICES&gt;.*?)\",(?&lt;VOLUME&gt;\d+)"|sort -VOLUME | table SERVICES, VOLUME</query>
+          <earliest>0</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Endpoints by Volume</title>
+        <search>
+          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmEndpointsVolume" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;ENDPOINTS&gt;.*?)\",(?&lt;VOLUME&gt;\d+\.\d)"|sort -VOLUME | table ENDPOINTS, VOLUME</query>
+          <earliest>0</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <map>
+        <title>Volume by Country</title>
+        <search>
+          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmGeoVolume" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;LOC&gt;.*?)\",(?&lt;VOLUME&gt;\d+\.\d+)"  | eval iso2=LOC | lookup geo_attr_countries iso2 OUTPUT country  |sort -VOLUME | table country, VOLUME | geom geo_countries featureIdField=country</query>
+          <earliest>0</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="mapping.choroplethLayer.colorBins">8</option>
+        <option name="mapping.choroplethLayer.colorMode">auto</option>
+        <option name="mapping.choroplethLayer.maximumColor">0x2EA79E</option>
+        <option name="mapping.choroplethLayer.minimumColor">0x2F25BA</option>
+        <option name="mapping.choroplethLayer.neutralPoint">0</option>
+        <option name="mapping.choroplethLayer.shapeOpacity">0.75</option>
+        <option name="mapping.choroplethLayer.showBorder">true</option>
+        <option name="mapping.data.maxClusters">100</option>
+        <option name="mapping.map.center">(0,0)</option>
+        <option name="mapping.map.panning">true</option>
+        <option name="mapping.map.scrollZoom">true</option>
+        <option name="mapping.map.zoom">3</option>
+        <option name="mapping.markerLayer.markerMaxSize">50</option>
+        <option name="mapping.markerLayer.markerMinSize">10</option>
+        <option name="mapping.markerLayer.markerOpacity">0.8</option>
+        <option name="mapping.showTiles">true</option>
+        <option name="mapping.tileLayer.maxZoom">7</option>
+        <option name="mapping.tileLayer.minZoom">0</option>
+        <option name="mapping.tileLayer.tileOpacity">1</option>
+        <option name="mapping.type">choropleth</option>
+        <option name="drilldown">all</option>
+      </map>
+    </panel>
+  </row>
+</form>

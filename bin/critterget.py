@@ -22,15 +22,36 @@ authbaseurl = "https://developers.crittercism.com/v1.0/"
 # baseurl = "https://developers.eu.crittercism.com:443/v1.0/"
 # authbaseurl = "https://developers.eu.crittercism.com/v1.0/"
 
-debug = 0
+debug = False
 DUMP_DIAGS = 1
 interval = 10 #minutes between runs of theis script as performed by Splunk
 
-today = datetime.datetime.now() # calculate this for a common time for all summary data
-myruntime = today.strftime('%Y-%m-%d %H:%M:%S %Z')
+TODAY = datetime.datetime.now() # calculate this for a common time for all summary data
+DATETIME_OF_RUN = TODAY.strftime('%Y-%m-%d %H:%M:%S %Z')
 
 # a quick command to format quasi json output nicely
 pretty=(lambda a:lambda v,t="\t",n="\n",i=0:a(a,v,t,n,i))(lambda f,v,t,n,i:"{%s%s%s}"%(",".join(["%s%s%s: %s"%(n,t*(i+1),repr(k),f(f,v[k],t,n,i+1))for k in v]),n,(t*i)) if type(v)in[dict] else (type(v)in[list]and"[%s%s%s]"or"(%s%s%s)")%(",".join(["%s%s%s"%(n,t*(i+1),f(f,k,t,n,i+1))for k in v]),n,(t*i)) if type(v)in[list,tuple] else repr(v))
+
+PARAMS = 'params'
+APPID = 'appId'
+SORT = 'sort'
+LATENCY = 'latency'
+VOLUME = 'volume'
+ERRORS = 'errors'
+DATA = 'data'
+LIMIT = 'limit'
+GRAPH = 'graph'
+DURATION = 'duration'
+GEOMODE = 'geoMode'
+FILTERS = 'filters'
+COUNTRY = 'country'
+US = 'US'
+U = 'u'
+S = 's'
+D = 'd'
+ENDPOINTS = 'endpoints'
+DATA = 'data'
+
 
 def apicall (uri, attribs=None):
     # perform an API call
@@ -69,11 +90,16 @@ def apipost (uri, postdata='', keyget=None):
     if (debug): print u'access token is {}'.format(access_token)
     url = baseurl + uri
 
-    if (debug): print u'reqstring is {}'.format(url)
+    if (debug):
+        print u'reqstring is {}'.format(url)
+        print u'postdata is {}'.format(postdata)
+
 
     pdata = json.dumps(postdata)
 
-    if not keyget:
+    if keyget:
+        headers = None
+    else:
         headers = {
             'Content-Type': 'application/json',
             'Authorization': "Bearer {}".format(access_token),
@@ -82,10 +108,12 @@ def apipost (uri, postdata='', keyget=None):
 
     try:
         response = requests.post(url, headers=headers, data=pdata)
+        if debug:
+            print 'response is {}'.format(response.text)
         return response.json()
 
     except requests.exceptions.RequestException as e:
-        print u'{} MessageType="ApteligentError" Apteligent API retuned an error code: {} for the call to {}.  Maybe an ENTERPRISE feature?'.format(myruntime, e, url)
+        print u'{} MessageType="ApteligentError" Apteligent API retuned an error code: {} for the call to {}.  Maybe an ENTERPRISE feature?'.format(DATETIME_OF_RUN, e, url)
         return "ERROR"
 
 
@@ -106,7 +134,7 @@ def getAppSummary():
 
     AppDict = {}
     for appId in gdata.keys():
-        printstring = u'{} MessageType="AppSummary" appId={} '.format(myruntime, appId)
+        printstring = u'{} MessageType="AppSummary" appId={} '.format(DATETIME_OF_RUN, appId)
         slist = summattrs.split(",")
         for atname in slist:
             printstring += u'{}="{}" '.format(atname,gdata[appId][atname])
@@ -124,7 +152,7 @@ def getCrashSummary(appId, appName):
     crashdata = apicall("app/%s/crash/summaries" % appId, "lastOccurredStart=%s" % mystime)
     CrashDict = {}
     for x,y in enumerate(crashdata):
-        printstring = u'{} MessageType="CrashSummary" appId={} appName="{}" '.format(myruntime, appId, appName)
+        printstring = u'{} MessageType="CrashSummary" appId={} appName="{}" '.format(DATETIME_OF_RUN, appId, appName)
         slist = crashattrs.split(",")
         for atname in slist:
             printstring += u'{}="{}" '.format(atname, crashdata[x][atname])
@@ -133,11 +161,12 @@ def getCrashSummary(appId, appName):
 
     return CrashDict
 
+
 def getBreadcrumbs(crumbs, hash, appName) :
 #breadcrumbs come in as a list.  need to ennumerate
     for i,key in enumerate(crumbs):
         #print "BREADCRUMB i %s key %s" % (i, key)
-        printstring = u'{} MessageType="CrashDetailBreadcrumbs" hash={} '.format(myruntime, hash)
+        printstring = u'{} MessageType="CrashDetailBreadcrumbs" hash={} '.format(DATETIME_OF_RUN, hash)
         for bkey in key.keys():
 
             if bkey in ("current_session", "previous_session", "crashed_session") :
@@ -146,8 +175,10 @@ def getBreadcrumbs(crumbs, hash, appName) :
                 printstring += u' {}="{}" '.format(bkey, key[bkey])
         print printstring
 
+
 def getStacktrace(stacktrace,hash) :
-    print u'{} MessageType="CrashDetailStacktrace"  hash={} '.format(myruntime, hash),pretty(stacktrace)
+    print u'{} MessageType="CrashDetailStacktrace"  hash={} '.format(DATETIME_OF_RUN, hash),pretty(stacktrace)
+
 
 def diag_geo(data,hash):
     if (debug) : print "into diag_geo"
@@ -158,7 +189,8 @@ def diag_geo(data,hash):
             (lat,lon,crashes) = (str(data[country][city][0]),
                                 str(data[country][city][1]),
                                 str(data[country][city][2])  )
-            print u'{} MessageType="CrashDiagsGeo" hash={} country="{}" city="{}" lat={} lon={} crashes="{}"'.format(myruntime, hash, country, city, lat, lon, crashes)
+            print u'{} MessageType="CrashDiagsGeo" hash={} country="{}" city="{}" lat={} lon={} crashes="{}"'.format(DATETIME_OF_RUN, hash, country, city, lat, lon, crashes)
+
 
 def diag_discrete(data, hash):
     datastring= ""
@@ -166,7 +198,7 @@ def diag_discrete(data, hash):
         for (var,val) in data[dstat]:
             datastring += " \"%s:%s\"=\"%s\"" % (dstat,str(var).replace(" ","_"),str(val))
 
-    print u'{} MessageType="CrashDiagsDiscrete"  hash={} {} '.format(myruntime, hash,datastring)
+    print u'{} MessageType="CrashDiagsDiscrete"  hash={} {} '.format(DATETIME_OF_RUN, hash, datastring)
 
 
 def diag_affected_users(data,hash) :
@@ -175,14 +207,15 @@ def diag_affected_users(data,hash) :
         for vhash in data[uhash]:
             datastring += " %s=\"%s\"" % (str(vhash).replace(" ","_"),str(data[uhash][vhash]))
 
-        print u'{} MessageType="CrashDiagsAffectedUser"  hash={}  userhash={} {} '.format(myruntime, hash, uhash, datastring)
+        print u'{} MessageType="CrashDiagsAffectedUser"  hash={}  userhash={} {} '.format(DATETIME_OF_RUN, hash, uhash, datastring)
+
 
 def diag_affected_versions(data,hash):
     datastring = ""
     for x,vpair in data:
         datastring += " \"%s\"=%s" % (str(x).replace(" ","_"),str(vpair))
 
-    print u'{} MessageType="CrashDiagsAffectedVersions"  hash={} {} '.format(myruntime, hash,datastring)
+    print u'{} MessageType="CrashDiagsAffectedVersions"  hash={} {} '.format(DATETIME_OF_RUN, hash, datastring)
 
 
 def diag_cont_bar(data, hash):
@@ -200,7 +233,7 @@ def diag_cont_bar(data, hash):
         for var,val in zipped:
             valstr += " \"%s\"=%s" %(val,var)
 
-        print u'{} MessageType="CrashDiagsContBar"  hash={} datatype={} {} '.format(myruntime, hash, dstat, valstr)
+        print u'{} MessageType="CrashDiagsContBar"  hash={} datatype={} {} '.format(DATETIME_OF_RUN, hash, dstat, valstr)
 
 
 def diag_cont(data, hash):
@@ -211,14 +244,14 @@ def diag_cont(data, hash):
         for vhash in data[uhash]:
             datastring += " %s_%s=\"%s\"" % (uhash,str(vhash).replace(" ","_"),str(data[uhash][vhash]))
 
-    print u'{} MessageType="CrashDiagsContinuous"  hash={} {} '.format(myruntime, hash, datastring)
+    print u'{} MessageType="CrashDiagsContinuous"  hash={} {} '.format(DATETIME_OF_RUN, hash, datastring)
 
 
 #############
 def getDiagnostics(diags,hash) :
 # Dump and prettyprint the diags -- might want to expand on this...
     if (DUMP_DIAGS ==0) :
-        print u'{} MessageType="CrashDetailDiagnostics" DISABLED PER CONFIG FILE '.format(myruntime, hash)
+        print u'{} MessageType="CrashDetailDiagnostics" DISABLED PER CONFIG FILE '.format(DATETIME_OF_RUN, hash)
         return
 
 
@@ -249,29 +282,32 @@ def getDiagnostics(diags,hash) :
         else:
             print u'--UNPROCESSED----{} - {}'.format(key,diags[key])
 
+
 def getDOBV(stacktrace, hash) :
 # handle the DailyOccurrencesByVersion coming back from a crashdetail
-    print u'{} MessageType="CrashDetailDailyOccurrencesByVersion"  hash={} '.format(myruntime, hash), pretty(stacktrace)
+    print u'{} MessageType="CrashDetailDailyOccurrencesByVersion"  hash={} '.format(DATETIME_OF_RUN, hash), pretty(stacktrace)
+
 
 def getUSCBV(stacktrace,hash) :
 # handle the UniqueSessionCountsByVersion coming back from a crashdetail
-    print u'{} MessageType="CrashDetailUniqueSessionCountsByVersion"  hash={} '.format(myruntime, hash), pretty(stacktrace)
+    print u'{} MessageType="CrashDetailUniqueSessionCountsByVersion"  hash={} '.format(DATETIME_OF_RUN, hash), pretty(stacktrace)
 
 
 def getSCBV(stacktrace, hash) :
 # handle the SessionCountsByVersion coming back from a crashdetail
-    print u'{} MessageType="CrashDetailSessionCountsByVersion"  hash={} '.format(myruntime, hash), pretty(stacktrace)
+    print u'{} MessageType="CrashDetailSessionCountsByVersion"  hash={} '.format(DATETIME_OF_RUN, hash), pretty(stacktrace)
 
 
 def getSymStacktrace(stacktrace,hash) :
 # handle the lSymbolizedStacktrace coming back from a crashdetail
-    print u'{} MessageType="CrashDetailSymbolizedStacktrace"  hash={} '.format(myruntime, hash), pretty(stacktrace)
+    print u'{} MessageType="CrashDetailSymbolizedStacktrace"  hash={} '.format(DATETIME_OF_RUN, hash), pretty(stacktrace)
+
 
 def getCrashDetail(hash, appName):
 # given a crashhash, get all of the detail about that crash
 
     crashdetail = apicall("crash/%s" % hash, "diagnostics=True")
-    printstring = u'{} MessageType="CrashDetail"  appName="{}" '.format(myruntime, appName)
+    printstring = u'{} MessageType="CrashDetail"  appName="{}" '.format(DATETIME_OF_RUN, appName)
     for dkey in crashdetail.keys():
         if dkey == "breadcrumbs" :
             getBreadcrumbs(crashdetail[dkey], hash, appName)
@@ -303,7 +339,7 @@ def getErrorSummary(appId,appName) :
     appload_sum=apipost("errorMonitoring/graph", params)
 #    print(pretty(appload_sum))
     dlist = appload_sum['data']['series'][0]['points']
-    print u'{} MessageType=HourlyAppLoads AppLoads={} appId="{}" appName="{}"'.format(myruntime, dlist[len(dlist)-1],appId,appName)
+    print u'{} MessageType=HourlyAppLoads AppLoads={} appId="{}" appName="{}"'.format(DATETIME_OF_RUN, dlist[len(dlist) - 1], appId, appName)
     #print jtest['data']
 
 
@@ -326,13 +362,12 @@ def getCrashesByOS(appId,appName):
         for series in crashesos['data']['slices']:
             mystring += u'("{}",{}),'.format(series['label'], series['value'])
 
-        print u'{} MessageType=DailyCrashesByOS appName="{}" appId="{}" DATA {}'.format(myruntime, appName,appId,mystring)
+        print u'{} MessageType=DailyCrashesByOS appName="{}" appId="{}" DATA {}'.format(DATETIME_OF_RUN, appName, appId, mystring)
         return
 
     except KeyError as e:
-        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(myruntime, str(e), 'get_crashes_by_os')
+        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), 'get_crashes_by_os')
         return (None, None)
-
 
 
 """--------------------------------------------------------------"""
@@ -348,20 +383,98 @@ def getGenericPerfMgmt(appId, appName,graph,groupby,messagetype):
 
     serverrors = apipost("performanceManagement/pie",params)
 
-#    print "%s DEBUG Into getGenericPerfMgmt appId = %s  appName = %s graph= %s groupby = %s messagetype = %s" %(myruntime, appId, appName,graph,groupby,messagetype)
+#    print "%s DEBUG Into getGenericPerfMgmt appId = %s  appName = %s graph= %s groupby = %s messagetype = %s" %(DATETIME_OF_RUN, appId, appName,graph,groupby,messagetype)
 
     mystring = u''
     try:
         for series in serverrors['data']['slices']:
             mystring += u'("{}",{}),'.format(series['label'], series['value'])
 
-        print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(myruntime, messagetype, appName, appId, mystring)
+        print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(DATETIME_OF_RUN, messagetype, appName, appId, mystring)
 
     except KeyError as e:
-        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(myruntime, str(e), messagetype)
+        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), messagetype)
         return (None, None)
 
-"""--------------------------------------------------------------"""
+
+def getAPMEndpoints(app_id, app_name, sort, message_type):
+    """Get APM Endpoint data."""
+
+    params = {
+        PARAMS: {
+            APPID: app_id,
+            SORT: sort,
+            LIMIT: 10,
+            DURATION: 240,
+            GEOMODE: True
+        }
+    }
+
+    response = apipost("apm/endpoints", params)
+
+    try:
+        messages = u','.join([u'("{}{}",{})'.format(ep[D], ep[U], ep[S]) for ep in
+                              response[DATA][ENDPOINTS]])
+        print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(
+            DATETIME_OF_RUN, message_type, app_name, app_id, messages)
+
+    except KeyError as e:
+        print (u'{} MessageType="ApteligentError" Error: Could not access {} '
+               u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
+        return None, None
+
+def getAPMServices(app_id, app_name, sort, message_type):
+    """Get APM services data"""
+
+    params = {
+        PARAMS: {
+            APPID: app_id,
+            SORT: sort,
+            LIMIT: 10,
+            DURATION: 240,
+            GEOMODE: True
+        }
+    }
+
+    response = apipost("apm/services", params)
+
+    try:
+        messages = u','.join([u'("{}",{})'.format(service['name'], service['sort']) for service in
+                              response['data']['services']])
+        print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(
+            DATETIME_OF_RUN, message_type, app_name, app_id, messages)
+
+    except KeyError as e:
+        print (u'{} MessageType="ApteligentError" Error: Could not access {} '
+               u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
+        return None, None
+
+
+def getAPMGeo(app_id, app_name, graph, message_type):
+    """Get APM geographical data"""
+
+    params = {
+        PARAMS: {
+            APPID: app_id,
+            GRAPH: graph,
+            LIMIT: 10,
+            DURATION: 240,
+        }
+    }
+
+    response = apipost("apm/geo", params)
+
+    try:
+        messages = u','.join([u'("{}",{})'.format(location, data) for location, data in
+                      response['data']['series'][0]['geo'].iteritems()])
+        print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(
+            DATETIME_OF_RUN, message_type, app_name, app_id, messages)
+    except KeyError as e:
+        print (u'{} MessageType="ApteligentError" Error: Could not access {} '
+               u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
+        return None, None
+
+
 def getGenericErrorMon(appId, appName,graph,groupby,messagetype):
     """Generic data return for errorMonitoring/pie end point."""
 
@@ -374,21 +487,21 @@ def getGenericErrorMon(appId, appName,graph,groupby,messagetype):
 
     serverrors = apipost("errorMonitoring/pie",params)
 
-#    print "%s DEBUG Into getGenericErrorMon appId = %s  appName = %s graph= %s groupby = %s messagetype = %s" %(myruntime, appId, appName,graph,groupby,messagetype)
+#    print "%s DEBUG Into getGenericErrorMon appId = %s  appName = %s graph= %s groupby = %s messagetype = %s" %(DATETIME_OF_RUN, appId, appName,graph,groupby,messagetype)
 
     mystring = u''
     try:
         for series in serverrors['data']['slices']:
             mystring += u'("{}",{}),'.format(series['label'], series['value'])
 
-        print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(myruntime, messagetype, appName, appId, mystring)
+        print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(DATETIME_OF_RUN, messagetype, appName, appId, mystring)
 
     except KeyError as e:
-        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(myruntime, str(e), messagetype)
+        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), messagetype)
         return (None, None)
 
-"""--------------------------------------------------------------"""
 
+"""--------------------------------------------------------------"""
 
 
 def getDailyAppLoads(appId,appName):
@@ -403,10 +516,11 @@ def getDailyAppLoads(appId,appName):
     apploadsD = apipost("errorMonitoring/graph", params)
 
     try:
-        print u'{} MessageType=DailyAppLoads appName="{}" appId="{}" dailyAppLoads={}'.format(myruntime,appName, appId, apploadsD['data']['series'][0]['points'][0])
+        print u'{} MessageType=DailyAppLoads appName="{}" appId="{}" dailyAppLoads={}'.format(DATETIME_OF_RUN, appName, appId, apploadsD['data']['series'][0]['points'][0])
     except KeyError as e:
-        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(myruntime, str(e), 'get_daily_app_loads')
+        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), 'get_daily_app_loads')
         return None
+
 
 def getDailyCrashes(appId,appName):
     """Get the number of daily app crashes for a given app."""
@@ -415,12 +529,13 @@ def getDailyCrashes(appId,appName):
     crashdata = apicall("app/%s/crash/counts" % appId)
 
     try:
-        print u'{} MessageType=DailyCrashes appName="{}" appId="{}" dailyCrashes={}'.format(myruntime,appName, appId, crashdata[len(crashdata)-1]['value'])
+        print u'{} MessageType=DailyCrashes appName="{}" appId="{}" dailyCrashes={}'.format(DATETIME_OF_RUN, appName, appId, crashdata[len(crashdata) - 1]['value'])
     except KeyError as e:
-        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(myruntime, str(e), 'get_daily_crashes')
+        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), 'get_daily_crashes')
         return None
 
     return
+
 
 def getCrashCounts(appId,appName):
     """Get the number of daily app crashes for a given app."""
@@ -434,32 +549,33 @@ def getCrashCounts(appId,appName):
         for series in crashdata:
             mystring += u'({},{}),'.format(series['date'], series['value'])
 
-        print u'{} MessageType=CrashCounts appName="{}" appId="{}" DATA {}'.format(myruntime, appName,appId,mystring)
+        print u'{} MessageType=CrashCounts appName="{}" appId="{}" DATA {}'.format(DATETIME_OF_RUN, appName, appId, mystring)
 
     except KeyError as e:
-        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(myruntime, str(e), 'get_crash_counts')
+        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), 'get_crash_counts')
         return None
 
     return
 
+
 def getCredentials(sessionKey):
 # access the credentials in /servicesNS/nobody/<MyApp>/admin/passwords
 
-    if (debug) : print u'{} MessageType="ApteligentDebug"  Into getCredentials'.format(myruntime)
+    if (debug) : print u'{} MessageType="ApteligentDebug"  Into getCredentials'.format(DATETIME_OF_RUN)
 
     try:
         # list all credentials
         entities = entity.getEntities(['admin', 'passwords'], namespace=myapp,
                                     owner='nobody', sessionKey=sessionKey)
     except Exception, e:
-        print u'{} MessageType="ApteligentDebug" Could not get {} credentials from splunk. Error: {}'.format(myruntime, myapp, str(e))
+        print u'{} MessageType="ApteligentDebug" Could not get {} credentials from splunk. Error: {}'.format(DATETIME_OF_RUN, myapp, str(e))
 
     # return first set of credentials
     if (debug) : print "Entities is ", entities
     for i, c in entities.items():
         return c['clear_password']
 
-    print u'{} MessageType="ApteligentDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(myruntime, myapp)
+    print u'{} MessageType="ApteligentDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(DATETIME_OF_RUN, myapp)
 
 ###########
 #
@@ -467,17 +583,17 @@ def getCredentials(sessionKey):
 def main():
     #read session key sent from splunkd
     sessionKey = sys.stdin.readline().strip()
-    if (debug) : print u'{} MessageType="ApteligentDebug" sessionKey is {}'.format(myruntime, sessionKey)
+    if (debug) : print u'{} MessageType="ApteligentDebug" sessionKey is {}'.format(DATETIME_OF_RUN, sessionKey)
 
     if len(sessionKey) == 0:
-        print u'{} MessageType="ApteligentError" Did not receive a session key from splunk. '.format(myruntime)
+        print u'{} MessageType="ApteligentError" Did not receive a session key from splunk. '.format(DATETIME_OF_RUN)
         exit(2)
 
     # now get crittercism oauth token
     global access_token
     access_token = getCredentials(sessionKey)
 
-    if (debug) : print u'{} MessageType="ApteligentDebug" OAuth token is {}'.format(myruntime, access_token)
+    if (debug) : print u'{} MessageType="ApteligentDebug" OAuth token is {}'.format(DATETIME_OF_RUN, access_token)
 
 # Get application summary information.
     apps = getAppSummary()
@@ -485,31 +601,43 @@ def main():
         crashes = getCrashSummary(key, apps[key])
         for ckey in crashes.keys():
             getCrashDetail(ckey, apps[key])
-#        errors = getErrorSummary(key,apps[key])
-#        cbos = getCrashesByOS(key,apps[key])
+
+        getDailyAppLoads(key,apps[key])
+        getDailyCrashes(key,apps[key])
+        getCrashCounts(key,apps[key])
+
+        getGenericPerfMgmt(key,apps[key],"volume","device","DailyVolumeByDevice")
+        getGenericPerfMgmt(key,apps[key],"errors","service","DailyServiceErrorRates")
+        getGenericPerfMgmt(key,apps[key],"volume","os","DailyVolumeByOS")
+        getGenericPerfMgmt(key,apps[key],"volume","appVersion","VolumeByAppVersion")
+
+        getGenericErrorMon(key,apps[key],"crashes","device","CrashesByDevice")
+        getGenericErrorMon(key,apps[key],"crashPercent","device","CrashPerByDevice")
+        getGenericErrorMon(key,apps[key],"appLoads","os","ApploadsByOs")
+        getGenericErrorMon(key,apps[key],"crashes","os","DailyCrashesByOs")
+        getGenericErrorMon(key,apps[key],"crashPercent","os","CrashPerByOs")
+        getGenericErrorMon(key,apps[key],"crashPercent","appVersion","CrashPerByAppVersion")
+        getGenericErrorMon(key,apps[key],"crashes","appVersion","CrashByAppVersion")
+        getGenericErrorMon(key,apps[key],"appLoads","appVersion","LoadsByAppVersion")
+        getGenericErrorMon(key,apps[key],"dau","appVersion","DauByAppVersion")
+        getGenericErrorMon(key,apps[key],"appLoads","device","ApploadsByDevice")
+
+        getAPMEndpoints(key, apps[key], LATENCY, "ApmEndpointsLatency")
+        getAPMEndpoints(key, apps[key], VOLUME, "ApmEndpointsVolume")
+        getAPMEndpoints(key, apps[key], ERRORS, "ApmEndpointsErrors")
+        getAPMEndpoints(key, apps[key], DATA, "ApmEndpointsData")
+
+        getAPMServices(key, apps[key], LATENCY, "ApmServicesLatency")
+        getAPMServices(key, apps[key], VOLUME, "ApmServicesVolume")
+        getAPMServices(key, apps[key], ERRORS, "ApmServicesErrors")
+        getAPMServices(key, apps[key], DATA, "ApmServicesData")
+
+        getAPMGeo(key, apps[key], LATENCY, "ApmGeoLatency")
+        getAPMGeo(key, apps[key], VOLUME, "ApmGeoVolume")
+        getAPMGeo(key, apps[key], ERRORS, "ApmGeoErrors")
+        getAPMGeo(key, apps[key], DATA, "ApmGeoData")
 
 
-        apploadsD = getDailyAppLoads(key,apps[key])
-        appCrashD = getDailyCrashes(key,apps[key])
-        crashCounts = getCrashCounts(key,apps[key])
-        reqByDevice = getGenericPerfMgmt(key,apps[key],"volume","device","DailyVolumeByDevice")
-        errByService = getGenericPerfMgmt(key,apps[key],"errors","service","DailyServiceErrorRates")
-        reqByOs = getGenericPerfMgmt(key,apps[key],"volume","os","DailyVolumeByOS")
-
-        crashbydev = getGenericErrorMon(key,apps[key],"crashes","device","CrashesByDevice")
-        crashPerbydev = getGenericErrorMon(key,apps[key],"crashPercent","device","CrashPerByDevice")
-        apploadsos = getGenericErrorMon(key,apps[key],"appLoads","os","ApploadsByOs")
-        crashbyos = getGenericErrorMon(key,apps[key],"crashes","os","DailyCrashesByOs")
-        crashPerbyos = getGenericErrorMon(key,apps[key],"crashPercent","os","CrashPerByOs")
-
-        reqbyver = getGenericPerfMgmt(key,apps[key],"volume","appVersion","VolumeByAppVersion")
-        crashPbyver = getGenericErrorMon(key,apps[key],"crashPercent","appVersion","CrashPerByAppVersion")
-        crashbyver = getGenericErrorMon(key,apps[key],"crashes","appVersion","CrashByAppVersion")
-        loadsbyver = getGenericErrorMon(key,apps[key],"appLoads","appVersion","LoadsByAppVersion")
-        daubyver = getGenericErrorMon(key,apps[key],"dau","appVersion","DauByAppVersion")
-#        userbydev = getGenericErrorMon(key,apps[key],"affectedUsers","device","UserbaseByDevice")
-#        userbyos = getGenericErrorMon(key,apps[key],"affectedUsers","os","UserbaseByOs")
-        apploadsbydev = getGenericErrorMon(key,apps[key],"appLoads","device","ApploadsByDevice")
 
 if __name__=='__main__':
 	main()
