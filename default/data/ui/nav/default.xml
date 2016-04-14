@@ -10,6 +10,7 @@
     <view name="latency_browser" />
     <view name="error_browser" />
     <view name="volume_browser" />
+    <view name="data_browser" />
   </collection>
   <collection label="Apteligent Home">
     <view name="mysearchview" />

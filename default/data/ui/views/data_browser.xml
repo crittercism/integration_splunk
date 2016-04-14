@@ -1,6 +1,6 @@
 <form>
-  <label>Network Insight Volume Viewer</label>
-  <description>Choose an application to view network volume as seen by mobile users</description>
+  <label>Network Insight Data Browser</label>
+  <description>Choose an application to view network data as seen by mobile users</description>
   <html>
     <p>Test
       <a href="/app/crittercism/performance_management_browser">Performance Management Browser</a>
@@ -20,9 +20,9 @@
   <row>
     <panel>
       <table>
-        <title>Services by Volume</title>
+        <title>Endpoints by Data</title>
         <search>
-          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmServicesVolume" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;SERVICES&gt;.*?)\",(?&lt;VOLUME&gt;\d+)"|sort -VOLUME | table SERVICES, VOLUME</query>
+          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmEndpointsData" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;ENDPOINTS&gt;.*?)\",(?&lt;DATA&gt;\d+\.\d{2})"|sort -DATA | table ENDPOINTS, DATA</query>
           <earliest>0</earliest>
           <latest>now</latest>
         </search>
@@ -35,9 +35,9 @@
     </panel>
     <panel>
       <table>
-        <title>Endpoints by Volume</title>
+        <title>Services by Data</title>
         <search>
-          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmEndpointsVolume" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;ENDPOINTS&gt;.*?)\",(?&lt;VOLUME&gt;\d+\.\d)"|sort -VOLUME | table ENDPOINTS, VOLUME</query>
+          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmServicesData" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;SERVICES&gt;.*?)\",(?&lt;DATA&gt;\d+\.\d{2})"|sort -DATA | table SERVICES, DATA</query>
           <earliest>0</earliest>
           <latest>now</latest>
         </search>
@@ -52,9 +52,9 @@
   <row>
     <panel>
       <map>
-        <title>Volume by Country</title>
+        <title>Data by Country</title>
         <search>
-          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmGeoVolume" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;LOC&gt;.*?)\",(?&lt;VOLUME&gt;\d+\.\d+)"  | eval iso2=LOC | lookup geo_attr_countries iso2 OUTPUT country  |sort -VOLUME | table country, VOLUME | geom geo_countries featureIdField=country</query>
+          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmGeoData" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;LOC&gt;.*?)\",(?&lt;DATA&gt;\d+\.\d+)"  | eval iso2=LOC | lookup geo_attr_countries iso2 OUTPUT country  |sort -DATA | table country, DATA | geom geo_countries featureIdField=country</query>
           <earliest>0</earliest>
           <latest>now</latest>
         </search>
