@@ -3,7 +3,7 @@
   <description>Choose an application to view userflows data</description>
   <html>
     <p>Test
-      <a href="/app/crittercism/crash_browser">Crash Browser</a>
+      <a href="/app/crittercism/userflows">Crash Browser</a>
     </p>
   </html>
   <fieldset autoRun="true" submitButton="false">
