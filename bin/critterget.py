@@ -51,6 +51,7 @@ S = 's'
 D = 'd'
 ENDPOINTS = 'endpoints'
 DATA = 'data'
+TXN_DURATION = 'P3M'
 
 
 def apicall (uri, attribs=None):
@@ -423,6 +424,7 @@ def getAPMEndpoints(app_id, app_name, sort, message_type):
                u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
         return None, None
 
+
 def getAPMServices(app_id, app_name, sort, message_type):
     """Get APM services data"""
 
@@ -502,6 +504,29 @@ def getGenericErrorMon(appId, appName,graph,groupby,messagetype):
 
 
 """--------------------------------------------------------------"""
+
+def getUserflowsSummary(app_id, app_name):
+    # begin kludge. This direct call to requests will be replaced by a proper call to apicall()
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': "Bearer {}".format(access_token),
+        'CR-source': 'integration_splunk'
+        }
+    url = 'https://txn-report.crittercism.com/v1.0/{}/summary/{}'.format(app_id, TXN_DURATION)
+    response_raw = requests.get(url, headers=headers)
+
+    response = response_raw.json() # end kludge.
+
+    try:
+        messages = u','.join([u'("{}",{},{})'.format(metric, data['value'], data['changePct']) for metric, data in
+                              response['series'].iteritems()])
+        print u'{} MessageType=UserflowsSummary appName="{}" appId="{}"  DATA {}'.format(
+            DATETIME_OF_RUN, app_name, app_id, messages)
+    except KeyError as e:
+        print (u'{} MessageType="ApteligentError" Error: Could not access {} '
+               u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
+        return None, None
+
 
 
 def getDailyAppLoads(appId,appName):
@@ -637,6 +662,7 @@ def main():
         getAPMGeo(key, apps[key], ERRORS, "ApmGeoErrors")
         getAPMGeo(key, apps[key], DATA, "ApmGeoData")
 
+        getUserflowsSummary(key, apps[key])
 
 
 if __name__=='__main__':

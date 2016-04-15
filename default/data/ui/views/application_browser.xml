@@ -136,15 +136,20 @@
     </chart>
   </row>
   <row>
-    <table>
-      <title>APM Data</title>
-      <searchString>index=crittercism sourcetype="crittercism" "MessageType=ApmEndpointsLatency" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;ENDPOINTS&gt;.*?)\",(?&lt;LATENCY&gt;\d+\.\d{2})"|sort -LATENCY | table ENDPOINTS, LATENCY</searchString>
-      <earliestTime>0</earliestTime>
-      <latestTime>now</latestTime>
-      <option name="wrap">true</option>
-      <option name="rowNumbers">false</option>
-      <option name="dataOverlayMode">none</option>
-      <option name="drilldown">cell</option>
-    </table>
+    <panel>
+      <table>
+        <title>Userflows Summary</title>
+        <search>
+          <query>index=crittercism sourcetype="crittercism"  "MessageType=UserflowsSummary" appName=$appName$  | head 1 | rex "\((?&lt;metric&gt;\".*?\")\,(?&lt;val&gt;\d+\.?\d*|None)\,(?&lt;percent&gt;\d+\.?\d*|None)\)" max_match=30 | eval fields=mvzip(mvzip(metric,val),percent) | mvexpand fields | rex field=fields "\"(?&lt;METRIC&gt;.*?)\",(?&lt;VALUE&gt;\d+\.*\d*),(?&lt;PERCENT_CHANGE&gt;.*)"| sort -VALUE |  table METRIC, VALUE, PERCENT_CHANGE</query>
+          <earliest>-7d@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
   </row>
 </form>
