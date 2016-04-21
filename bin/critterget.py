@@ -23,7 +23,7 @@ authbaseurl = "https://developers.crittercism.com/v1.0/"
 # baseurl = "https://developers.eu.crittercism.com:443/v1.0/"
 # authbaseurl = "https://developers.eu.crittercism.com/v1.0/"
 
-debug = False
+debug = True
 DUMP_DIAGS = 1
 interval = 10 #minutes between runs of theis script as performed by Splunk
 MAX_RETRY = 10
@@ -54,7 +54,6 @@ D = 'd'
 ENDPOINTS = 'endpoints'
 DATA = 'data'
 TXN_DURATION = 'P3M'
-FAILED = 'failed'
 
 
 def apicall_with_response_code (uri, attribs=None):
@@ -441,6 +440,7 @@ def getAPMEndpoints(app_id, app_name, sort, message_type):
         print (u'{} MessageType="ApteligentError" Error: Could not access {} '
                u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
         return None, None
+
 
 def getAPMServices(app_id, app_name, sort, message_type):
     """Get APM services data"""
