@@ -22,7 +22,7 @@ authbaseurl = "https://developers.crittercism.com/v1.0/"
 # baseurl = "https://developers.eu.crittercism.com:443/v1.0/"
 # authbaseurl = "https://developers.eu.crittercism.com/v1.0/"
 
-debug = False
+debug = True
 DUMP_DIAGS = 1
 interval = 10 #minutes between runs of theis script as performed by Splunk
 
@@ -52,6 +52,7 @@ D = 'd'
 ENDPOINTS = 'endpoints'
 DATA = 'data'
 TXN_DURATION = 'P3M'
+FAILED = 'failed'
 
 
 def apicall (uri, attribs=None):
@@ -505,28 +506,91 @@ def getGenericErrorMon(appId, appName,graph,groupby,messagetype):
 
 """--------------------------------------------------------------"""
 
-def getUserflowsSummary(app_id, app_name):
-    # begin kludge. This direct call to requests will be replaced by a proper call to apicall()
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': "Bearer {}".format(access_token),
-        'CR-source': 'integration_splunk'
-        }
-    url = 'https://txn-report.crittercism.com/v1.0/{}/summary/{}'.format(app_id, TXN_DURATION)
-    response_raw = requests.get(url, headers=headers)
+def getUserflowsSummary(app_id, app_name, message_type):
+    # Get Userflows (transactions) summary data
 
-    response = response_raw.json() # end kludge.
+    uri = 'transactions/{}/summary/'.format(app_id)
+
+    response = apicall(uri)
 
     try:
         messages = u','.join([u'("{}",{},{})'.format(metric, data['value'], data['changePct']) for metric, data in
                               response['series'].iteritems()])
-        print u'{} MessageType=UserflowsSummary appName="{}" appId="{}"  DATA {}'.format(
-            DATETIME_OF_RUN, app_name, app_id, messages)
+        print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(
+            DATETIME_OF_RUN, message_type, app_name, app_id, messages)
     except KeyError as e:
         print (u'{} MessageType="ApteligentError" Error: Could not access {} '
                u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
         return None, None
 
+def getUserflowsRanked(app_id, app_name, category, message_type):
+    # Get top ranked transactions
+
+    uri = 'transactions/{}/ranked/{}/'.format(app_id, category)
+
+    response = apicall(uri)
+
+    try:
+        messages = u','.join([u'("{}",{},{})'.format(group['name'], group['failureRate'], group['unit']['type']) for group in
+                              response['groups']])
+        print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(
+            DATETIME_OF_RUN, message_type, app_name, app_id, messages)
+    except KeyError as e:
+        print (u'{} MessageType="ApteligentError" Error: Could not access {} '
+               u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
+
+
+def getUserflowsChangeDetails(app_id, app_name, message_type):
+    # Get userflow details with change
+    # No table hooked to this yet
+
+    uri = 'transactions/{}/details/change/'.format(app_id)
+
+    response = apicall(uri)
+
+    try:
+        groups = response['groups']
+        for group in groups:
+            group_data = {}
+            group_name = group['name']
+            for name, data in group['series'].iteritems():
+                group_data[name] = {}
+                unit = data['unit'].get('of')
+                if not unit:
+                    unit = data['unit'].get('currency')
+                group_data[name]['value'] = data['value']
+                group_data[name]['changePct'] = data['changePct']
+                group_data[name]['unit'] = unit
+            getUserflowGroupData(app_name, group_name, group_data)
+
+
+
+
+    #     for group in groups:
+    #         messages = ''
+    #         messages += u'("{}"'.format(group['name'])
+    #         for name, data in group['series'].iteritems():
+    #             unit = data['unit'].get('of')
+    #             if not unit:
+    #                 unit = data['unit'].get('currency')
+    #             messages += u',{}'.format(name)
+    #             messages += u',[{},{},{}]'.format(data['value'], unit, data['changePct'])
+    #         messages += u'),'
+    #         print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(
+    #             DATETIME_OF_RUN, message_type, app_name, app_id, messages)
+    # except KeyError as e:
+    #     print (u'{} MessageType="ApteligentError" Error: Could not access {} '
+    #            u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
+
+def getUserflowGroupData(app_name, group_name, data):
+    pass
+
+
+def getRootCause(app_id, app_name, group):
+    # get root cause analysis data for userflows
+
+    uri = ''.format()
+    pass
 
 
 def getDailyAppLoads(appId,appName):
@@ -662,8 +726,9 @@ def main():
         getAPMGeo(key, apps[key], ERRORS, "ApmGeoErrors")
         getAPMGeo(key, apps[key], DATA, "ApmGeoData")
 
-        getUserflowsSummary(key, apps[key])
-
+        getUserflowsSummary(key, apps[key], "UserflowsSummary")
+        getUserflowsRanked(key, apps[key], FAILED, "UserflowsRankedFailed")
+        getUserflowsChangeDetails(key, apps[key], "UserflowsChangeDetails")
 
 if __name__=='__main__':
 	main()

@@ -135,21 +135,4 @@
       <option name="charting.legend.placement">right</option>
     </chart>
   </row>
-  <row>
-    <panel>
-      <table>
-        <title>Userflows Summary</title>
-        <search>
-          <query>index=crittercism sourcetype="crittercism"  "MessageType=UserflowsSummary" appName=$appName$  | head 1 | rex "\((?&lt;metric&gt;\".*?\")\,(?&lt;val&gt;\d+\.?\d*|None)\,(?&lt;percent&gt;\d+\.?\d*|None)\)" max_match=30 | eval fields=mvzip(mvzip(metric,val),percent) | mvexpand fields | rex field=fields "\"(?&lt;METRIC&gt;.*?)\",(?&lt;VALUE&gt;\d+\.*\d*),(?&lt;PERCENT_CHANGE&gt;.*)"| sort -VALUE |  table METRIC, VALUE, PERCENT_CHANGE</query>
-          <earliest>-7d@h</earliest>
-          <latest>now</latest>
-        </search>
-        <option name="wrap">true</option>
-        <option name="rowNumbers">false</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="drilldown">cell</option>
-        <option name="count">10</option>
-      </table>
-    </panel>
-  </row>
 </form>
