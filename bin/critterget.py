@@ -548,49 +548,19 @@ def getUserflowsChangeDetails(app_id, app_name, message_type):
 
     response = apicall(uri)
 
+    messages = u''
     try:
-        groups = response['groups']
-        for group in groups:
-            group_data = {}
-            group_name = group['name']
-            for name, data in group['series'].iteritems():
-                group_data[name] = {}
+        for group in response['groups']:
+            for metric, data in group['series'].iteritems():
                 unit = data['unit'].get('of')
                 if not unit:
                     unit = data['unit'].get('currency')
-                group_data[name]['value'] = data['value']
-                group_data[name]['changePct'] = data['changePct']
-                group_data[name]['unit'] = unit
-            getUserflowGroupData(app_name, group_name, group_data)
-
-
-
-
-    #     for group in groups:
-    #         messages = ''
-    #         messages += u'("{}"'.format(group['name'])
-    #         for name, data in group['series'].iteritems():
-    #             unit = data['unit'].get('of')
-    #             if not unit:
-    #                 unit = data['unit'].get('currency')
-    #             messages += u',{}'.format(name)
-    #             messages += u',[{},{},{}]'.format(data['value'], unit, data['changePct'])
-    #         messages += u'),'
-    #         print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(
-    #             DATETIME_OF_RUN, message_type, app_name, app_id, messages)
-    # except KeyError as e:
-    #     print (u'{} MessageType="ApteligentError" Error: Could not access {} '
-    #            u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
-
-def getUserflowGroupData(app_name, group_name, data):
-    pass
-
-
-def getRootCause(app_id, app_name, group):
-    # get root cause analysis data for userflows
-
-    uri = ''.format()
-    pass
+                messages += u'("{}",{},{},{},[{}])'.format(metric, group['name'], data['value'], unit, data['changePct'])
+        print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(
+            DATETIME_OF_RUN, message_type, app_name, app_id, messages)
+    except KeyError as e:
+        print (u'{} MessageType="ApteligentError" Error: Could not access {} '
+               u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
 
 
 def getDailyAppLoads(appId,appName):
