@@ -78,13 +78,15 @@ class TestSplunk(unittest.TestCase):
                                                                          'iconURL': 'bogusURL',
                                                                          'mau': 'bogusMAU',
                                                                          'rating': 'bogusRating',
-                                                                         'role': 'bogusRole'}
+                                                                         'role': 'bogusRole',
+                                                                         'appVersions': ['bogus.version']}
                                                                     }
                                                                    )
                                      ]
         apps = critterget.getAppSummary()
         self.assertEqual(apps.keys()[0], 'bogusappID')
-        self.assertEqual(apps[apps.keys()[0]], 'bogusApp')
+        self.assertEqual(apps[apps.keys()[0]]['name'], 'bogusApp')
+        self.assertEqual(apps[apps.keys()[0]]['versions'], ['bogus.version'])
 
     def test_scopetime(self):
         test_time = critterget.scopetime()
