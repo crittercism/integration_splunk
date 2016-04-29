@@ -9,7 +9,7 @@
     <type>text</type>
   </input>
 </block>
-<block title="Apteligent API Info" endpoint="configs/conf-apteligent_integration" entity="api">
+<block title="Apteligent API Info" endpoint="configs/conf-crittercism_integration" entity="api">
 <text> Notes:</text>
   <text> - To generate your Apteligent OAuth Access Token, please visit https://app.apteligent.com/developers/user-settings then click on the OAuth Tokens tab and follow the instructions on the page.</text>
   <text> - To change the Credentials or Apteligent API Key later, first remove the entry from SPLUNK_HOME/etc/apps/crittercism/local/app.conf and restart Splunk.</text>
