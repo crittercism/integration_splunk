@@ -10,7 +10,7 @@ except ImportError:
     import splunk_mock.entity as entity
 
 #The splunk name for the app.  Needed for the autho storage
-myapp = 'apteligent_integration'
+myapp = 'crittercism_integration'
 access_token = ''
 baseurl = "https://developers.crittercism.com/v1.0/"
 authbaseurl = "https://developers.crittercism.com/v1.0/"
