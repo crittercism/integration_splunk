@@ -648,10 +648,10 @@ def main():
 # Get application summary information.
     apps = getAppSummary()
     for key in apps.keys():
-        crashes = getCrashSummary(key, apps[key])
+        crashes = getCrashSummary(key, apps[key]['name'])
         if crashes:
             for ckey in crashes.keys():
-                getCrashDetail(ckey, apps[key])
+                getCrashDetail(ckey, apps[key]['name'])
         else:
             continue
 
