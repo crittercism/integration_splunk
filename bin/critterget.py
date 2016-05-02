@@ -73,7 +73,7 @@ def apicall (uri, attribs=None):
 
     try:
         response = requests.get(url, headers=headers)
-        return response.json()
+        return (response.status_code, response.json())
     except requests.exceptions.Timeout as e:
         print 'Connection timeout. Apteligent API returned an error code:', e
         sys.exit(0)
@@ -113,7 +113,7 @@ def apipost (uri, postdata='', keyget=None):
         response = requests.post(url, headers=headers, data=pdata)
         if debug:
             print 'response is {}'.format(response.text)
-        return response.json()
+        return (response.status_code, response.json())
 
     except requests.exceptions.RequestException as e:
         print u'{} MessageType="ApteligentError" Apteligent API retuned an error code: {} for the call to {}.  Maybe an ENTERPRISE feature?'.format(DATETIME_OF_RUN, e, url)
@@ -133,7 +133,7 @@ def getAppSummary():
     # list of the attributes we'll hand to Apteligent, also the list we will create as Splunk Keys
     summattrs = "appName,appType,crashPercent,dau,latency,latestAppStoreReleaseDate,latestVersionString,linkToAppStore,iconURL,mau,rating,role"
     atstring = "attributes=%s"%summattrs
-    gdata = apicall("apps",atstring)
+    http_status, gdata = apicall("apps",atstring)
 
     AppDict = {}
     for appId in gdata.keys():
@@ -152,7 +152,7 @@ def getCrashSummary(appId, appName):
     mystime = scopetime()
 
     crashattrs = "hash,lastOccurred,sessionCount,uniqueSessionCount,reason,status,displayReason,name"
-    crashdata = apicall("app/%s/crash/summaries" % appId, "lastOccurredStart=%s" % mystime)
+    http_status, crashdata = apicall("app/%s/crash/summaries" % appId, "lastOccurredStart=%s" % mystime)
     CrashDict = {}
     for x,y in enumerate(crashdata):
         printstring = u'{} MessageType="CrashSummary" appId={} appName="{}" '.format(DATETIME_OF_RUN, appId, appName)
@@ -309,7 +309,7 @@ def getSymStacktrace(stacktrace,hash) :
 def getCrashDetail(hash, appName):
 # given a crashhash, get all of the detail about that crash
 
-    crashdetail = apicall("crash/%s" % hash, "diagnostics=True")
+    http_status, crashdetail = apicall("crash/%s" % hash, "diagnostics=True")
     printstring = u'{} MessageType="CrashDetail"  appName="{}" '.format(DATETIME_OF_RUN, appName)
     for dkey in crashdetail.keys():
         if dkey == "breadcrumbs" :
@@ -339,7 +339,7 @@ def getErrorSummary(appId,appName) :
 # Get the current apploads
 #    params = {"params":{"appId":appId,"graph":"appLoads","duration":43200}, "filter":{"carrier":""}}
     params = {"params":{"appId":appId,"graph":"appLoads","duration":43200}}
-    appload_sum=apipost("errorMonitoring/graph", params)
+    http_status, appload_sum=apipost("errorMonitoring/graph", params)
 #    print(pretty(appload_sum))
     dlist = appload_sum['data']['series'][0]['points']
     print u'{} MessageType=HourlyAppLoads AppLoads={} appId="{}" appName="{}"'.format(DATETIME_OF_RUN, dlist[len(dlist) - 1], appId, appName)
@@ -356,7 +356,7 @@ def getCrashesByOS(appId,appName):
         "appId": appId
         }}
 
-    crashesos = apipost("errorMonitoring/pie",params)
+    http_status, crashesos = apipost("errorMonitoring/pie",params)
     # is user does not have pro access for a given application, this fails.
     if (crashesos == "ERROR") : return (None,None)
 
@@ -384,7 +384,7 @@ def getGenericPerfMgmt(appId, appName,graph,groupby,messagetype):
         "appId": appId
         }}
 
-    serverrors = apipost("performanceManagement/pie",params)
+    http_status, serverrors = apipost("performanceManagement/pie",params)
 
 #    print "%s DEBUG Into getGenericPerfMgmt appId = %s  appName = %s graph= %s groupby = %s messagetype = %s" %(DATETIME_OF_RUN, appId, appName,graph,groupby,messagetype)
 
@@ -413,7 +413,7 @@ def getAPMEndpoints(app_id, app_name, sort, message_type):
         }
     }
 
-    response = apipost("apm/endpoints", params)
+    http_status, response = apipost("apm/endpoints", params)
 
     try:
         messages = u','.join([u'("{}{}",{})'.format(ep[D], ep[U], ep[S]) for ep in
@@ -440,7 +440,7 @@ def getAPMServices(app_id, app_name, sort, message_type):
         }
     }
 
-    response = apipost("apm/services", params)
+    http_status, response = apipost("apm/services", params)
 
     try:
         messages = u','.join([u'("{}",{})'.format(service['name'], service['sort']) for service in
@@ -466,7 +466,7 @@ def getAPMGeo(app_id, app_name, graph, message_type):
         }
     }
 
-    response = apipost("apm/geo", params)
+    http_status, response = apipost("apm/geo", params)
 
     try:
         messages = u','.join([u'("{}",{})'.format(location, data) for location, data in
@@ -489,7 +489,7 @@ def getGenericErrorMon(appId, appName,graph,groupby,messagetype):
         "appId": appId
         }}
 
-    serverrors = apipost("errorMonitoring/pie",params)
+    http_status, serverrors = apipost("errorMonitoring/pie",params)
 
 #    print "%s DEBUG Into getGenericErrorMon appId = %s  appName = %s graph= %s groupby = %s messagetype = %s" %(DATETIME_OF_RUN, appId, appName,graph,groupby,messagetype)
 
@@ -573,7 +573,7 @@ def getDailyAppLoads(appId,appName):
         "appId": appId,
         }}
 
-    apploadsD = apipost("errorMonitoring/graph", params)
+    http_status, apploadsD = apipost("errorMonitoring/graph", params)
 
     try:
         print u'{} MessageType=DailyAppLoads appName="{}" appId="{}" dailyAppLoads={}'.format(DATETIME_OF_RUN, appName, appId, apploadsD['data']['series'][0]['points'][0])
@@ -586,7 +586,7 @@ def getDailyCrashes(appId,appName):
     """Get the number of daily app crashes for a given app."""
     """good candidate for 'backfill' data if needed"""
 
-    crashdata = apicall("app/%s/crash/counts" % appId)
+    http_status, crashdata = apicall("app/%s/crash/counts" % appId)
 
     try:
         print u'{} MessageType=DailyCrashes appName="{}" appId="{}" dailyCrashes={}'.format(DATETIME_OF_RUN, appName, appId, crashdata[len(crashdata) - 1]['value'])
@@ -601,7 +601,7 @@ def getCrashCounts(appId,appName):
     """Get the number of daily app crashes for a given app."""
     """good candidate for 'backfill' data if needed"""
 
-    crashdata = apicall("app/%s/crash/counts" % appId)
+    http_status, crashdata = apicall("app/%s/crash/counts" % appId)
 
     mystring = u''
 
