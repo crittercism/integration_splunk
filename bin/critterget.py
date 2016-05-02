@@ -28,6 +28,7 @@ interval = 10 #minutes between runs of theis script as performed by Splunk
 
 TODAY = datetime.datetime.now() # calculate this for a common time for all summary data
 DATETIME_OF_RUN = TODAY.strftime('%Y-%m-%d %H:%M:%S %Z')
+MAX_RETRY = 5
 
 # a quick command to format quasi json output nicely
 pretty=(lambda a:lambda v,t="\t",n="\n",i=0:a(a,v,t,n,i))(lambda f,v,t,n,i:"{%s%s%s}"%(",".join(["%s%s%s: %s"%(n,t*(i+1),repr(k),f(f,v[k],t,n,i+1))for k in v]),n,(t*i)) if type(v)in[dict] else (type(v)in[list]and"[%s%s%s]"or"(%s%s%s)")%(",".join(["%s%s%s"%(n,t*(i+1),f(f,k,t,n,i+1))for k in v]),n,(t*i)) if type(v)in[list,tuple] else repr(v))
@@ -622,19 +623,23 @@ def getCredentials(sessionKey):
 
     if (debug) : print u'{} MessageType="ApteligentDebug"  Into getCredentials'.format(DATETIME_OF_RUN)
 
-    try:
-        # list all credentials
-        entities = entity.getEntities(['admin', 'passwords'], namespace=myapp,
-                                    owner='nobody', sessionKey=sessionKey)
-    except Exception, e:
-        print u'{} MessageType="ApteligentDebug" Could not get {} credentials from splunk. Error: {}'.format(DATETIME_OF_RUN, myapp, str(e))
+    auth = None
 
-    # return first set of credentials
-    if (debug) : print "Entities is ", entities
-    for i, c in entities.items():
-        return c['clear_password']
+    while auth is None:
+        try:
+            # list all credentials
+            entities = entity.getEntities(['admin', 'passwords'], namespace=myapp,
+                                        owner='nobody', sessionKey=sessionKey)
+        except Exception, e:
+            print u'{} MessageType="ApteligentDebug" Could not get {} credentials from splunk. Error: {}'.format(DATETIME_OF_RUN, myapp, str(e))
 
-    print u'{} MessageType="ApteligentDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(DATETIME_OF_RUN, myapp)
+        # return first set of credentials
+        if (debug) : print "Entities is ", entities
+        for i, c in entities.items():
+            auth = c.get('clear_password')
+
+        print u'{} MessageType="ApteligentDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(DATETIME_OF_RUN, myapp)
+    return auth
 
 ###########
 #
