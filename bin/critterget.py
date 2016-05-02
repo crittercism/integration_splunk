@@ -3,6 +3,7 @@ import datetime
 import json
 import sys
 import requests
+import time
 
 try:
     import splunk.entity as entity
@@ -22,9 +23,10 @@ authbaseurl = "https://developers.crittercism.com/v1.0/"
 # baseurl = "https://developers.eu.crittercism.com:443/v1.0/"
 # authbaseurl = "https://developers.eu.crittercism.com/v1.0/"
 
-debug = False
+debug = True
 DUMP_DIAGS = 1
 interval = 10 #minutes between runs of theis script as performed by Splunk
+MAX_RETRY = 10
 
 TODAY = datetime.datetime.now() # calculate this for a common time for all summary data
 DATETIME_OF_RUN = TODAY.strftime('%Y-%m-%d %H:%M:%S %Z')
@@ -55,7 +57,7 @@ TXN_DURATION = 'P3M'
 FAILED = 'failed'
 
 
-def apicall (uri, attribs=None):
+def apicall_with_response_code (uri, attribs=None):
     # perform an API call
     if (debug): print u'access token is {}'.format(access_token)
     url = baseurl + uri
@@ -86,8 +88,11 @@ def apicall (uri, attribs=None):
         print 'Apteligent API retuned an error code:', e
         sys.exit(0)
 
+def apicall(uri, attribs=None):
+    http_code, data = apicall_with_response_code(uri, attribs)
+    return data
 
-def apipost (uri, postdata='', keyget=None):
+def apipost_with_response_code (uri, postdata='', keyget=None):
     # perform an API POST
     if (debug): print u'access token is {}'.format(access_token)
     url = baseurl + uri
@@ -95,7 +100,6 @@ def apipost (uri, postdata='', keyget=None):
     if (debug):
         print u'reqstring is {}'.format(url)
         print u'postdata is {}'.format(postdata)
-
 
     pdata = json.dumps(postdata)
 
@@ -118,6 +122,9 @@ def apipost (uri, postdata='', keyget=None):
         print u'{} MessageType="ApteligentError" Apteligent API retuned an error code: {} for the call to {}.  Maybe an ENTERPRISE feature?'.format(DATETIME_OF_RUN, e, url)
         return "ERROR"
 
+def apipost(uri, attribs=None):
+    http_code, data = apipost_with_response_code(uri, attribs)
+    return data
 
 def scopetime():
     # return an ISO8601 timestring based on NOW - Interval
@@ -132,7 +139,7 @@ def getAppSummary():
     # list of the attributes we'll hand to Apteligent, also the list we will create as Splunk Keys
     summattrs = "appName,appType,crashPercent,dau,latency,latestAppStoreReleaseDate,latestVersionString,linkToAppStore,iconURL,mau,rating,role"
     atstring = "attributes=%s"%summattrs
-    http_status, gdata = apicall("apps",atstring)
+    gdata = apicall("apps",atstring)
 
     AppDict = {}
     for appId in gdata.keys():
@@ -151,7 +158,7 @@ def getCrashSummary(appId, appName):
     mystime = scopetime()
 
     crashattrs = "hash,lastOccurred,sessionCount,uniqueSessionCount,reason,status,displayReason,name"
-    http_status, crashdata = apicall("app/%s/crash/summaries" % appId, "lastOccurredStart=%s" % mystime)
+    crashdata = apicall("app/%s/crash/summaries" % appId, "lastOccurredStart=%s" % mystime)
     CrashDict = {}
     for x,y in enumerate(crashdata):
         printstring = u'{} MessageType="CrashSummary" appId={} appName="{}" '.format(DATETIME_OF_RUN, appId, appName)
@@ -308,7 +315,7 @@ def getSymStacktrace(stacktrace,hash) :
 def getCrashDetail(hash, appName):
 # given a crashhash, get all of the detail about that crash
 
-    http_status, crashdetail = apicall("crash/%s" % hash, "diagnostics=True")
+    crashdetail = apicall("crash/%s" % hash, "diagnostics=True")
     printstring = u'{} MessageType="CrashDetail"  appName="{}" '.format(DATETIME_OF_RUN, appName)
     for dkey in crashdetail.keys():
         if dkey == "breadcrumbs" :
@@ -338,7 +345,7 @@ def getErrorSummary(appId,appName) :
 # Get the current apploads
 #    params = {"params":{"appId":appId,"graph":"appLoads","duration":43200}, "filter":{"carrier":""}}
     params = {"params":{"appId":appId,"graph":"appLoads","duration":43200}}
-    http_status, appload_sum=apipost("errorMonitoring/graph", params)
+    appload_sum=apipost("errorMonitoring/graph", params)
 #    print(pretty(appload_sum))
     dlist = appload_sum['data']['series'][0]['points']
     print u'{} MessageType=HourlyAppLoads AppLoads={} appId="{}" appName="{}"'.format(DATETIME_OF_RUN, dlist[len(dlist) - 1], appId, appName)
@@ -355,7 +362,7 @@ def getCrashesByOS(appId,appName):
         "appId": appId
         }}
 
-    http_status, crashesos = apipost("errorMonitoring/pie",params)
+    crashesos = apipost("errorMonitoring/pie",params)
     # is user does not have pro access for a given application, this fails.
     if (crashesos == "ERROR") : return (None,None)
 
@@ -383,7 +390,7 @@ def getGenericPerfMgmt(appId, appName,graph,groupby,messagetype):
         "appId": appId
         }}
 
-    http_status, serverrors = apipost("performanceManagement/pie",params)
+    serverrors = apipost("performanceManagement/pie",params)
 
 #    print "%s DEBUG Into getGenericPerfMgmt appId = %s  appName = %s graph= %s groupby = %s messagetype = %s" %(DATETIME_OF_RUN, appId, appName,graph,groupby,messagetype)
 
@@ -412,7 +419,7 @@ def getAPMEndpoints(app_id, app_name, sort, message_type):
         }
     }
 
-    http_status, response = apipost("apm/endpoints", params)
+    response = apipost("apm/endpoints", params)
 
     try:
         messages = u','.join([u'("{}{}",{})'.format(ep[D], ep[U], ep[S]) for ep in
@@ -439,7 +446,7 @@ def getAPMServices(app_id, app_name, sort, message_type):
         }
     }
 
-    http_status, response = apipost("apm/services", params)
+    response = apipost("apm/services", params)
 
     try:
         messages = u','.join([u'("{}",{})'.format(service['name'], service['sort']) for service in
@@ -465,7 +472,7 @@ def getAPMGeo(app_id, app_name, graph, message_type):
         }
     }
 
-    http_status, response = apipost("apm/geo", params)
+    response = apipost("apm/geo", params)
 
     try:
         messages = u','.join([u'("{}",{})'.format(location, data) for location, data in
@@ -488,7 +495,7 @@ def getGenericErrorMon(appId, appName,graph,groupby,messagetype):
         "appId": appId
         }}
 
-    http_status, serverrors = apipost("errorMonitoring/pie",params)
+    serverrors = apipost("errorMonitoring/pie",params)
 
 #    print "%s DEBUG Into getGenericErrorMon appId = %s  appName = %s graph= %s groupby = %s messagetype = %s" %(DATETIME_OF_RUN, appId, appName,graph,groupby,messagetype)
 
@@ -572,7 +579,7 @@ def getDailyAppLoads(appId,appName):
         "appId": appId,
         }}
 
-    http_status, apploadsD = apipost("errorMonitoring/graph", params)
+    apploadsD = apipost("errorMonitoring/graph", params)
 
     try:
         print u'{} MessageType=DailyAppLoads appName="{}" appId="{}" dailyAppLoads={}'.format(DATETIME_OF_RUN, appName, appId, apploadsD['data']['series'][0]['points'][0])
@@ -585,7 +592,7 @@ def getDailyCrashes(appId,appName):
     """Get the number of daily app crashes for a given app."""
     """good candidate for 'backfill' data if needed"""
 
-    http_status, crashdata = apicall("app/%s/crash/counts" % appId)
+    crashdata = apicall("app/%s/crash/counts" % appId)
 
     try:
         print u'{} MessageType=DailyCrashes appName="{}" appId="{}" dailyCrashes={}'.format(DATETIME_OF_RUN, appName, appId, crashdata[len(crashdata) - 1]['value'])
@@ -600,7 +607,7 @@ def getCrashCounts(appId,appName):
     """Get the number of daily app crashes for a given app."""
     """good candidate for 'backfill' data if needed"""
 
-    http_status, crashdata = apicall("app/%s/crash/counts" % appId)
+    crashdata = apicall("app/%s/crash/counts" % appId)
 
     mystring = u''
 
@@ -623,8 +630,11 @@ def getCredentials(sessionKey):
     if (debug) : print u'{} MessageType="ApteligentDebug"  Into getCredentials'.format(DATETIME_OF_RUN)
 
     auth = None
+    entities = None
+    retry = 1
 
-    while auth is None:
+    while auth is None and retry < MAX_RETRY:
+        if (debug) : print u'Attempt to get credentials {}'.format(retry)
         try:
             # list all credentials
             entities = entity.getEntities(['admin', 'passwords'], namespace=myapp,
@@ -636,8 +646,10 @@ def getCredentials(sessionKey):
         if (debug) : print "Entities is ", entities
         for i, c in entities.items():
             auth = c.get('clear_password')
-
-        print u'{} MessageType="ApteligentDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(DATETIME_OF_RUN, myapp)
+        if auth is None:
+            print u'{} MessageType="ApteligentDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(DATETIME_OF_RUN, myapp)
+        retry += 1
+        time.sleep(5)
     return auth
 
 ###########
