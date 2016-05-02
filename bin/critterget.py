@@ -585,10 +585,11 @@ def getCredentials(sessionKey):
 
         # return first set of credentials
         if (debug) : print "Entities is ", entities
-        for i, c in entities.items():
-            auth = c.get('clear_password')
-        if auth is None:
-            print u'{} MessageType="ApteligentDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(DATETIME_OF_RUN, myapp)
+        if entities is not None:
+            for i, c in entities.items():
+                auth = c.get('clear_password')
+            if auth is None:
+                print u'{} MessageType="ApteligentDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(DATETIME_OF_RUN, myapp)
         retry += 1
         time.sleep(5)
     return auth
