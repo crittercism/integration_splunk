@@ -549,7 +549,13 @@ def getCrashesByVersion(appId,appName,appVersions):
 
     messages = u''
     for version in appVersions:
-        crashdata = apicall(u'app/{}/crash/counts'.format(appId), u'appVersion={}'.format(version))
+        http_status, crashdata = apicall_with_response_code(u'app/{}/crash/counts'.format(appId), u'appVersion={}'.format(version))
+        if http_status == 429:
+            retry = 1
+            while http_status == 429 and retry < MAX_RETRY:
+                time.sleep(30)
+                http_status, crashdata = apicall_with_response_code(u'app/{}/crash/counts'.format(appId), u'appVersion={}'.format(version))
+                retry += 1
         messages += u'("{}",{}),'.format(version, crashdata[len(crashdata) - 1]['value'])
 
     try:
@@ -608,7 +614,7 @@ def getCredentials(sessionKey):
             if auth is None:
                 print u'{} MessageType="ApteligentDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(DATETIME_OF_RUN, myapp)
         retry += 1
-        time.sleep(5)
+        time.sleep(10)
     return auth
 
 ###########
