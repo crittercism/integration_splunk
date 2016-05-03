@@ -432,7 +432,6 @@ def getAPMEndpoints(app_id, app_name, sort, message_type):
                u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
         return None, None
 
-
 def getAPMServices(app_id, app_name, sort, message_type):
     """Get APM services data"""
 
@@ -698,8 +697,11 @@ def main():
     apps = getAppSummary()
     for key in apps.keys():
         crashes = getCrashSummary(key, apps[key]['name'])
-        for ckey in crashes.keys():
-            getCrashDetail(ckey, apps[key]['name'])
+        if crashes:
+            for ckey in crashes.keys():
+                getCrashDetail(ckey, apps[key]['name'])
+        else:
+            continue
 
         getCrashesByVersion(key,apps[key]['name'],apps[key]['versions'])
 
