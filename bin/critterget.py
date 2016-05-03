@@ -23,7 +23,7 @@ authbaseurl = "https://developers.crittercism.com/v1.0/"
 # baseurl = "https://developers.eu.crittercism.com:443/v1.0/"
 # authbaseurl = "https://developers.eu.crittercism.com/v1.0/"
 
-debug = False
+debug = True
 DUMP_DIAGS = 1
 interval = 10 #minutes between runs of theis script as performed by Splunk
 MAX_RETRY = 10
@@ -156,17 +156,27 @@ def getCrashSummary(appId, appName):
     mystime = scopetime()
 
     crashattrs = "hash,lastOccurred,sessionCount,uniqueSessionCount,reason,status,displayReason,name"
-    crashdata = apicall("app/%s/crash/summaries" % appId, "lastOccurredStart=%s" % mystime)
-    CrashDict = {}
-    for x,y in enumerate(crashdata):
-        printstring = u'{} MessageType="CrashSummary" appId={} appName="{}" '.format(DATETIME_OF_RUN, appId, appName)
-        slist = crashattrs.split(",")
-        for atname in slist:
-            printstring += u'{}="{}" '.format(atname, crashdata[x][atname])
-            if atname == "hash" : CrashDict[crashdata[x][atname]]= appName
-        print printstring
 
+    http_code, crashdata = apicall_with_response_code("app/%s/crash/summaries" % appId, "lastOccurredStart=%s" % mystime)
+    if http_code == 500:
+        retry = 1
+        while http_code == 500 and retry < MAX_RETRY:
+            http_code, crashdata = apicall_with_response_code("app/%s/crash/summaries" % appId, "lastOccurredStart=%s" % mystime)
+            retry += 1
+    CrashDict = {}
+    if http_code == 500:
+        print u'{} MessageType="CrashSummary" appId={} appName="{}" ERROR COLLECTING CRASH SUMMARIES'.format(DATETIME_OF_RUN, appId, appName)
+    else:
+        for x,y in enumerate(crashdata):
+            printstring = u'{} MessageType="CrashSummary" appId={} appName="{}" '.format(DATETIME_OF_RUN, appId, appName)
+            slist = crashattrs.split(",")
+            for atname in slist:
+                printstring += u'{}="{}" '.format(atname, crashdata[x][atname])
+                if atname == "hash" : CrashDict[crashdata[x][atname]]= appName
+            print printstring
     return CrashDict
+
+
 
 
 def getBreadcrumbs(crumbs, hash, appName) :
@@ -616,8 +626,11 @@ def main():
     apps = getAppSummary()
     for key in apps.keys():
         crashes = getCrashSummary(key, apps[key])
-        for ckey in crashes.keys():
-            getCrashDetail(ckey, apps[key])
+        if crashes:
+            for ckey in crashes.keys():
+                getCrashDetail(ckey, apps[key])
+        else:
+            continue
 
         getDailyAppLoads(key,apps[key])
         getDailyCrashes(key,apps[key])
