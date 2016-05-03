@@ -3,6 +3,7 @@ import datetime
 import json
 import sys
 import requests
+import time
 
 try:
     import splunk.entity as entity
@@ -25,6 +26,7 @@ authbaseurl = "https://developers.crittercism.com/v1.0/"
 debug = False
 DUMP_DIAGS = 1
 interval = 10 #minutes between runs of theis script as performed by Splunk
+MAX_RETRY = 10
 
 TODAY = datetime.datetime.now() # calculate this for a common time for all summary data
 DATETIME_OF_RUN = TODAY.strftime('%Y-%m-%d %H:%M:%S %Z')
@@ -53,7 +55,7 @@ ENDPOINTS = 'endpoints'
 DATA = 'data'
 
 
-def apicall (uri, attribs=None):
+def apicall_with_response_code (uri, attribs=None):
     # perform an API call
     if (debug): print u'access token is {}'.format(access_token)
     url = baseurl + uri
@@ -70,7 +72,7 @@ def apicall (uri, attribs=None):
 
     try:
         response = requests.get(url, headers=headers)
-        return response.json()
+        return (response.status_code, response.json())
     except requests.exceptions.Timeout as e:
         print 'Connection timeout. Apteligent API returned an error code:', e
         sys.exit(0)
@@ -84,8 +86,11 @@ def apicall (uri, attribs=None):
         print 'Apteligent API retuned an error code:', e
         sys.exit(0)
 
+def apicall(uri, attribs=None):
+    http_code, data = apicall_with_response_code(uri, attribs)
+    return data
 
-def apipost (uri, postdata='', keyget=None):
+def apipost_with_response_code (uri, postdata='', keyget=None):
     # perform an API POST
     if (debug): print u'access token is {}'.format(access_token)
     url = baseurl + uri
@@ -93,7 +98,6 @@ def apipost (uri, postdata='', keyget=None):
     if (debug):
         print u'reqstring is {}'.format(url)
         print u'postdata is {}'.format(postdata)
-
 
     pdata = json.dumps(postdata)
 
@@ -110,12 +114,15 @@ def apipost (uri, postdata='', keyget=None):
         response = requests.post(url, headers=headers, data=pdata)
         if debug:
             print 'response is {}'.format(response.text)
-        return response.json()
+        return (response.status_code, response.json())
 
     except requests.exceptions.RequestException as e:
         print u'{} MessageType="ApteligentError" Apteligent API retuned an error code: {} for the call to {}.  Maybe an ENTERPRISE feature?'.format(DATETIME_OF_RUN, e, url)
         return "ERROR"
 
+def apipost(uri, attribs=None):
+    http_code, data = apipost_with_response_code(uri, attribs)
+    return data
 
 def scopetime():
     # return an ISO8601 timestring based on NOW - Interval
@@ -563,19 +570,29 @@ def getCredentials(sessionKey):
 
     if (debug) : print u'{} MessageType="ApteligentDebug"  Into getCredentials'.format(DATETIME_OF_RUN)
 
-    try:
-        # list all credentials
-        entities = entity.getEntities(['admin', 'passwords'], namespace=myapp,
-                                    owner='nobody', sessionKey=sessionKey)
-    except Exception, e:
-        print u'{} MessageType="ApteligentDebug" Could not get {} credentials from splunk. Error: {}'.format(DATETIME_OF_RUN, myapp, str(e))
+    auth = None
+    entities = None
+    retry = 1
 
-    # return first set of credentials
-    if (debug) : print "Entities is ", entities
-    for i, c in entities.items():
-        return c['clear_password']
+    while auth is None and retry < MAX_RETRY:
+        if (debug) : print u'Attempt to get credentials {}'.format(retry)
+        try:
+            # list all credentials
+            entities = entity.getEntities(['admin', 'passwords'], namespace=myapp,
+                                        owner='nobody', sessionKey=sessionKey)
+        except Exception, e:
+            print u'{} MessageType="ApteligentDebug" Could not get {} credentials from splunk. Error: {}'.format(DATETIME_OF_RUN, myapp, str(e))
 
-    print u'{} MessageType="ApteligentDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(DATETIME_OF_RUN, myapp)
+        # return first set of credentials
+        if (debug) : print "Entities is ", entities
+        if entities is not None:
+            for i, c in entities.items():
+                auth = c.get('clear_password')
+            if auth is None:
+                print u'{} MessageType="ApteligentDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(DATETIME_OF_RUN, myapp)
+        retry += 1
+        time.sleep(5)
+    return auth
 
 ###########
 #
