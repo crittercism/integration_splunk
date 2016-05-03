@@ -23,7 +23,7 @@ authbaseurl = "https://developers.crittercism.com/v1.0/"
 # baseurl = "https://developers.eu.crittercism.com:443/v1.0/"
 # authbaseurl = "https://developers.eu.crittercism.com/v1.0/"
 
-debug = False
+debug = True
 DUMP_DIAGS = 1
 interval = 10 #minutes between runs of theis script as performed by Splunk
 MAX_RETRY = 10
@@ -179,8 +179,6 @@ def getCrashSummary(appId, appName):
                 if atname == "hash" : CrashDict[crashdata[x][atname]]= appName
             print printstring
     return CrashDict
-
-
 
 
 def getBreadcrumbs(crumbs, hash, appName) :
