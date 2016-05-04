@@ -156,16 +156,26 @@ def getCrashSummary(appId, appName):
     mystime = scopetime()
 
     crashattrs = "hash,lastOccurred,sessionCount,uniqueSessionCount,reason,status,displayReason,name"
-    crashdata = apicall("app/%s/crash/summaries" % appId, "lastOccurredStart=%s" % mystime)
-    CrashDict = {}
-    for x,y in enumerate(crashdata):
-        printstring = u'{} MessageType="CrashSummary" appId={} appName="{}" '.format(DATETIME_OF_RUN, appId, appName)
-        slist = crashattrs.split(",")
-        for atname in slist:
-            printstring += u'{}="{}" '.format(atname, crashdata[x][atname])
-            if atname == "hash" : CrashDict[crashdata[x][atname]]= appName
-        print printstring
 
+    http_code = None
+    retry = 1
+    while http_code != 200:
+        http_code, crashdata = apicall_with_response_code("app/%s/crash/summaries" % appId, "lastOccurredStart=%s" % mystime)
+        retry += 1
+        if retry > MAX_RETRY:
+            break
+
+    CrashDict = {}
+    if http_code != 200:
+        print u'{} MessageType="CrashSummary" appId={} appName="{}" Could not get crash summaries. Code: {} after retry {}'.format(DATETIME_OF_RUN, appId, appName, http_code, retry)
+    else:
+        for x,y in enumerate(crashdata):
+            printstring = u'{} MessageType="CrashSummary" appId={} appName="{}" '.format(DATETIME_OF_RUN, appId, appName)
+            slist = crashattrs.split(",")
+            for atname in slist:
+                printstring += u'{}="{}" '.format(atname, crashdata[x][atname])
+                if atname == "hash" : CrashDict[crashdata[x][atname]]= appName
+            print printstring
     return CrashDict
 
 
@@ -616,8 +626,11 @@ def main():
     apps = getAppSummary()
     for key in apps.keys():
         crashes = getCrashSummary(key, apps[key])
-        for ckey in crashes.keys():
-            getCrashDetail(ckey, apps[key])
+        if crashes:
+            for ckey in crashes.keys():
+                getCrashDetail(ckey, apps[key])
+        else:
+            continue
 
         getDailyAppLoads(key,apps[key])
         getDailyCrashes(key,apps[key])
