@@ -157,14 +157,16 @@ def getCrashSummary(appId, appName):
 
     crashattrs = "hash,lastOccurred,sessionCount,uniqueSessionCount,reason,status,displayReason,name"
 
-    http_code, crashdata = apicall_with_response_code("app/%s/crash/summaries" % appId, "lastOccurredStart=%s" % mystime)
-    if http_code == 500:
-        retry = 1
-        while http_code == 500 and retry < MAX_RETRY:
-            http_code, crashdata = apicall_with_response_code("app/%s/crash/summaries" % appId, "lastOccurredStart=%s" % mystime)
-            retry += 1
+    http_code = None
+    retry = 1
+    while http_code != 200:
+        http_code, crashdata = apicall_with_response_code("app/%s/crash/summaries" % appId, "lastOccurredStart=%s" % mystime)
+        retry += 1
+        if retry > MAX_RETRY:
+            break
+
     CrashDict = {}
-    if http_code == 500:
+    if http_code != 200:
         print u'{} MessageType="CrashSummary" appId={} appName="{}" ERROR COLLECTING CRASH SUMMARIES'.format(DATETIME_OF_RUN, appId, appName)
     else:
         for x,y in enumerate(crashdata):
