@@ -617,7 +617,7 @@ def getCrashesByVersion(appId,appName,appVersions):
         messages += u'("{}",{}),'.format(version, crashdata[len(crashdata) - 1]['value'])
 
     try:
-        print u'{} MessageType=CrashesByVersion appName="{}" appId="{}" DATA {}'.format(DATETIME_OF_RUN, appName, appId, message)
+        print u'{} MessageType=CrashesByVersion appName="{}" appId="{}" DATA {}'.format(DATETIME_OF_RUN, appName, appId, messages)
     except KeyError as e:
         print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), 'get_daily_crashes')
         return None
