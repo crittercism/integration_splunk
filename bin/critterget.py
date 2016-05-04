@@ -169,7 +169,7 @@ def getCrashSummary(appId, appName):
 
     CrashDict = {}
     if http_code != 200:
-        print u'{} MessageType="CrashSummary" appId={} appName="{}" ERROR COLLECTING CRASH SUMMARIES'.format(DATETIME_OF_RUN, appId, appName)
+        print u'{} MessageType="CrashSummary" appId={} appName="{}" Could not get crash summaries. Code: {} after retry {}'.format(DATETIME_OF_RUN, appId, appName, http_code, retry)
     else:
         for x,y in enumerate(crashdata):
             printstring = u'{} MessageType="CrashSummary" appId={} appName="{}" '.format(DATETIME_OF_RUN, appId, appName)
