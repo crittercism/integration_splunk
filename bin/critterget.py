@@ -554,25 +554,25 @@ def getDailyCrashes(appId,appName):
     return
 
 
-def getCrashesByVersion(appId,appName,appVersions):
+def getTrends(appId,appName):
     """Get the number of daily app crashes for all versions of an app."""
 
-    messages = u''
-    for version in appVersions:
-        http_status, crashdata = apicall_with_response_code(u'app/{}/crash/counts'.format(appId), u'appVersion={}'.format(version))
-        if http_status == 429:
-            retry = 1
-            while http_status == 429 and retry < MAX_RETRY:
-                time.sleep(30)
-                http_status, crashdata = apicall_with_response_code(u'app/{}/crash/counts'.format(appId), u'appVersion={}'.format(version))
-                retry += 1
-        messages += u'("{}",{}),'.format(version, crashdata[len(crashdata) - 1]['value'])
+    crashdata = apicall(u'{}/trends'.format(appId))
 
-    try:
-        print u'{} MessageType=CrashesByVersion appName="{}" appId="{}" DATA {}'.format(DATETIME_OF_RUN, appName, appId, messages)
-    except KeyError as e:
-        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), 'get_daily_crashes')
-        return None
+    trends = [u'appLoadsByVersion',
+                 u'crashesByVersion',
+                 u'appLoadsByOs',
+                 u'crashesByOs']
+
+    for trend in trends:
+        messages = u''
+        for version, value in crashdata[u'series'][trend][u'todayTopValues'].iteritems():
+            messages += u'("{}",{}),'.format(version, value)
+            try:
+                print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(DATETIME_OF_RUN, trend, appName, appId, messages)
+            except KeyError as e:
+                print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), 'crashesByVersion')
+                continue
 
     return
 
@@ -655,7 +655,7 @@ def main():
         else:
             continue
 
-        getCrashesByVersion(key,apps[key]['name'],apps[key]['versions'])
+        getTrends(key,apps[key]['name'])
 
         getDailyAppLoads(key,apps[key]['name'])
         getDailyCrashes(key,apps[key]['name'])

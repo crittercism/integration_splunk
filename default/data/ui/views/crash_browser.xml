@@ -39,7 +39,7 @@
     <panel>
       <chart id="link5">
         <title>Crashes Per Hour Split by Crash</title>
-        <searchString>index=crittercism sourcetype="crittercism"  MessageType=CrashSummary $appName$| reverse |stats first(sessionCount) as p_count by hash,_time | delta p_count as pdelta | eval pdelta=if(pdelta&lt;0,0,pdelta) | timechart values(pdelta) by hash</searchString>
+        <searchString>index=crittercism sourcetype="crittercism"  MessageType=CrashSummary $appName$ | reverse |stats first(sessionCount) as p_count by hash,_time | delta p_count as pdelta | eval pdelta=if(pdelta&lt;0,0,pdelta) | timechart values(pdelta) by hash</searchString>
         <earliestTime>-24h@h</earliestTime>
         <latestTime>now</latestTime>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -86,10 +86,10 @@
   </row>
   <row>
     <panel>
-      <chart>
-        <title>Crashes By App Version</title>
+      <table>
+        <title>Crashes vs App Loads by Version</title>
         <search>
-          <query>index=crittercism sourcetype="crittercism"  "MessageType=CrashesByVersion" $appName$ | head 1| rex "\((?&lt;version&gt;\".*?\")\,(?&lt;val&gt;\d+)" max_match=30 | eval fields=mvzip(version,val) | mvexpand fields | rex field=fields "\"(?&lt;VERSION&gt;.*?)\",(?&lt;CRASHES&gt;\d+)"| chart avg(CRASHES) by VERSION</query>
+          <query>index=crittercism sourcetype="crittercism"  CASE("MessageType=appLoadsByVersion") $appName$ | head 1 | rex "\((?&lt;version&gt;\".*?\")\,(?&lt;app_loads&gt;\d+)" max_match=30 | eval fields=mvzip(version,app_loads) | mvexpand fields | rex field=fields "\"(?&lt;VERSION&gt;.*?)\",(?&lt;APP_LOADS&gt;\d+)" | sort -VERSION | table VERSION, APP_LOADS | appendcols [search index=crittercism sourcetype="crittercism"  "MessageType=crashesByVersion" $appName$  | head 1 | rex "\((?&lt;version&gt;\".*?\")\,(?&lt;crashes&gt;\d+)" max_match=30 | eval fields=mvzip(version,crashes) | mvexpand fields | rex field=fields "\"(?&lt;VERSION&gt;.*?)\",(?&lt;CRASHES&gt;\d+)" | sort -VERSION | table VERSION, CRASHES]</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
         </search>
@@ -117,7 +117,51 @@
         <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">right</option>
-      </chart>
+        <option name="charting.seriesColors">[0x135c8d,0xb7e9da]</option>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Crashes vs App Loads by OS</title>
+        <search>
+          <query>index=crittercism sourcetype="crittercism"  CASE("MessageType=appLoadsByOs") $appName$ | head 1 | rex "\((?&lt;os&gt;\".*?\")\,(?&lt;app_loads&gt;\d+)" max_match=30 | eval fields=mvzip(os,app_loads) | mvexpand fields | rex field=fields "\"(?&lt;OS&gt;.*?)\",(?&lt;APP_LOADS&gt;\d+)" | sort -OS | table OS, APP_LOADS | appendcols [search index=crittercism sourcetype="crittercism"  "MessageType=crashesByOs" $appName$  | head 1 | rex "\((?&lt;os&gt;\".*?\")\,(?&lt;crashes&gt;\d+)" max_match=30 | eval fields=mvzip(os,crashes) | mvexpand fields | rex field=fields "\"(?&lt;OS&gt;.*?)\",(?&lt;CRASHES&gt;\d+)" | sort -OS | table OS, CRASHES]</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.seriesColors">[0x135c8d,0xb7e9da]</option>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+      </table>
     </panel>
   </row>
 </form>
