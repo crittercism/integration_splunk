@@ -557,8 +557,13 @@ def getDailyCrashes(appId,appName):
 def getTrends(appId,appName):
     """Get the number of daily app crashes for all versions of an app."""
 
-    crashdata = apicall(u'{}/trends'.format(appId))
+    trends_data = apicall(u'{}/trends'.format(appId))
 
+    getTopValues(appId,appName,trends_data)
+    getTimeseriesTrends(appId,appName,trends_data)
+
+
+def getTopValues(appId,appName,trends):
     trends = [u'appLoadsByVersion',
                  u'crashesByVersion',
                  u'appLoadsByOs',
@@ -575,6 +580,10 @@ def getTrends(appId,appName):
                 continue
 
     return
+
+
+def getTimeseriesTrends(appId,appName,trends):
+    pass
 
 
 def getCrashCounts(appId,appName):
