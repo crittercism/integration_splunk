@@ -574,7 +574,6 @@ def getTopValues(appId,appName,trendsData):
     :param appName: (string) Human-readable app name
     :param trendsData: (dict) A dictionary of trends data
     :return: None
-    :raises: KeyError if a trend does not exist in the trends dictionary (or if the trends data input was not a dictionary)
     """
 
     trend_names = ['appLoadsByVersion',
@@ -601,7 +600,6 @@ def getTimeseriesTrends(appId,appName,trendsData):
     :param appName: (string) Human-readable app name
     :param trendsData: (dict) A dictionary of trends data
     :return: None
-    :raises: KeyError if the data provided was not a dictionary
     """
 
     for version in trendsData['series']['crashesByVersion']['categories'].keys():
