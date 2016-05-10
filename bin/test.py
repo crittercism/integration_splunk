@@ -78,13 +78,15 @@ class TestSplunk(unittest.TestCase):
                                                                          'iconURL': 'bogusURL',
                                                                          'mau': 'bogusMAU',
                                                                          'rating': 'bogusRating',
-                                                                         'role': 'bogusRole'}
+                                                                         'role': 'bogusRole',
+                                                                         'appVersions': ['bogus.version']}
                                                                     }
                                                                    )
                                      ]
         apps = critterget.getAppSummary()
         self.assertEqual(apps.keys()[0], 'bogusappID')
-        self.assertEqual(apps[apps.keys()[0]], 'bogusApp')
+        self.assertEqual(apps[apps.keys()[0]]['name'], 'bogusApp')
+        self.assertEqual(apps[apps.keys()[0]]['versions'], ['bogus.version'])
 
     def test_scopetime(self):
         test_time = critterget.scopetime()
@@ -246,7 +248,6 @@ class TestSplunk(unittest.TestCase):
         self.assertIn('MessageType=bogusMessageType appName="appName" appId="appId"  DATA ("bogusLabel",bogusValue)', output)
 
     def test_getAPMEndpoints(self):
-        pass
         self.mock_post.side_effect = [self._response_with_json_data(200, {'data': {'endpoints': [{'d': 'bogusD', 'u': 'bogusU', 's': 'bogusS'}]}})]
 
         output = self._catch_stdout(critterget.getAPMEndpoints, 'appId', 'appName', 'bogusMetric', 'bogusMessageType')
@@ -254,7 +255,6 @@ class TestSplunk(unittest.TestCase):
         self.assertIn('MessageType=bogusMessageType appName="appName" appId="appId"  DATA ("bogusDbogusU",bogusS)', output)
 
     def test_getAPMServices(self):
-        pass
         self.mock_post.side_effect = [self._response_with_json_data(200, {'data': {'services': [{'name': 'bogusName', 'sort': 'bogusSort'}]}})]
 
         output = self._catch_stdout(critterget.getAPMServices, 'appId', 'appName', 'bogusMetric', 'bogusMessageType')
@@ -262,9 +262,39 @@ class TestSplunk(unittest.TestCase):
         self.assertIn('MessageType=bogusMessageType appName="appName" appId="appId"  DATA ("bogusName",bogusSort)', output)
 
     def test_getAPMGeo(self):
-        pass
         self.mock_post.side_effect = [self._response_with_json_data(200, {'data': {'series': [{'geo': {'BogusCountry': 'bogusStat'}}]}})]
 
         output = self._catch_stdout(critterget.getAPMGeo, 'appId', 'appName', 'bogusMetric', 'bogusMessageType')
 
         self.assertIn('MessageType=bogusMessageType appName="appName" appId="appId"  DATA ("BogusCountry",bogusStat)', output)
+
+    def test_getTopValues(self):
+        trendsData = {u'series':{u'crashesByVersion':{u'todayTopValues': {'bogusVersion': 'bogusCrashes'}},
+                        u'appLoadsByVersion':{u'todayTopValues': {'bogusVersion': 'bogusAppLoads'}},
+                        u'appLoadsByOs':{u'todayTopValues': {'bogusOS': 'bogusAppLoads'}},
+                        u'crashesByOs':{u'todayTopValues': {'bogusOS': 'bogusCrashes'}}
+                        }
+                    }
+
+        output = self._catch_stdout(critterget.getTopValues, 'appId', 'appName', trendsData)
+
+        self.assertIn('MessageType=crashesByVersion appName="appName" appId="appId" DATA ("bogusVersion",bogusCrashes),', output)
+        self.assertIn('MessageType=appLoadsByVersion appName="appName" appId="appId" DATA ("bogusVersion",bogusAppLoads),', output)
+        self.assertIn('MessageType=appLoadsByOs appName="appName" appId="appId" DATA ("bogusOS",bogusAppLoads),', output)
+        self.assertIn('MessageType=crashesByOs appName="appName" appId="appId" DATA ("bogusOS",bogusCrashes),', output)
+
+    def test_getTimeseriesTrends(self):
+        trendsData = {u'series':
+                          {u'crashesByVersion':
+                               {u'categories':
+                                    {'bogusVersion':
+                                         {'buckets': [{u'start': 'YYYY-MM-DDTHH:MM:SS+TZ:TZ', u'value': 'bogusVal'}]
+                                          }
+                                     }
+                                }
+                          }
+                     }
+
+        output = self._catch_stdout(critterget.getTimeseriesTrends, 'appId', 'appName', trendsData)
+
+        self.assertIn('MessageType=TimeseriesTrends appName="appName" appId="appId" appVersion="bogusVersion" DATA (YYYY-MM-DD,bogusVal)', output)

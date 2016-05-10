@@ -1,0 +1,60 @@
+<form script="link_switcher.js, autodiscover.js">
+  <label>Crash by Version</label>
+
+  <fieldset autoRun="true" submitButton="false">
+    <input type="dropdown" token="appName" searchWhenChanged="true">
+      <label>Select an Application:</label>
+      <prefix>"</prefix>
+      <suffix>"</suffix>
+      <populatingSearch fieldForValue="appId" fieldForLabel="appName" earliest="-24h" latest="now">
+        <![CDATA[index=crittercism sourcetype=crittercism | stats dc by appName, appId]]>
+      </populatingSearch>
+      <selectFirstChoice>true</selectFirstChoice>
+    </input>
+    <input type="dropdown" token="version" searchWhenChanged="true">
+      <label>Select a Version:</label>
+      <prefix>"</prefix>
+      <suffix>"</suffix>
+      <populatingSearch fieldForValue="version" fieldForLabel="version" earliest="-24h" latest="now">
+        <![CDATA[index=crittercism index=crittercism sourcetype="crittercism"  "MessageType=TimeseriesTrends" appId=$appName$ appVersion | rex "appVersion=\"(?<version>.+?)\"" | eval fields=version | dedup version]]>
+      </populatingSearch>
+      <selectFirstChoice>true</selectFirstChoice>
+    </input>
+  </fieldset>
+
+  <row>
+    <panel>
+      <chart>
+        <title>Application Crashes (Daily) Over Time</title>
+        <search>
+          <query>index=crittercism index=crittercism sourcetype="crittercism"  "MessageType=TimeseriesTrends" appId=$appName$ appVersion=$version$  | head 1 | rex "\((?&lt;xdate&gt;\d{4}\-\d{2}\-\d{2}?)\,(?&lt;val&gt;\d+)" max_match=32 | eval fields=mvzip(xdate,val)  | mvexpand fields | rex field=fields "(?&lt;CrashX&gt;\d{4}\-\d{2}\-\d{2}?),(?&lt;CRASHES&gt;\d+)" | rex field=CrashX "(?&lt;CrashYear&gt;\d{4})\-(?&lt;CrashMon&gt;\d{2})\-(?&lt;CrashDay&gt;\d{2})" | eval CrashDate = CrashMon."-".CrashDay | chart values(CRASHES) as CrashCount by  CrashDate</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+  </row>
+</form>
