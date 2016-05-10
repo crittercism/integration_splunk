@@ -286,7 +286,7 @@ class TestSplunk(unittest.TestCase):
     def test_getTimeseriesTrends(self):
         trendsData = {u'series':
                           {u'crashesByVersion':
-                               {u'categories': 
+                               {u'categories':
                                     {'bogusVersion':
                                          {'buckets': [{u'start': 'YYYY-MM-DDTHH:MM:SS+TZ:TZ', u'value': 'bogusVal'}]
                                           }
