@@ -613,7 +613,12 @@ def getDailyCrashes(appId,appName):
 
 
 def getTrends(appId,appName):
-    """Get the number of daily app crashes for all versions of an app."""
+    """Calls the trends endpoint for an app
+
+    :param appId: (string) App ID used to request data from the API
+    :param appName: (string) Human-readable app name
+    :return: None
+    """
 
     trends_data = apicall(u'{}/trends'.format(appId))
 
@@ -622,12 +627,18 @@ def getTrends(appId,appName):
 
 
 def getTopValues(appId,appName,trendsData):
-    "Get top values from the trends endpoint"
+    """Pulls todayTopValues data out of the trends dictionary for specific trends, and prints to Splunk.
+    :param appId: (string) App ID
+    :param appName: (string) Human-readable app name
+    :param trendsData: (dict) A dictionary of trends data
+    :return: None
+    :raises: KeyError if a trend does not exist in the trends dictionary (or if the trends data input was not a dictionary)
+    """
 
-    trend_names = [u'appLoadsByVersion',
-                 u'crashesByVersion',
-                 u'appLoadsByOs',
-                 u'crashesByOs']
+    trend_names = ['appLoadsByVersion',
+                   'crashesByVersion',
+                   'appLoadsByOs',
+                   'crashesByOs']
 
     for trend in trend_names:
         messages = u''
@@ -643,11 +654,17 @@ def getTopValues(appId,appName,trendsData):
 
 
 def getTimeseriesTrends(appId,appName,trendsData):
-    "Get timeseries data from the trends endpoint"
+    """Pulls time series data out of the trends dictionary for crashes by version, and prints to Splunk.
+    :param appId: (string) App ID
+    :param appName: (string) Human-readable app name
+    :param trendsData: (dict) A dictionary of trends data
+    :return: None
+    :raises: KeyError if the data provided was not a dictionary
+    """
 
-    for version in trendsData[u'series'][u'crashesByVersion'][u'categories'].keys():
+    for version in trendsData['series']['crashesByVersion']['categories'].keys():
         messages = u''
-        for bucket in trendsData[u'series'][u'crashesByVersion'][u'categories'][version][u'buckets']:
+        for bucket in trendsData['series']['crashesByVersion']['categories'][version]['buckets']:
             messages += u'({},{}),'.format(bucket['start'][:10], bucket['value'])
         try:
             print u'{} MessageType={} appName="{}" appId="{}" appVersion="{}" DATA {}'.format(DATETIME_OF_RUN, "TimeseriesTrends",
@@ -740,36 +757,36 @@ def main():
         getDailyCrashes(key,apps[key]['name'])
         getCrashCounts(key,apps[key]['name'])
 
-        getGenericPerfMgmt(key,apps[key]['name'],"volume","device","DailyVolumeByDevice")
-        getGenericPerfMgmt(key,apps[key]['name'],"errors","service","DailyServiceErrorRates")
-        getGenericPerfMgmt(key,apps[key]['name'],"volume","os","DailyVolumeByOS")
-        getGenericPerfMgmt(key,apps[key]['name'],"volume","appVersion","VolumeByAppVersion")
+        getGenericPerfMgmt(key,apps[key]['name'],'volume','device','DailyVolumeByDevice')
+        getGenericPerfMgmt(key,apps[key]['name'],'errors','service','DailyServiceErrorRates')
+        getGenericPerfMgmt(key,apps[key]['name'],'volume','os','DailyVolumeByOS')
+        getGenericPerfMgmt(key,apps[key]['name'],'volume','appVersion','VolumeByAppVersion')
 
-        getGenericErrorMon(key,apps[key]['name'],"crashes","device","CrashesByDevice")
-        getGenericErrorMon(key,apps[key]['name'],"crashPercent","device","CrashPerByDevice")
-        getGenericErrorMon(key,apps[key]['name'],"appLoads","os","ApploadsByOs")
-        getGenericErrorMon(key,apps[key]['name'],"crashes","os","DailyCrashesByOs")
-        getGenericErrorMon(key,apps[key]['name'],"crashPercent","os","CrashPerByOs")
-        getGenericErrorMon(key,apps[key]['name'],"crashPercent","appVersion","CrashPerByAppVersion")
-        getGenericErrorMon(key,apps[key]['name'],"crashes","appVersion","CrashByAppVersion")
-        getGenericErrorMon(key,apps[key]['name'],"appLoads","appVersion","LoadsByAppVersion")
-        getGenericErrorMon(key,apps[key]['name'],"dau","appVersion","DauByAppVersion")
-        getGenericErrorMon(key,apps[key]['name'],"appLoads","device","ApploadsByDevice")
+        getGenericErrorMon(key,apps[key]['name'],'crashes','device','CrashesByDevice')
+        getGenericErrorMon(key,apps[key]['name'],'crashPercent','device','CrashPerByDevice')
+        getGenericErrorMon(key,apps[key]['name'],'appLoads','os','ApploadsByOs')
+        getGenericErrorMon(key,apps[key]['name'],'crashes','os','DailyCrashesByOs')
+        getGenericErrorMon(key,apps[key]['name'],'crashPercent','os','CrashPerByOs')
+        getGenericErrorMon(key,apps[key]['name'],'crashPercent','appVersion','CrashPerByAppVersion')
+        getGenericErrorMon(key,apps[key]['name'],'crashes','appVersion','CrashByAppVersion')
+        getGenericErrorMon(key,apps[key]['name'],'appLoads','appVersion','LoadsByAppVersion')
+        getGenericErrorMon(key,apps[key]['name'],'dau','appVersion','DauByAppVersion')
+        getGenericErrorMon(key,apps[key]['name'],'appLoads','device','ApploadsByDevice')
 
-        getAPMEndpoints(key, apps[key]['name'], LATENCY, "ApmEndpointsLatency")
-        getAPMEndpoints(key, apps[key]['name'], VOLUME, "ApmEndpointsVolume")
-        getAPMEndpoints(key, apps[key]['name'], ERRORS, "ApmEndpointsErrors")
-        getAPMEndpoints(key, apps[key]['name'], DATA, "ApmEndpointsData")
+        getAPMEndpoints(key, apps[key]['name'], LATENCY, 'ApmEndpointsLatency')
+        getAPMEndpoints(key, apps[key]['name'], VOLUME, 'ApmEndpointsVolume')
+        getAPMEndpoints(key, apps[key]['name'], ERRORS, 'ApmEndpointsErrors')
+        getAPMEndpoints(key, apps[key]['name'], DATA, 'ApmEndpointsData')
 
-        getAPMServices(key, apps[key]['name'], LATENCY, "ApmServicesLatency")
-        getAPMServices(key, apps[key]['name'], VOLUME, "ApmServicesVolume")
-        getAPMServices(key, apps[key]['name'], ERRORS, "ApmServicesErrors")
-        getAPMServices(key, apps[key]['name'], DATA, "ApmServicesData")
+        getAPMServices(key, apps[key]['name'], LATENCY, 'ApmServicesLatency')
+        getAPMServices(key, apps[key]['name'], VOLUME, 'ApmServicesVolume')
+        getAPMServices(key, apps[key]['name'], ERRORS, 'ApmServicesErrors')
+        getAPMServices(key, apps[key]['name'], DATA, 'ApmServicesData')
 
-        getAPMGeo(key, apps[key]['name'], LATENCY, "ApmGeoLatency")
-        getAPMGeo(key, apps[key]['name'], VOLUME, "ApmGeoVolume")
-        getAPMGeo(key, apps[key]['name'], ERRORS, "ApmGeoErrors")
-        getAPMGeo(key, apps[key]['name'], DATA, "ApmGeoData")
+        getAPMGeo(key, apps[key]['name'], LATENCY, 'ApmGeoLatency')
+        getAPMGeo(key, apps[key]['name'], VOLUME, 'ApmGeoVolume')
+        getAPMGeo(key, apps[key]['name'], ERRORS, 'ApmGeoErrors')
+        getAPMGeo(key, apps[key]['name'], DATA, 'ApmGeoData')
 
         getUserflowsSummary(key, apps[key], "UserflowsSummary")
         getUserflowsRanked(key, apps[key], FAILED, "UserflowsRankedFailed")
