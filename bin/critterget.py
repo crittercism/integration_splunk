@@ -23,7 +23,7 @@ authbaseurl = "https://developers.crittercism.com/v1.0/"
 # baseurl = "https://developers.eu.crittercism.com:443/v1.0/"
 # authbaseurl = "https://developers.eu.crittercism.com/v1.0/"
 
-debug = False
+debug = True
 DUMP_DIAGS = 1
 interval = 10 #minutes between runs of theis script as performed by Splunk
 MAX_RETRY = 10
@@ -621,28 +621,40 @@ def getTrends(appId,appName):
     getTimeseriesTrends(appId,appName,trends_data)
 
 
-def getTopValues(appId,appName,trends):
-    trends = [u'appLoadsByVersion',
+def getTopValues(appId,appName,trendsData):
+    "Get top values from the trends endpoint"
+
+    trend_names = [u'appLoadsByVersion',
                  u'crashesByVersion',
                  u'appLoadsByOs',
                  u'crashesByOs']
 
-    for trend in trends:
+    for trend in trend_names:
         messages = u''
-        for version, value in crashdata[u'series'][trend][u'todayTopValues'].iteritems():
+        for version, value in trendsData[u'series'][trend][u'todayTopValues'].iteritems():
             messages += u'("{}",{}),'.format(version, value)
-            try:
-                print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(DATETIME_OF_RUN, trend, appName, appId, messages)
-            except KeyError as e:
-                print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), 'crashesByVersion')
-                continue
+        try:
+            print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(DATETIME_OF_RUN, trend, appName, appId, messages)
+        except KeyError as e:
+            print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), 'TopValues')
+            continue
 
     return
 
 
-def getTimeseriesTrends(appId,appName,trends):
-    pass
+def getTimeseriesTrends(appId,appName,trendsData):
+    "Get timeseries data from the trends endpoint"
 
+    for version in trendsData[u'series'][u'crashesByVersion'][u'categories'].keys():
+        messages = u''
+        for bucket in trendsData[u'series'][u'crashesByVersion'][u'categories'][version][u'buckets']:
+            messages += u'({},{}),'.format(bucket['start'][:10], bucket['value'])
+        try:
+            print u'{} MessageType={} appName="{}" appId="{}" appVersion="{}" DATA {}'.format(DATETIME_OF_RUN, "TimeseriesTrends",
+                                                                                              appName, appId, version, messages)
+        except KeyError as e:
+            print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), 'TimeseriesTrends')
+    return
 
 def getCrashCounts(appId,appName):
     """Get the number of daily app crashes for a given app."""

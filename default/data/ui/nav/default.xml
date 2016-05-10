@@ -11,6 +11,7 @@
     <view name="error_browser" />
     <view name="volume_browser" />
     <view name="data_browser" />
+    <view name="versiondetails" />
   </collection>
   <collection label="Apteligent Home">
     <view name="mysearchview" />
