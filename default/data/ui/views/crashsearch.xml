@@ -11,41 +11,41 @@
       </populatingSearch>
       <selectFirstChoice>true</selectFirstChoice>
     </input>
-    
+
     <input type="time" searchWhenChanged="true">
       <label>Select a time:</label>
       <default>Last 24 hours</default>
     </input>
   </fieldset>
   <row>
-    
+
       <single>
         <searchString>
           index=crittercism sourcetype="crittercism" MessageType=CrashSummary $appName$ | dedup reason,name | stats count
-          
+
         </searchString>
         <option name="drilldown">none</option>
-        <option name="afterLabel">unique crashes found in this time period</option>
+        <option name="underLabel">unique crashes found in this time period</option>
         <option name="linkView">search</option>
       </single>
-    
+
       <single>
         <searchString>
           index=crittercism sourcetype="crittercism" MessageType=CrashSummary $appName$  | stats count
-         
+
         </searchString>
         <option name="drilldown">none</option>
-        <option name="afterLabel">total crashes found in this time period</option>
+        <option name="underLabel">total crashes found in this time period</option>
         <option name="linkView">search</option>
       </single>
 
   </row>
   <row>
-  
+
       <table>
         <searchString>
           index=crittercism sourcetype="crittercism" MessageType=CrashSummary $appName$ | dedup reason,name | table reason, status, name, lastOccurred,hash
-     
+
         </searchString>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>

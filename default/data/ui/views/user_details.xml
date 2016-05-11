@@ -7,14 +7,12 @@
       <earliestTime>-7d@h</earliestTime>
       <latestTime>now</latestTime>
       <option name="drilldown">none</option>
-      <option name="linkView">search</option>
     </single>
     <single>
       <title>Username</title>
       <searchString>index=crittercism sourcetype=crittercism MessageType=CrashDiagsAffectedUser userhash=$userhash$ | head 1|stats list(username)</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
-      <option name="linkView">search</option>
       <option name="drilldown">none</option>
     </single>
   </row>
@@ -25,7 +23,6 @@
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <option name="drilldown">none</option>
-      <option name="linkView">search</option>
     </single>
     <single>
       <title>Most Recent Crash</title>
@@ -33,7 +30,6 @@
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <option name="drilldown">none</option>
-      <option name="linkView">search</option>
     </single>
     <single>
       <title>App Version</title>
@@ -41,7 +37,6 @@
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <option name="drilldown">none</option>
-      <option name="linkView">search</option>
     </single>
   </row>
   <row>
