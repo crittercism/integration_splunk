@@ -54,6 +54,7 @@ D = 'd'
 ENDPOINTS = 'endpoints'
 DATA = 'data'
 TXN_DURATION = 'P3M'
+FAILED = 'failed'
 
 
 def apicall_with_response_code (uri, attribs=None):
@@ -560,18 +561,21 @@ def getUserflowsChangeDetails(app_id, app_name, message_type):
     # Get userflow details with change
     # No table hooked to this yet
 
-    uri = 'transactions/{}/details/change/'.format(app_id)
-
+    uri = 'transactions/{}/details/change/P1M?pageNum=1&pageSize=10&sortBy=name&sortOrder=ascending'.format(app_id)
+#https://txn-report.crit-ci.com/v1.0/519d53101386202089000007/details/change/P1M?pageNum=1&pageSize=10&sortBy=name&sortOrder=ascending
     response = apicall(uri)
 
     messages = u''
     try:
         for group in response['groups']:
-            for metric, data in group['series'].iteritems():
-                unit = data['unit'].get('of')
-                if not unit:
-                    unit = data['unit'].get('currency')
-                messages += u'("{}",{},{},{},[{}])'.format(metric, group['name'], data['value'], unit, data['changePct'])
+            messages += u'(Name="{}",volume={},foregroundTime={}s,failed={},failRate={}%,successful={},revenueAtRisk=${})'.format(
+                                                                  group['name'],
+                                                                  group['series']['startedTransactions']['value'],
+                                                                  group['series']['meanForegroundTime']['value'],
+                                                                  group['series']['failedTransactions']['value'],
+                                                                  group['series']['failRate']['value'],
+                                                                  group['series']['succeededTransactions']['value'],
+                                                                  group['series']['failedMoneyValue']['value'])
         print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(
             DATETIME_OF_RUN, message_type, app_name, app_id, messages)
     except KeyError as e:
@@ -786,9 +790,9 @@ def main():
         getAPMGeo(key, apps[key]['name'], ERRORS, 'ApmGeoErrors')
         getAPMGeo(key, apps[key]['name'], DATA, 'ApmGeoData')
 
-        getUserflowsSummary(key, apps[key], "UserflowsSummary")
-        getUserflowsRanked(key, apps[key], FAILED, "UserflowsRankedFailed")
-        getUserflowsChangeDetails(key, apps[key], "UserflowsChangeDetails")
+        getUserflowsSummary(key, apps[key]['name'], "UserflowsSummary")
+        getUserflowsRanked(key, apps[key]['name'], FAILED, "UserflowsRankedFailed")
+        getUserflowsChangeDetails(key, apps[key]['name'], "UserflowsChangeDetails")
 
 if __name__=='__main__':
 	main()

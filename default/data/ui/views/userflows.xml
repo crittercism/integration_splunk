@@ -49,4 +49,21 @@
       </table>
     </panel>
   </row>
+  <row>
+    <panel>
+      <table>
+        <title>Userflows</title>
+        <search>
+          <query>index=crittercism sourcetype="crittercism"  "MessageType=UserflowsChangeDetails" appName="Apteligent Demo" | head 1 | rex "\(Name=\"(?&lt;UserflowName&gt;.+?)\",volume=(?&lt;volume&gt;\d+),foregroundTime=(?&lt;foregroundTime&gt;\d+\.?\d*s),failed=(?&lt;failed&gt;\d+),failRate=(?&lt;failRate&gt;\d+\.?\d*%),successful=(?&lt;successful&gt;\d+),revenueAtRisk=(?&lt;revenueAtRisk&gt;\$\d+\.?\d*)\)" max_match=30 | table UserflowName, volume, foregroundTime, failed, failRate, successful, revenueAtRisk</query>
+          <earliest>-7d@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
 </form>
