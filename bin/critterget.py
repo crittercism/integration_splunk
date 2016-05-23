@@ -160,16 +160,16 @@ def getCrashSummary(appId, appName):
     crashattrs = "hash,lastOccurred,sessionCount,uniqueSessionCount,reason,status,displayReason,name"
 
     http_code = None
-    retry = 1
+    retry = 0
     while http_code != 200:
-        http_code, crashdata = apicall_with_response_code("app/%s/crash/summaries" % appId, "lastOccurredStart=%s" % mystime)
+        http_code, crashdata = apicall_with_response_code("app/%s/crash/summaries" % appId) #, "lastOccurredStart=%s" % mystime)
         retry += 1
         if retry > MAX_RETRY:
             break
 
     CrashDict = {}
     if http_code != 200:
-        print u'{} MessageType="CrashSummary" appId={} appName="{}" Could not get crash summaries. Code: {} after retry {}'.format(DATETIME_OF_RUN, appId, appName, http_code, retry)
+        print u'{} MessageType="CrashSummary" appId={} appName="{}" Could not get crash summaries for {}. Code: {} after retry {}'.format(DATETIME_OF_RUN, appId, appName, mystime, http_code, retry)
     else:
         for x,y in enumerate(crashdata):
             printstring = u'{} MessageType="CrashSummary" appId={} appName="{}" '.format(DATETIME_OF_RUN, appId, appName)
@@ -559,7 +559,6 @@ def getUserflowsRanked(app_id, app_name, category, message_type):
 
 def getUserflowsChangeDetails(app_id, app_name, message_type):
     # Get userflow details with change
-    # No table hooked to this yet
 
     uri = 'transactions/{}/details/change/P1M?pageNum=1&pageSize=10&sortBy=name&sortOrder=ascending'.format(app_id)
 #https://txn-report.crit-ci.com/v1.0/519d53101386202089000007/details/change/P1M?pageNum=1&pageSize=10&sortBy=name&sortOrder=ascending
@@ -568,6 +567,7 @@ def getUserflowsChangeDetails(app_id, app_name, message_type):
     messages = u''
     try:
         for group in response['groups']:
+            getUserflowsGroups(app_id, app_name, group['name'])
             messages += u'(Name="{}",volume={},foregroundTime={}s,failed={},failRate={}%,successful={},revenueAtRisk=${})'.format(
                                                                   group['name'],
                                                                   group['series']['startedTransactions']['value'],
@@ -581,6 +581,29 @@ def getUserflowsChangeDetails(app_id, app_name, message_type):
     except KeyError as e:
         print (u'{} MessageType="ApteligentError" Error: Could not access {} '
                u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
+
+def getUserflowsGroups(app_id, app_name, group):
+    # so many api calls. so many.
+
+    uri = '/transactions/{}/group/{}'.format(app_id, group)
+
+    response = apicall(uri)
+
+    messages = u''
+
+    try:
+        for transaction in response['series'].keys():
+            messages += u'(Userflow={},count={},rate={}%,moneyValue=${},meanDuration={})'.format(
+                transaction,
+                response['series'][transaction]['count']['value'],
+                response['series'][transaction]['rate']['value'],
+                response['series'][transaction]['moneyValue']['value'],
+                response['series'][transaction]['meanDuration']['value'])
+        print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(DATETIME_OF_RUN, 'TransactionsGroup', app_name, app_id, messages)
+
+    except KeyError as e:
+        print (u'{} MessageType="ApteligentError" Error: Could not access {} '
+               u'in {}.'.format(DATETIME_OF_RUN, str(e), "TransactionsGroup"))
 
 
 def getDailyAppLoads(appId,appName):
