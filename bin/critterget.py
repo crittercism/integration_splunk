@@ -564,9 +564,9 @@ def getUserflowsChangeDetails(app_id, app_name, message_type):
 #https://txn-report.crit-ci.com/v1.0/519d53101386202089000007/details/change/P1M?pageNum=1&pageSize=10&sortBy=name&sortOrder=ascending
     response = apicall(uri)
 
-    messages = u''
     try:
         for group in response['groups']:
+            messages = u''
             getUserflowsGroups(app_id, app_name, group['name'])
             messages += u'(Name="{}",volume={},foregroundTime={}s,failed={},failRate={}%,successful={},revenueAtRisk=${})'.format(
                                                                   group['name'],
@@ -576,8 +576,8 @@ def getUserflowsChangeDetails(app_id, app_name, message_type):
                                                                   group['series']['failRate']['value'],
                                                                   group['series']['succeededTransactions']['value'],
                                                                   group['series']['failedMoneyValue']['value'])
-        print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(
-            DATETIME_OF_RUN, message_type, app_name, app_id, messages)
+            print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(
+                DATETIME_OF_RUN, message_type, app_name, app_id, messages)
     except KeyError as e:
         print (u'{} MessageType="ApteligentError" Error: Could not access {} '
                u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
@@ -593,13 +593,13 @@ def getUserflowsGroups(app_id, app_name, group):
 
     try:
         for transaction in response['series'].keys():
-            messages += u'(Userflow={},count={},rate={}%,moneyValue=${},meanDuration={})'.format(
+            messages += u'(Metric="{}",count={},rate={}%,moneyValue=${},meanDuration={})'.format(
                 transaction,
                 response['series'][transaction]['count']['value'],
                 response['series'][transaction]['rate']['value'],
                 response['series'][transaction]['moneyValue']['value'],
                 response['series'][transaction]['meanDuration']['value'])
-        print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(DATETIME_OF_RUN, 'TransactionsGroup', app_name, app_id, messages)
+        print u'{} MessageType={} appName="{}" appId="{}" Userflow="{}" DATA {}'.format(DATETIME_OF_RUN, 'UserflowGroup', app_name, app_id, group, messages)
 
     except KeyError as e:
         print (u'{} MessageType="ApteligentError" Error: Could not access {} '
