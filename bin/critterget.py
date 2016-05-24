@@ -538,7 +538,7 @@ def getUserflowsSummary(app_id, app_name, message_type):
     try:
         messages = u','.join([u'("{}",{},{})'.format(metric, data['value'], data['changePct']) for metric, data in
                               response['series'].iteritems()])
-        print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(
+        print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(
             DATETIME_OF_RUN, message_type, app_name, app_id, messages)
     except KeyError as e:
         print (u'{} MessageType="ApteligentError" Error: Could not access {} '
@@ -582,7 +582,7 @@ def getUserflowsChangeDetails(app_id, app_name, message_type):
     """
 
     uri = 'transactions/{}/details/change/P1M?pageNum=1&pageSize=10&sortBy=name&sortOrder=ascending'.format(app_id)
-    
+
     response = apicall(uri)
 
     try:

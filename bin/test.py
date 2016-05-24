@@ -300,13 +300,29 @@ class TestSplunk(unittest.TestCase):
         self.assertIn('MessageType=TimeseriesTrends appName="appName" appId="appId" appVersion="bogusVersion" DATA (YYYY-MM-DD,bogusVal)', output)
 
     def test_getUserflowsSummary(self):
-        pass
+        self.mock_get.side_effect = [self._response_with_json_data(200, {'series': {'bogusMetric': {'value': 'bogusValue', 'changePct': 'bogusPct'}}})]
+
+        output = self._catch_stdout(critterget.getUserflowsSummary, 'appId', 'appName', "UserflowsSummary")
+
+        self.assertIn('MessageType=UserflowsSummary appName="appName" appId="appId" DATA ("bogusMetric",bogusValue,bogusPct)', output)
 
     def test_getUserflowsRanked(self):
-        pass
+        self.mock_get.side_effect = [self._response_with_json_data(200, {'groups': [{'name': 'bogusName', 'failureRate': 'bogusRate', 'unit':{'type':'bogusType'}}]} )]
+
+        output = self._catch_stdout(critterget.getUserflowsRanked, 'appId', 'appName', 'failed', "UserflowsRanked")
+
+        self.assertIn('MessageType=UserflowsRanked appName="appName" appId="appId"  DATA ("bogusName",bogusRate,bogusType)', output)
 
     def test_getUserflowsChangeDetails(self):
-        pass
+        self.assertTrue(False)
 
     def test_getUserflowsGroups(self):
-        pass
+        self.mock_get.side_effect = [self._response_with_json_data(200, {'series': {'bogusTransaction': {'count': {'value': 'bogusCount'},
+                                                                                                         'rate': {'value': 'bogusRate'},
+                                                                                                         'moneyValue': {'value': 'bogusMoney'},
+                                                                                                         'meanDuration': {'value': 'bogusMean'}
+                                                                                                         }}} )]
+
+        output = self._catch_stdout(critterget.getUserflowsGroups, 'appId', 'appName', 'bogusGroup')
+
+        self.assertIn('MessageType=UserflowGroup appName="appName" appId="appId" Userflow="bogusGroup" DATA (Metric="bogusTransaction",count=bogusCount,rate=bogusRate%,moneyValue=$bogusMoney,meanDuration=bogusMean)', output)
