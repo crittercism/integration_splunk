@@ -54,7 +54,7 @@
       <table>
         <title>Userflows</title>
         <search>
-          <query>index=crittercism sourcetype="crittercism"  "MessageType=UserflowsChangeDetails" appName=$appName$ | rex "\(Name=\"(?&lt;USERFLOW&gt;.+?)\",volume=(?&lt;VOLUME&gt;\d+),foregroundTime=(?&lt;FOREGROUND_TIME&gt;\d+\.?\d*s),failed=(?&lt;FAILED&gt;\d+),failRate=(?&lt;FAILURE_RATE&gt;\d+\.?\d*%),successful=(?&lt;SUCCESSFUL&gt;\d+),revenueAtRisk=(?&lt;REVENUE_AT_RISK&gt;\$\d+\.?\d*)\)" max_match=30 | dedup USERFLOW | table USERFLOW, VOLUME, FOREGROUND_TIME, FAILED, FAILURE_RATE, SUCCESSFUL, REVENUE_AT_RISK</query>
+          <query>index=crittercism sourcetype="crittercism"  "MessageType=UserflowsChangeDetails" appName=$appName$  | rex "\(Name=\"(?&lt;USERFLOW&gt;.+?)\",volume=(?&lt;VOLUME&gt;\d+),foregroundTime=(?&lt;FOREGROUND_TIME&gt;\d+\.?\d*s),failed=(?&lt;FAILED&gt;\d+),failRate=(?&lt;FAILURE_RATE&gt;\d+\.?\d*%),successful=(?&lt;SUCCESSFUL&gt;\d+),revenueAtRisk=(?&lt;REVENUE_AT_RISK&gt;\$\d+\.?\d*)\)" max_match=30 | dedup USERFLOW sortby -_time | sort +USERFLOW | table USERFLOW, VOLUME, FOREGROUND_TIME, FAILED, FAILURE_RATE, SUCCESSFUL, REVENUE_AT_RISK</query>
           <earliest>-7d@h</earliest>
           <latest>now</latest>
         </search>
@@ -63,7 +63,7 @@
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">row</option>
         <drilldown target="crashdetails">
-          <link>userflowdetails?form.userflow=$row.userflow$</link>
+          <link>userflowdetails?form.userflow=$row.USERFLOW$</link>
         </drilldown>
         <option name="count">10</option>
       </table>

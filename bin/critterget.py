@@ -589,17 +589,18 @@ def getUserflowsGroups(app_id, app_name, group):
 
     response = apicall(uri)
 
-    messages = u''
+
 
     try:
         for transaction in response['series'].keys():
+            messages = u''
             messages += u'(Metric="{}",count={},rate={}%,moneyValue=${},meanDuration={})'.format(
                 transaction,
                 response['series'][transaction]['count']['value'],
                 response['series'][transaction]['rate']['value'],
                 response['series'][transaction]['moneyValue']['value'],
                 response['series'][transaction]['meanDuration']['value'])
-        print u'{} MessageType={} appName="{}" appId="{}" Userflow="{}" DATA {}'.format(DATETIME_OF_RUN, 'UserflowGroup', app_name, app_id, group, messages)
+            print u'{} MessageType={} appName="{}" appId="{}" Userflow="{}" DATA {}'.format(DATETIME_OF_RUN, 'UserflowGroup', app_name, app_id, group, messages)
 
     except KeyError as e:
         print (u'{} MessageType="ApteligentError" Error: Could not access {} '
