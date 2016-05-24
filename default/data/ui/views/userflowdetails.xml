@@ -3,7 +3,7 @@
   <fieldset autoRun="true" submitButton="false">
     <input type="dropdown" token="userflow" searchWhenChanged="true">
       <label>Userflow</label>
-      <populatingSearch fieldForValue="userflow" fieldForLabel="Userflow">
+      <populatingSearch fieldForValue="UserflowName" fieldForLabel="UserflowName">
         <![CDATA[index=crittercism sourcetype=crittercism "MessageType=UserflowsChangeDetails" earliest=-7d | rex ""\(Name=\"(?<UserflowName>.+?)\" max_match=30 | dedup UserflowName | top UserflowName]]>
       </populatingSearch>
     </input>
