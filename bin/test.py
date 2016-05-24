@@ -298,3 +298,15 @@ class TestSplunk(unittest.TestCase):
         output = self._catch_stdout(critterget.getTimeseriesTrends, 'appId', 'appName', trendsData)
 
         self.assertIn('MessageType=TimeseriesTrends appName="appName" appId="appId" appVersion="bogusVersion" DATA (YYYY-MM-DD,bogusVal)', output)
+
+    def test_getUserflowsSummary(self):
+        pass
+
+    def test_getUserflowsRanked(self):
+        pass
+
+    def test_getUserflowsChangeDetails(self):
+        pass
+
+    def test_getUserflowsGroups(self):
+        pass

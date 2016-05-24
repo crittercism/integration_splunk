@@ -23,7 +23,7 @@ authbaseurl = "https://developers.crittercism.com/v1.0/"
 # baseurl = "https://developers.eu.crittercism.com:443/v1.0/"
 # authbaseurl = "https://developers.eu.crittercism.com/v1.0/"
 
-debug = True
+debug = False
 DUMP_DIAGS = 1
 interval = 10 #minutes between runs of theis script as performed by Splunk
 MAX_RETRY = 10
@@ -162,7 +162,7 @@ def getCrashSummary(appId, appName):
     http_code = None
     retry = 0
     while http_code != 200:
-        http_code, crashdata = apicall_with_response_code("app/%s/crash/summaries" % appId) #, "lastOccurredStart=%s" % mystime)
+        http_code, crashdata = apicall_with_response_code("app/%s/crash/summaries" % appId, "lastOccurredStart=%s" % mystime)
         retry += 1
         if retry > MAX_RETRY:
             break
@@ -524,8 +524,13 @@ def getGenericErrorMon(appId, appName,graph,groupby,messagetype):
 """--------------------------------------------------------------"""
 
 def getUserflowsSummary(app_id, app_name, message_type):
-    # Get Userflows (transactions) summary data
+    """Calls the transactions summary endpoint for an app
 
+    :param app_id: (string) App ID used to request data from the API
+    :param app_name: (string) Human-readable app name
+    :param message_type: (string) Type of message (for sorting in Splunk)
+    :return: None
+    """
     uri = 'transactions/{}/summary/'.format(app_id)
 
     response = apicall(uri)
@@ -541,7 +546,14 @@ def getUserflowsSummary(app_id, app_name, message_type):
         return None, None
 
 def getUserflowsRanked(app_id, app_name, category, message_type):
-    # Get top ranked transactions
+    """Calls the transactions ranked endpoint to get the top failed transactions
+
+    :param app_id: (string) App ID used to request data from the API
+    :param app_name: (string) Human-readable app name
+    :param category: (string) Kind of transaction to return (e.g. failed, succeeded)
+    :param message_type: (string) Type of message (for sorting in Splunk), equivalent to category
+    :return: None
+    """
 
     uri = 'transactions/{}/ranked/{}/'.format(app_id, category)
 
@@ -558,10 +570,19 @@ def getUserflowsRanked(app_id, app_name, category, message_type):
 
 
 def getUserflowsChangeDetails(app_id, app_name, message_type):
-    # Get userflow details with change
+    """Call the userflows details/change endpoint for an app
+
+    Currently this function calls the getUserflowsGroups function for each group.
+    This is non-optimal and they should be split up.
+
+    :param app_id: (string) App ID used to request data from the API
+    :param app_name: (string) Human-readable app name
+    :param message_type: (string) Type of message (for sorting in Splunk)
+    :return: None
+    """
 
     uri = 'transactions/{}/details/change/P1M?pageNum=1&pageSize=10&sortBy=name&sortOrder=ascending'.format(app_id)
-#https://txn-report.crit-ci.com/v1.0/519d53101386202089000007/details/change/P1M?pageNum=1&pageSize=10&sortBy=name&sortOrder=ascending
+    
     response = apicall(uri)
 
     try:
@@ -583,13 +604,17 @@ def getUserflowsChangeDetails(app_id, app_name, message_type):
                u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
 
 def getUserflowsGroups(app_id, app_name, group):
-    # so many api calls. so many.
+    """Call the transactions group endpoint for a group
+
+    :param app_id: (string) App ID used to request data from the API
+    :param app_name: (string) Human-readable app name
+    :param group: (string) The name of a transactions group (e.g. Login)
+    :return: None
+    """
 
     uri = '/transactions/{}/group/{}'.format(app_id, group)
 
     response = apicall(uri)
-
-
 
     try:
         for transaction in response['series'].keys():
