@@ -23,7 +23,7 @@ authbaseurl = "https://developers.crittercism.com/v1.0/"
 # baseurl = "https://developers.eu.crittercism.com:443/v1.0/"
 # authbaseurl = "https://developers.eu.crittercism.com/v1.0/"
 
-debug = False
+debug = True
 DUMP_DIAGS = 1
 interval = 10 #minutes between runs of theis script as performed by Splunk
 MAX_RETRY = 10
@@ -170,7 +170,7 @@ def getCrashSummary(appId, appName):
     CrashDict = {}
     if http_code != 200:
         print u'{} MessageType="CrashSummary" appId={} appName="{}" Could not get crash summaries for {}. Code: {} after retry {}'.format(DATETIME_OF_RUN, appId, appName, mystime, http_code, retry)
-    else:
+    elif crashdata:
         for x,y in enumerate(crashdata):
             printstring = u'{} MessageType="CrashSummary" appId={} appName="{}" '.format(DATETIME_OF_RUN, appId, appName)
             slist = crashattrs.split(",")
@@ -178,6 +178,8 @@ def getCrashSummary(appId, appName):
                 printstring += u'{}="{}" '.format(atname, crashdata[x][atname])
                 if atname == "hash" : CrashDict[crashdata[x][atname]]= appName
             print printstring
+    else:
+        print u'{} MessageType="CrashSummary" appId={} appName="{}" No crashes found for {}.'.format(DATETIME_OF_RUN, appId, appName, mystime)
     return CrashDict
 
 
@@ -569,11 +571,25 @@ def getUserflowsRanked(app_id, app_name, category, message_type):
                u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
 
 
-def getUserflowsChangeDetails(app_id, app_name, message_type):
+def getUserflowsDetails(app_id, app_name):
     """Call the userflows details/change endpoint for an app
 
-    Currently this function calls the getUserflowsGroups function for each group.
-    This is non-optimal and they should be split up.
+    :param app_id: (string) App ID used to request data from the API
+    :param app_name: (string) Human-readable app name
+    :return: None
+    """
+    uri = 'transactions/{}/details/change/P1M?pageNum=1&pageSize=10&sortBy=name&sortOrder=ascending'.format(app_id)
+
+    response = apicall(uri)
+
+    getUserflowsChangeDetails(app_id, app_name, response)
+
+    for group in response['groups']:
+        getUserflowsGroups(app_id, app_name, group['name'])
+
+
+def getUserflowsChangeDetails(app_id, app_name, userflow_dict):
+    """Process the userflows details/change data for Splunk
 
     :param app_id: (string) App ID used to request data from the API
     :param app_name: (string) Human-readable app name
@@ -581,14 +597,9 @@ def getUserflowsChangeDetails(app_id, app_name, message_type):
     :return: None
     """
 
-    uri = 'transactions/{}/details/change/P1M?pageNum=1&pageSize=10&sortBy=name&sortOrder=ascending'.format(app_id)
-
-    response = apicall(uri)
-
     try:
-        for group in response['groups']:
+        for group in userflow_dict['groups']:
             messages = u''
-            getUserflowsGroups(app_id, app_name, group['name'])
             messages += u'(Name="{}",volume={},foregroundTime={}s,failed={},failRate={}%,successful={},revenueAtRisk=${})'.format(
                                                                   group['name'],
                                                                   group['series']['startedTransactions']['value'],
@@ -598,10 +609,10 @@ def getUserflowsChangeDetails(app_id, app_name, message_type):
                                                                   group['series']['succeededTransactions']['value'],
                                                                   group['series']['failedMoneyValue']['value'])
             print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(
-                DATETIME_OF_RUN, message_type, app_name, app_id, messages)
+                DATETIME_OF_RUN, 'UserflowsChangeDetails', app_name, app_id, messages)
     except KeyError as e:
         print (u'{} MessageType="ApteligentError" Error: Could not access {} '
-               u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
+               u'in {}.'.format(DATETIME_OF_RUN, str(e), 'UserflowsChangeDetails'))
 
 def getUserflowsGroups(app_id, app_name, group):
     """Call the transactions group endpoint for a group
@@ -799,8 +810,6 @@ def main():
         if crashes:
             for ckey in crashes.keys():
                 getCrashDetail(ckey, apps[key]['name'])
-        else:
-            continue
 
         getTrends(key,apps[key]['name'])
 
@@ -841,7 +850,7 @@ def main():
 
         getUserflowsSummary(key, apps[key]['name'], "UserflowsSummary")
         getUserflowsRanked(key, apps[key]['name'], FAILED, "UserflowsRankedFailed")
-        getUserflowsChangeDetails(key, apps[key]['name'], "UserflowsChangeDetails")
+        getUserflowsDetails(key, apps[key]['name'])
 
 if __name__=='__main__':
 	main()

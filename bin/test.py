@@ -314,7 +314,21 @@ class TestSplunk(unittest.TestCase):
         self.assertIn('MessageType=UserflowsRanked appName="appName" appId="appId"  DATA ("bogusName",bogusRate,bogusType)', output)
 
     def test_getUserflowsChangeDetails(self):
-        self.assertTrue(False)
+        userflows_data = {'groups': [
+            {'name': "Bogus",
+             'series': {
+                 'startedTransactions': {'value':'bogusVol'},
+                 'meanForegroundTime': {'value':'bogusTime'},
+                 'failedTransactions': {'value':'bogusFailed'},
+                 'failRate': {'value':'bogusRate'},
+                 'succeededTransactions': {'value':'bogusSuccess'},
+                 'failedMoneyValue': {'value':'bogusRev'}
+             }}
+        ]}
+
+        output = self._catch_stdout(critterget.getUserflowsChangeDetails, 'appId', 'appName', userflows_data)
+
+        self.assertIn('MessageType=UserflowsChangeDetails appName="appName" appId="appId" DATA (Name="Bogus",volume=bogusVol,foregroundTime=bogusTimes,failed=bogusFailed,failRate=bogusRate%,successful=bogusSuccess,revenueAtRisk=$bogusRev)', output)
 
     def test_getUserflowsGroups(self):
         self.mock_get.side_effect = [self._response_with_json_data(200, {'series': {'bogusTransaction': {'count': {'value': 'bogusCount'},
