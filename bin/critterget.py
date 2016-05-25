@@ -59,8 +59,19 @@ SERIES = 'series'
 NAME = 'name'
 GROUPS = 'groups'
 FAILURE_RATE = 'failureRate'
+FAIL_RATE = 'failRate'
 UNIT = 'unit'
 TYPE = 'type'
+STARTED_TRANSACTIONS = 'startedTransactions'
+MEAN_FOREGROUND_TIME = 'meanForegroundTime'
+FAILED_TRANSACTIONS = 'failedTransactions'
+SUCCEEDED_TRANSACTIONS = 'succeededTransactions'
+FAILED_MONEY_VALUE = 'failedMoneyValue'
+COUNT = 'count'
+RATE = 'rate'
+MONEY_VALUE = 'moneyValue'
+MEAN_DURATION = 'meanDuration'
+
 
 
 def apicall_with_response_code (uri, attribs=None):
@@ -610,12 +621,12 @@ def getUserflowsChangeDetails(app_id, app_name, userflow_dict):
                          u'failed={},failRate={}%,successful={},'
                          u'revenueAtRisk=${})'.format(
                               group[NAME],
-                              group[SERIES]['startedTransactions'][VALUE],
-                              group[SERIES]['meanForegroundTime'][VALUE],
-                              group[SERIES]['failedTransactions'][VALUE],
-                              group[SERIES]['failRate'][VALUE],
-                              group[SERIES]['succeededTransactions'][VALUE],
-                              group[SERIES]['failedMoneyValue'][VALUE]))
+                              group[SERIES][STARTED_TRANSACTIONS][VALUE],
+                              group[SERIES][MEAN_FOREGROUND_TIME][VALUE],
+                              group[SERIES][FAILED_TRANSACTIONS][VALUE],
+                              group[SERIES][FAIL_RATE][VALUE],
+                              group[SERIES][SUCCEEDED_TRANSACTIONS][VALUE],
+                              group[SERIES][FAILED_MONEY_VALUE][VALUE]))
             print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(
                 DATETIME_OF_RUN, 'UserflowsChangeDetails', app_name, app_id, messages)
     except KeyError as e:
@@ -640,10 +651,10 @@ def getUserflowsGroups(app_id, app_name, group):
             messages = u''
             messages += u'(Metric="{}",count={},rate={}%,moneyValue=${},meanDuration={})'.format(
                 transaction,
-                response[SERIES][transaction]['count'][VALUE],
-                response[SERIES][transaction]['rate'][VALUE],
-                response[SERIES][transaction]['moneyValue'][VALUE],
-                response[SERIES][transaction]['meanDuration'][VALUE])
+                response[SERIES][transaction][COUNT][VALUE],
+                response[SERIES][transaction][RATE][VALUE],
+                response[SERIES][transaction][MONEY_VALUE][VALUE],
+                response[SERIES][transaction][MEAN_DURATION][VALUE])
             print u'{} MessageType={} appName="{}" appId="{}" Userflow="{}" DATA {}'.format(
                 DATETIME_OF_RUN,
                 'UserflowGroup',
