@@ -52,9 +52,15 @@ U = 'u'
 S = 's'
 D = 'd'
 ENDPOINTS = 'endpoints'
-DATA = 'data'
-TXN_DURATION = 'P3M'
 FAILED = 'failed'
+CHANGE_PCT = 'changePct'
+VALUE = 'value'
+SERIES = 'series'
+NAME = 'name'
+GROUPS = 'groups'
+FAILURE_RATE = 'failureRate'
+UNIT = 'unit'
+TYPE = 'type'
 
 
 def apicall_with_response_code (uri, attribs=None):
@@ -538,8 +544,8 @@ def getUserflowsSummary(app_id, app_name, message_type):
     response = apicall(uri)
 
     try:
-        messages = u','.join([u'("{}",{},{})'.format(metric, data['value'], data['changePct']) for metric, data in
-                              response['series'].iteritems()])
+        messages = u','.join([u'("{}",{},{})'.format(metric, data[VALUE], data[CHANGE_PCT]) for metric, data in
+                              response[SERIES].iteritems()])
         print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(
             DATETIME_OF_RUN, message_type, app_name, app_id, messages)
     except KeyError as e:
@@ -562,8 +568,8 @@ def getUserflowsRanked(app_id, app_name, category, message_type):
     response = apicall(uri)
 
     try:
-        messages = u','.join([u'("{}",{},{})'.format(group['name'], group['failureRate'], group['unit']['type']) for group in
-                              response['groups']])
+        messages = u','.join([u'("{}",{},{})'.format(group[NAME], group[FAILURE_RATE], group[UNIT][TYPE]) for group in
+                              response[GROUPS]])
         print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(
             DATETIME_OF_RUN, message_type, app_name, app_id, messages)
     except KeyError as e:
@@ -584,8 +590,8 @@ def getUserflowsDetails(app_id, app_name):
 
     getUserflowsChangeDetails(app_id, app_name, response)
 
-    for group in response['groups']:
-        getUserflowsGroups(app_id, app_name, group['name'])
+    for group in response[GROUPS]:
+        getUserflowsGroups(app_id, app_name, group[NAME])
 
 
 def getUserflowsChangeDetails(app_id, app_name, userflow_dict):
@@ -598,16 +604,18 @@ def getUserflowsChangeDetails(app_id, app_name, userflow_dict):
     """
 
     try:
-        for group in userflow_dict['groups']:
+        for group in userflow_dict[GROUPS]:
             messages = u''
-            messages += u'(Name="{}",volume={},foregroundTime={}s,failed={},failRate={}%,successful={},revenueAtRisk=${})'.format(
-                                                                  group['name'],
-                                                                  group['series']['startedTransactions']['value'],
-                                                                  group['series']['meanForegroundTime']['value'],
-                                                                  group['series']['failedTransactions']['value'],
-                                                                  group['series']['failRate']['value'],
-                                                                  group['series']['succeededTransactions']['value'],
-                                                                  group['series']['failedMoneyValue']['value'])
+            messages += (u'(Name="{}",volume={},foregroundTime={}s,'
+                         u'failed={},failRate={}%,successful={},'
+                         u'revenueAtRisk=${})'.format(
+                              group[NAME],
+                              group[SERIES]['startedTransactions'][VALUE],
+                              group[SERIES]['meanForegroundTime'][VALUE],
+                              group[SERIES]['failedTransactions'][VALUE],
+                              group[SERIES]['failRate'][VALUE],
+                              group[SERIES]['succeededTransactions'][VALUE],
+                              group[SERIES]['failedMoneyValue'][VALUE]))
             print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(
                 DATETIME_OF_RUN, 'UserflowsChangeDetails', app_name, app_id, messages)
     except KeyError as e:
@@ -628,15 +636,21 @@ def getUserflowsGroups(app_id, app_name, group):
     response = apicall(uri)
 
     try:
-        for transaction in response['series'].keys():
+        for transaction in response[SERIES].keys():
             messages = u''
             messages += u'(Metric="{}",count={},rate={}%,moneyValue=${},meanDuration={})'.format(
                 transaction,
-                response['series'][transaction]['count']['value'],
-                response['series'][transaction]['rate']['value'],
-                response['series'][transaction]['moneyValue']['value'],
-                response['series'][transaction]['meanDuration']['value'])
-            print u'{} MessageType={} appName="{}" appId="{}" Userflow="{}" DATA {}'.format(DATETIME_OF_RUN, 'UserflowGroup', app_name, app_id, group, messages)
+                response[SERIES][transaction]['count'][VALUE],
+                response[SERIES][transaction]['rate'][VALUE],
+                response[SERIES][transaction]['moneyValue'][VALUE],
+                response[SERIES][transaction]['meanDuration'][VALUE])
+            print u'{} MessageType={} appName="{}" appId="{}" Userflow="{}" DATA {}'.format(
+                DATETIME_OF_RUN,
+                'UserflowGroup',
+                app_name,
+                app_id,
+                group,
+                messages)
 
     except KeyError as e:
         print (u'{} MessageType="ApteligentError" Error: Could not access {} '
