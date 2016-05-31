@@ -1,0 +1,28 @@
+<form script="link_switcher.js, autodiscover.js">
+  <label>Userflow Details</label>
+  <fieldset autoRun="true" submitButton="false">
+    <input type="dropdown" token="userflow" searchWhenChanged="true">
+      <label>Userflow</label>
+      <populatingSearch fieldForValue="UserflowName" fieldForLabel="UserflowName">
+        <![CDATA[index=crittercism sourcetype=crittercism "MessageType=UserflowsChangeDetails" earliest=-7d | rex ""\(Name=\"(?<UserflowName>.+?)\" max_match=30 | dedup UserflowName | top UserflowName]]>
+      </populatingSearch>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <table>
+        <title>Userflow Metrics</title>
+        <search>
+          <query>index=crittercism sourcetype="crittercism" "MessageType=UserflowGroup" appName="Apteligent Demo" appId="519d53101386202089000007" Userflow="$userflow$" |  rex "\(Metric=\"(?&lt;METRIC&gt;.+?)\",count=(?&lt;COUNT&gt;\d+),rate=(?&lt;RATE&gt;\d+.?\d*\%),moneyValue=(?&lt;MONEY_VALUE&gt;\$\d+.?\d*),meanDuration=(?&lt;MEAN_DURATION&gt;(\d+.?\d*)|None)\)" max_match=30 | dedup METRIC sortby -_time | sort -COUNT | table METRIC,COUNT,RATE,MONEY_VALUE,MEAN_DURATION</query>
+          <earliest>-7d@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+</form>

@@ -298,3 +298,45 @@ class TestSplunk(unittest.TestCase):
         output = self._catch_stdout(critterget.getTimeseriesTrends, 'appId', 'appName', trendsData)
 
         self.assertIn('MessageType=TimeseriesTrends appName="appName" appId="appId" appVersion="bogusVersion" DATA (YYYY-MM-DD,bogusVal)', output)
+
+    def test_getUserflowsSummary(self):
+        self.mock_get.side_effect = [self._response_with_json_data(200, {'series': {'bogusMetric': {'value': 'bogusValue', 'changePct': 'bogusPct'}}})]
+
+        output = self._catch_stdout(critterget.getUserflowsSummary, 'appId', 'appName', "UserflowsSummary")
+
+        self.assertIn('MessageType=UserflowsSummary appName="appName" appId="appId" DATA ("bogusMetric",bogusValue,bogusPct)', output)
+
+    def test_getUserflowsRanked(self):
+        self.mock_get.side_effect = [self._response_with_json_data(200, {'groups': [{'name': 'bogusName', 'failureRate': 'bogusRate', 'unit':{'type':'bogusType'}}]} )]
+
+        output = self._catch_stdout(critterget.getUserflowsRanked, 'appId', 'appName', 'failed', "UserflowsRanked")
+
+        self.assertIn('MessageType=UserflowsRanked appName="appName" appId="appId"  DATA ("bogusName",bogusRate,bogusType)', output)
+
+    def test_getUserflowsChangeDetails(self):
+        userflows_data = {'groups': [
+            {'name': "Bogus",
+             'series': {
+                 'startedTransactions': {'value':'bogusVol'},
+                 'meanForegroundTime': {'value':'bogusTime'},
+                 'failedTransactions': {'value':'bogusFailed'},
+                 'failRate': {'value':'bogusRate'},
+                 'succeededTransactions': {'value':'bogusSuccess'},
+                 'failedMoneyValue': {'value':'bogusRev'}
+             }}
+        ]}
+
+        output = self._catch_stdout(critterget.getUserflowsChangeDetails, 'appId', 'appName', userflows_data)
+
+        self.assertIn('MessageType=UserflowsChangeDetails appName="appName" appId="appId" DATA (Name="Bogus",volume=bogusVol,foregroundTime=bogusTimes,failed=bogusFailed,failRate=bogusRate%,successful=bogusSuccess,revenueAtRisk=$bogusRev)', output)
+
+    def test_getUserflowsGroups(self):
+        self.mock_get.side_effect = [self._response_with_json_data(200, {'series': {'bogusTransaction': {'count': {'value': 'bogusCount'},
+                                                                                                         'rate': {'value': 'bogusRate'},
+                                                                                                         'moneyValue': {'value': 'bogusMoney'},
+                                                                                                         'meanDuration': {'value': 'bogusMean'}
+                                                                                                         }}} )]
+
+        output = self._catch_stdout(critterget.getUserflowsGroups, 'appId', 'appName', 'bogusGroup')
+
+        self.assertIn('MessageType=UserflowGroup appName="appName" appId="appId" Userflow="bogusGroup" DATA (Metric="bogusTransaction",count=bogusCount,rate=bogusRate%,moneyValue=$bogusMoney,meanDuration=bogusMean)', output)

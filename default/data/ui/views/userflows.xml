@@ -1,0 +1,72 @@
+<form>
+  <label>Userflows</label>
+  <description>Choose an application to view userflows data</description>
+  <html>
+    <p>Test
+      <a href="/app/crittercism/crash_browser">Crash Browser</a>
+    </p>
+  </html>
+  <fieldset autoRun="true" submitButton="false">
+    <input type="dropdown" token="appName" searchWhenChanged="true">
+      <label>Select an Application:</label>
+      <prefix>"</prefix>
+      <suffix>"</suffix>
+      <populatingSearch fieldForValue="appName" fieldForLabel="appName" earliest="-24h" latest="now">
+        <![CDATA[index=crittercism sourcetype=crittercism | stats dc by appName, appId]]>
+      </populatingSearch>
+      <selectFirstChoice>true</selectFirstChoice>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <table>
+        <title>Userflows Summary</title>
+        <search>
+          <query>index=crittercism sourcetype="crittercism"  "MessageType=UserflowsSummary" appName=$appName$  | head 1 | rex "\((?&lt;metric&gt;\".*?\")\,(?&lt;val&gt;\d+\.?\d*|None)\,(?&lt;percent&gt;\-?\d+\.?\d*|None)\)" max_match=30 | eval fields=mvzip(mvzip(metric,val),percent) | mvexpand fields | rex field=fields "\"(?&lt;METRIC&gt;.*?)\",(?&lt;VALUE&gt;\d+\.*\d*),(?&lt;PERCENT_CHANGE&gt;.*)"| sort -VALUE |  table METRIC, VALUE, PERCENT_CHANGE</query>
+          <earliest>-7d@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Top Failed Userflows</title>
+        <search>
+          <query>index=crittercism sourcetype="crittercism"  "MessageType=UserflowsRankedFailed" appName=$appName$  | head 1 | rex "\((?&lt;userflow&gt;\".*?\")\,(?&lt;val&gt;\d+\.?\d*|None)\,(?&lt;unit&gt;.*?)\)" max_match=30 | eval fields=mvzip(mvzip(userflow,val),unit) | mvexpand fields | rex field=fields "\"(?&lt;USERFLOW&gt;.*?)\",(?&lt;FAILURE_RATE&gt;\d+\.*\d*),(?&lt;UNIT&gt;.*)"| sort -VALUE |  table USERFLOW, FAILURE_RATE, UNIT</query>
+          <earliest>-7d@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Userflows - click on a userflow for more information</title>
+        <search>
+          <query>index=crittercism sourcetype="crittercism"  "MessageType=UserflowsChangeDetails" appName=$appName$  | rex "\(Name=\"(?&lt;USERFLOW&gt;.+?)\",volume=(?&lt;VOLUME&gt;\d+),foregroundTime=(?&lt;FOREGROUND_TIME&gt;\d+\.?\d*s),failed=(?&lt;FAILED&gt;\d+),failRate=(?&lt;FAILURE_RATE&gt;\d+\.?\d*%),successful=(?&lt;SUCCESSFUL&gt;\d+),revenueAtRisk=(?&lt;REVENUE_AT_RISK&gt;\$\d+\.?\d*)\)" max_match=30 | dedup USERFLOW sortby -_time | sort +USERFLOW | table USERFLOW, VOLUME, FOREGROUND_TIME, FAILED, FAILURE_RATE, SUCCESSFUL, REVENUE_AT_RISK</query>
+          <earliest>-7d@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <drilldown target="crashdetails">
+          <link>userflowdetails?form.userflow=$row.USERFLOW$</link>
+        </drilldown>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+</form>

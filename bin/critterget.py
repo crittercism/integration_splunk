@@ -52,7 +52,26 @@ U = 'u'
 S = 's'
 D = 'd'
 ENDPOINTS = 'endpoints'
-DATA = 'data'
+FAILED = 'failed'
+CHANGE_PCT = 'changePct'
+VALUE = 'value'
+SERIES = 'series'
+NAME = 'name'
+GROUPS = 'groups'
+FAILURE_RATE = 'failureRate'
+FAIL_RATE = 'failRate'
+UNIT = 'unit'
+TYPE = 'type'
+STARTED_TRANSACTIONS = 'startedTransactions'
+MEAN_FOREGROUND_TIME = 'meanForegroundTime'
+FAILED_TRANSACTIONS = 'failedTransactions'
+SUCCEEDED_TRANSACTIONS = 'succeededTransactions'
+FAILED_MONEY_VALUE = 'failedMoneyValue'
+COUNT = 'count'
+RATE = 'rate'
+MONEY_VALUE = 'moneyValue'
+MEAN_DURATION = 'meanDuration'
+
 
 
 def apicall_with_response_code (uri, attribs=None):
@@ -158,7 +177,7 @@ def getCrashSummary(appId, appName):
     crashattrs = "hash,lastOccurred,sessionCount,uniqueSessionCount,reason,status,displayReason,name"
 
     http_code = None
-    retry = 1
+    retry = 0
     while http_code != 200:
         http_code, crashdata = apicall_with_response_code("app/%s/crash/summaries" % appId, "lastOccurredStart=%s" % mystime)
         retry += 1
@@ -167,8 +186,8 @@ def getCrashSummary(appId, appName):
 
     CrashDict = {}
     if http_code != 200:
-        print u'{} MessageType="CrashSummary" appId={} appName="{}" Could not get crash summaries. Code: {} after retry {}'.format(DATETIME_OF_RUN, appId, appName, http_code, retry)
-    else:
+        print u'{} MessageType="CrashSummary" appId={} appName="{}" Could not get crash summaries for {}. Code: {} after retry {}'.format(DATETIME_OF_RUN, appId, appName, mystime, http_code, retry)
+    elif crashdata:
         for x,y in enumerate(crashdata):
             printstring = u'{} MessageType="CrashSummary" appId={} appName="{}" '.format(DATETIME_OF_RUN, appId, appName)
             slist = crashattrs.split(",")
@@ -176,6 +195,8 @@ def getCrashSummary(appId, appName):
                 printstring += u'{}="{}" '.format(atname, crashdata[x][atname])
                 if atname == "hash" : CrashDict[crashdata[x][atname]]= appName
             print printstring
+    else:
+        print u'{} MessageType="CrashSummary" appId={} appName="{}" No crashes found for {}.'.format(DATETIME_OF_RUN, appId, appName, mystime)
     return CrashDict
 
 
@@ -440,6 +461,7 @@ def getAPMEndpoints(app_id, app_name, sort, message_type):
                u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
         return None, None
 
+
 def getAPMServices(app_id, app_name, sort, message_type):
     """Get APM services data"""
 
@@ -519,6 +541,131 @@ def getGenericErrorMon(appId, appName,graph,groupby,messagetype):
 
 
 """--------------------------------------------------------------"""
+
+def getUserflowsSummary(app_id, app_name, message_type):
+    """Calls the transactions summary endpoint for an app
+
+    :param app_id: (string) App ID used to request data from the API
+    :param app_name: (string) Human-readable app name
+    :param message_type: (string) Type of message (for sorting in Splunk)
+    :return: None
+    """
+    uri = 'transactions/{}/summary/'.format(app_id)
+
+    response = apicall(uri)
+
+    try:
+        messages = u','.join([u'("{}",{},{})'.format(metric, data[VALUE], data[CHANGE_PCT]) for metric, data in
+                              response[SERIES].iteritems()])
+        print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(
+            DATETIME_OF_RUN, message_type, app_name, app_id, messages)
+    except KeyError as e:
+        print (u'{} MessageType="ApteligentError" Error: Could not access {} '
+               u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
+        return None, None
+
+def getUserflowsRanked(app_id, app_name, category, message_type):
+    """Calls the transactions ranked endpoint to get the top failed transactions
+
+    :param app_id: (string) App ID used to request data from the API
+    :param app_name: (string) Human-readable app name
+    :param category: (string) Kind of transaction to return (e.g. failed, succeeded)
+    :param message_type: (string) Type of message (for sorting in Splunk), equivalent to category
+    :return: None
+    """
+
+    uri = 'transactions/{}/ranked/{}/'.format(app_id, category)
+
+    response = apicall(uri)
+
+    try:
+        messages = u','.join([u'("{}",{},{})'.format(group[NAME], group[FAILURE_RATE], group[UNIT][TYPE]) for group in
+                              response[GROUPS]])
+        print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(
+            DATETIME_OF_RUN, message_type, app_name, app_id, messages)
+    except KeyError as e:
+        print (u'{} MessageType="ApteligentError" Error: Could not access {} '
+               u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
+
+
+def getUserflowsDetails(app_id, app_name):
+    """Call the userflows details/change endpoint for an app
+
+    :param app_id: (string) App ID used to request data from the API
+    :param app_name: (string) Human-readable app name
+    :return: None
+    """
+    uri = 'transactions/{}/details/change/P1M?pageNum=1&pageSize=10&sortBy=name&sortOrder=ascending'.format(app_id)
+
+    response = apicall(uri)
+
+    getUserflowsChangeDetails(app_id, app_name, response)
+
+    for group in response[GROUPS]:
+        getUserflowsGroups(app_id, app_name, group[NAME])
+
+
+def getUserflowsChangeDetails(app_id, app_name, userflow_dict):
+    """Process the userflows details/change data for Splunk
+
+    :param app_id: (string) App ID used to request data from the API
+    :param app_name: (string) Human-readable app name
+    :param message_type: (string) Type of message (for sorting in Splunk)
+    :return: None
+    """
+
+    try:
+        for group in userflow_dict[GROUPS]:
+            messages = u''
+            messages += (u'(Name="{}",volume={},foregroundTime={}s,'
+                         u'failed={},failRate={}%,successful={},'
+                         u'revenueAtRisk=${})'.format(
+                              group[NAME],
+                              group[SERIES][STARTED_TRANSACTIONS][VALUE],
+                              group[SERIES][MEAN_FOREGROUND_TIME][VALUE],
+                              group[SERIES][FAILED_TRANSACTIONS][VALUE],
+                              group[SERIES][FAIL_RATE][VALUE],
+                              group[SERIES][SUCCEEDED_TRANSACTIONS][VALUE],
+                              group[SERIES][FAILED_MONEY_VALUE][VALUE]))
+            print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(
+                DATETIME_OF_RUN, 'UserflowsChangeDetails', app_name, app_id, messages)
+    except KeyError as e:
+        print (u'{} MessageType="ApteligentError" Error: Could not access {} '
+               u'in {}.'.format(DATETIME_OF_RUN, str(e), 'UserflowsChangeDetails'))
+
+def getUserflowsGroups(app_id, app_name, group):
+    """Call the transactions group endpoint for a group
+
+    :param app_id: (string) App ID used to request data from the API
+    :param app_name: (string) Human-readable app name
+    :param group: (string) The name of a transactions group (e.g. Login)
+    :return: None
+    """
+
+    uri = '/transactions/{}/group/{}'.format(app_id, group)
+
+    response = apicall(uri)
+
+    try:
+        for transaction in response[SERIES].keys():
+            messages = u''
+            messages += u'(Metric="{}",count={},rate={}%,moneyValue=${},meanDuration={})'.format(
+                transaction,
+                response[SERIES][transaction][COUNT][VALUE],
+                response[SERIES][transaction][RATE][VALUE],
+                response[SERIES][transaction][MONEY_VALUE][VALUE],
+                response[SERIES][transaction][MEAN_DURATION][VALUE])
+            print u'{} MessageType={} appName="{}" appId="{}" Userflow="{}" DATA {}'.format(
+                DATETIME_OF_RUN,
+                'UserflowGroup',
+                app_name,
+                app_id,
+                group,
+                messages)
+
+    except KeyError as e:
+        print (u'{} MessageType="ApteligentError" Error: Could not access {} '
+               u'in {}.'.format(DATETIME_OF_RUN, str(e), "TransactionsGroup"))
 
 
 def getDailyAppLoads(appId,appName):
@@ -688,8 +835,6 @@ def main():
         if crashes:
             for ckey in crashes.keys():
                 getCrashDetail(ckey, apps[key]['name'])
-        else:
-            continue
 
         getTrends(key,apps[key]['name'])
 
@@ -728,7 +873,9 @@ def main():
         getAPMGeo(key, apps[key]['name'], ERRORS, 'ApmGeoErrors')
         getAPMGeo(key, apps[key]['name'], DATA, 'ApmGeoData')
 
-
+        getUserflowsSummary(key, apps[key]['name'], "UserflowsSummary")
+        getUserflowsRanked(key, apps[key]['name'], FAILED, "UserflowsRankedFailed")
+        getUserflowsDetails(key, apps[key]['name'])
 
 if __name__=='__main__':
 	main()
