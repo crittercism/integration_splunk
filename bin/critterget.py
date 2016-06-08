@@ -10,11 +10,9 @@ try:
 except ImportError:
     import splunk_mock.entity as entity
 
-#The splunk name for the app.  Needed for the autho storage
+# The splunk name for the app. Needed for the auth storage
 myapp = 'crittercism_integration'
 access_token = ''
-baseurl = "https://developers.crittercism.com/v1.0/"
-authbaseurl = "https://developers.crittercism.com/v1.0/"
 
 # FOR EU PoP USERS ONLY:
 # If you are using Apteligent through its EU data center presence,
@@ -23,9 +21,9 @@ authbaseurl = "https://developers.crittercism.com/v1.0/"
 # baseurl = "https://developers.eu.crittercism.com:443/v1.0/"
 # authbaseurl = "https://developers.eu.crittercism.com/v1.0/"
 
-debug = False
+debug = True
 DUMP_DIAGS = 1
-interval = 10 #minutes between runs of theis script as performed by Splunk
+interval = 10  # minutes between runs of this script as performed by Splunk
 MAX_RETRY = 10
 
 TODAY = datetime.datetime.now() # calculate this for a common time for all summary data
@@ -74,7 +72,7 @@ MEAN_DURATION = 'meanDuration'
 
 
 
-def apicall_with_response_code (uri, attribs=None):
+def apicall_with_response_code(uri, attribs=None):
     # perform an API call
     if (debug): print u'access token is {}'.format(access_token)
     url = baseurl + uri
@@ -109,7 +107,7 @@ def apicall(uri, attribs=None):
     http_code, data = apicall_with_response_code(uri, attribs)
     return data
 
-def apipost_with_response_code (uri, postdata='', keyget=None):
+def apipost_with_response_code(uri, postdata='', keyget=None):
     # perform an API POST
     if (debug): print u'access token is {}'.format(access_token)
     url = baseurl + uri
@@ -156,7 +154,7 @@ def getAppSummary():
     # list of the attributes we'll hand to Apteligent, also the list we will create as Splunk Keys
     summattrs = "appName,appType,crashPercent,dau,latency,latestAppStoreReleaseDate,latestVersionString,linkToAppStore,iconURL,mau,rating,role,appVersions"
     atstring = "attributes=%s"%summattrs
-    gdata = apicall("apps",atstring)
+    gdata = apicall("apps", atstring)
 
     AppDict = {}
     for appId in gdata.keys():
@@ -173,7 +171,7 @@ def getAppSummary():
 def getCrashSummary(appId, appName):
 # given an appID and an appName, produce a Splunk KV summary of the crashes for a given timeframe
     mystime = scopetime()
-
+    crashdata = None
     crashattrs = "hash,lastOccurred,sessionCount,uniqueSessionCount,reason,status,displayReason,name"
 
     http_code = None
@@ -610,7 +608,6 @@ def getUserflowsChangeDetails(app_id, app_name, userflow_dict):
 
     :param app_id: (string) App ID used to request data from the API
     :param app_name: (string) Human-readable app name
-    :param message_type: (string) Type of message (for sorting in Splunk)
     :return: None
     """
 
@@ -781,6 +778,29 @@ def getCrashCounts(appId,appName):
     return
 
 
+def setDataRegion(sessionKey):
+    use_eu = None
+
+    if (debug) : print u'{} MessageType="ApteligentDebug"  Into setDataRegion'.format(DATETIME_OF_RUN)
+
+    try:
+        entities = entity.getEntities(['properties', 'crittercism','api'], namespace=myapp,
+                                        owner='nobody', sessionKey=sessionKey)
+    except Exception, e:
+        print u'{} MessageType="ApteligentDebug"  Could not get entities!'.format(DATETIME_OF_RUN)
+
+    if (debug) : print u'{} MessageType="CritterDebug" entities are {}'.format(DATETIME_OF_RUN, entities)
+
+    use_eu = int(entities['dataCenterRegion'])
+
+    global baseurl
+    if use_eu:
+        baseurl = "https://developers.eu.crittercism.com/v1.0/"
+    else:
+        baseurl = "https://developers.crittercism.com/v1.0/"
+
+
+
 def getCredentials(sessionKey):
 # access the credentials in /servicesNS/nobody/<MyApp>/admin/passwords
 
@@ -801,13 +821,17 @@ def getCredentials(sessionKey):
 
         # return first set of credentials
         if (debug) : print "Entities is ", entities
-        if entities is not None:
+        if entities:
             for i, c in entities.items():
                 auth = c.get('clear_password')
-            if auth is None:
-                print u'{} MessageType="ApteligentDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(DATETIME_OF_RUN, myapp)
+        else:
+            time.sleep(10)
+
         retry += 1
-        time.sleep(10)
+
+    if not auth:
+        print u'{} MessageType="ApteligentDebug" No credentials have been found for app {} . Maybe a setup issue?'.format(DATETIME_OF_RUN, myapp)
+
     return auth
 
 ###########
@@ -825,6 +849,9 @@ def main():
     # now get crittercism oauth token
     global access_token
     access_token = getCredentials(sessionKey)
+
+    # set the data region
+    setDataRegion(sessionKey)
 
     if (debug) : print u'{} MessageType="ApteligentDebug" OAuth token is {}'.format(DATETIME_OF_RUN, access_token)
 
@@ -878,4 +905,4 @@ def main():
         getUserflowsDetails(key, apps[key]['name'])
 
 if __name__=='__main__':
-	main()
+    main()
