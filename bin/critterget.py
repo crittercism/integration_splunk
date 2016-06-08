@@ -786,7 +786,8 @@ def setDataRegion(sessionKey):
         use_eu = int(entities['dataCenterRegion'].value)
         if (debug) : print u'{} MessageType="CritterDebug" use_eu is {}'.format(DATETIME_OF_RUN, use_eu)
     except Exception, e:
-        print u'{} MessageType="ApteligentDebug" Could not get a data region because {} Defaulting to US'.format(DATETIME_OF_RUN, e)
+        print (u'{} MessageType="ApteligentDebug" '
+                'Could not get a data region because {} Defaulting to US'.format(DATETIME_OF_RUN, e))
 
     global baseurl
     if use_eu:
