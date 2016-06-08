@@ -13,7 +13,7 @@ except ImportError:
 # The splunk name for the app. Needed for the auth storage
 myapp = 'crittercism_integration'
 access_token = ''
-debug = True
+debug = False
 DUMP_DIAGS = 1
 interval = 10  # minutes between runs of this script as performed by Splunk
 MAX_RETRY = 10
