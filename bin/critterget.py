@@ -782,22 +782,27 @@ def set_data_region(session_key):
                         'Into setDataRegion'.format(DATETIME_OF_RUN))
 
     try:
-        entities = entity.getEntities(['properties', 'crittercism','api'], namespace=myapp,
-                                        owner='nobody', sessionKey=session_key)
+        entities = entity.getEntities(['properties', 'crittercism','api'],
+                                      namespace=myapp, owner='nobody',
+                                      sessionKey=session_key)
         if (debug) : print (u'{} MessageType="ApteligentDebug" '
                             'entities are {}'.format(DATETIME_OF_RUN, entities))
         use_eu = int(entities['dataCenterRegion'].value)
-        if (debug) : print u'{} MessageType="ApteligentDebug" use_eu is {}'.format(DATETIME_OF_RUN, use_eu)
+        if (debug) : print (u'{} MessageType="ApteligentDebug" '
+                            u'use_eu is {}'.format(DATETIME_OF_RUN, use_eu))
     except Exception, e:
         print (u'{} MessageType="ApteligentDebug" '
-                'Could not get a data region because {} Defaulting to US'.format(DATETIME_OF_RUN, e))
+                'Could not get a data region because {} '
+               'Defaulting to US'.format(DATETIME_OF_RUN, e))
 
     global baseurl
     if use_eu:
-        if (debug) : print u'{} MessageType="ApteligentDebug" Using EU data center'.format(DATETIME_OF_RUN)
+        if (debug) : print (u'{} MessageType="ApteligentDebug" '
+                            u'Using EU data center'.format(DATETIME_OF_RUN))
         baseurl = "https://developers.eu.crittercism.com/v1.0/"
     else:
-        if (debug) : print u'{} MessageType="ApteligentDebug" Using US data center'.format(DATETIME_OF_RUN)
+        if (debug) : print (u'{} MessageType="ApteligentDebug" '
+                            u'Using US data center'.format(DATETIME_OF_RUN))
         baseurl = "https://developers.crittercism.com/v1.0/"
 
 
