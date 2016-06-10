@@ -12,7 +12,7 @@
       <prefix>"</prefix>
       <suffix>"</suffix>
       <populatingSearch fieldForValue="appName" fieldForLabel="appName" earliest="-24h" latest="now">
-        <![CDATA[index=crittercism sourcetype=crittercism | stats dc by appName, appId]]>
+        <![CDATA[index=crittercism sourcetype=crittercism | dedup appName | stats dc by appName, appId]]>
       </populatingSearch>
       <selectFirstChoice>true</selectFirstChoice>
     </input>
