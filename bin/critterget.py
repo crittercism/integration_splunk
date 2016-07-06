@@ -644,11 +644,11 @@ def getUserflowsGroups(app_id, app_name, group):
                 response[SERIES][transaction][RATE][VALUE],
                 response[SERIES][transaction][MONEY_VALUE][VALUE],
                 response[SERIES][transaction][MEAN_DURATION][VALUE])
-            print u'{} MessageType={} appName="{}" appId="{}" Userflow="{}" DATA {}'.format(
+            print u'{} MessageType={} appId="{}" appName="{}" Userflow="{}" DATA {}'.format(
                 DATETIME_OF_RUN,
                 'UserflowGroup',
-                app_name,
                 app_id,
+                app_name,
                 group,
                 messages)
 
