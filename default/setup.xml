@@ -9,12 +9,6 @@
     <type>text</type>
   </input>
 </block>
-<block title="Data Region" endpoint="configs/conf-crittercism" entity="api">
-  <input field="dataCenterRegion">
-    <label>Use EU data region?</label>
-    <type>bool</type>
-  </input>
-</block>
 <block title="Apteligent API Info" endpoint="configs/conf-crittercism_integration" entity="api">
 <text> Notes:</text>
   <text> - To generate your Apteligent OAuth Access Token, please visit https://app.apteligent.com/developers/user-settings then click on the OAuth Tokens tab and follow the instructions on the page.</text>
