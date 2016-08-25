@@ -62,7 +62,7 @@ RATE = 'rate'
 MONEY_VALUE = 'moneyValue'
 MEAN_DURATION = 'meanDuration'
 
-BASEURL = "https://developers.crit-staging.com/v1.0/"
+BASEURL = "https://developers.crittercism.com/v1.0/"
 
 def apicall_with_response_code(uri, attribs=None):
     # perform an API call
