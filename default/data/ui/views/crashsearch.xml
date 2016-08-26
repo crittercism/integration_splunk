@@ -26,7 +26,6 @@
         </searchString>
         <option name="drilldown">none</option>
         <option name="underLabel">unique crashes found in this time period</option>
-        <option name="linkView">search</option>
       </single>
 
       <single>
@@ -36,7 +35,6 @@
         </searchString>
         <option name="drilldown">none</option>
         <option name="underLabel">total crashes found in this time period</option>
-        <option name="linkView">search</option>
       </single>
 
   </row>
