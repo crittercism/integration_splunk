@@ -178,7 +178,7 @@ def getCrashSummary(appId, appName):
     if http_code != 200:
         print u'{} MessageType="CrashSummary" appId={} appName="{}" Could not get crash summaries for {}. Code: {} after retry {}'.format(DATETIME_OF_RUN, appId, appName, mystime, http_code, retry)
     elif crashdata:
-        for x,y in enumerate(crashdata):
+        for x, y in enumerate(crashdata):
             printstring = u'{} MessageType="CrashSummary" appId={} appName="{}" '.format(DATETIME_OF_RUN, appId, appName)
             slist = crashattrs.split(",")
             for atname in slist:
@@ -198,7 +198,7 @@ def getBreadcrumbs(crumbs, hash, appName) :
         for bkey in key.keys():
 
             if bkey in ("current_session", "previous_session", "crashed_session") :
-               printstring += u' \nsession={} '.format(bkey ) + pretty(key[bkey]) + u'\n'
+               printstring += u' \nsession={} '.format(bkey) + pretty(key[bkey]) + u'\n'
             else:
                 printstring += u' {}="{}" '.format(bkey, key[bkey])
         print printstring
@@ -282,9 +282,7 @@ def getDiagnostics(diags,hash) :
         print u'{} MessageType="CrashDetailDiagnostics" DISABLED PER CONFIG FILE '.format(DATETIME_OF_RUN, hash)
         return
 
-
     for key in diags.keys() :
-
         if (key == 'geo_data'):
             diag_geo(diags[key], hash)
 
@@ -298,7 +296,7 @@ def getDiagnostics(diags,hash) :
         elif (key=='affected_versions'):
             diag_affected_versions(diags[key], hash)
 
-        elif (key=="continuous_bar_diagnostic_data"):
+        elif (key=='continuous_bar_diagnostic_data'):
             diag_cont_bar(diags[key], hash)
 
         elif (key=='continuous_diagnostic_data'):
@@ -409,19 +407,22 @@ def getGenericPerfMgmt(appId, appName,graph,groupby,messagetype):
         "appId": appId
         }}
 
-    serverrors = apipost("performanceManagement/pie",params)
+    server_errors = apipost("performanceManagement/pie",params)
 
 #    print "%s DEBUG Into getGenericPerfMgmt appId = %s  appName = %s graph= %s groupby = %s messagetype = %s" %(DATETIME_OF_RUN, appId, appName,graph,groupby,messagetype)
 
     mystring = u''
     try:
-        for series in serverrors['data']['slices']:
-            mystring += u'("{}",{}),'.format(series['label'], series['value'])
+        slices = server_errors['data']['slices']
+        if slices:
+            for series in server_errors['data']['slices']:
+                mystring += u'("{}",{}),'.format(series['label'], series['value'])
 
-        print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(DATETIME_OF_RUN, messagetype, appName, appId, mystring)
-
+            print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(DATETIME_OF_RUN, messagetype, appName, appId, mystring)
+        else:
+            print u'{} MessageType="ApteligentError" Error: API did not return {} data for {}. Returned {}'.format(DATETIME_OF_RUN, messagetype, appId, server_errors['data'])
     except KeyError as e:
-        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), messagetype)
+        print u'{} MessageType="ApteligentError" Error: API returned malformed data in {} of {}. Data: {}'.format(DATETIME_OF_RUN, str(e), messagetype, server_errors)
         return (None, None)
 
 
@@ -514,19 +515,23 @@ def getGenericErrorMon(appId, appName,graph,groupby,messagetype):
         "appId": appId
         }}
 
-    serverrors = apipost("errorMonitoring/pie",params)
+    server_errors = apipost("errorMonitoring/pie",params)
 
-#    print "%s DEBUG Into getGenericErrorMon appId = %s  appName = %s graph= %s groupby = %s messagetype = %s" %(DATETIME_OF_RUN, appId, appName,graph,groupby,messagetype)
+    # print "{} DEBUG Into getGenericErrorMon appId = {}  appName = {} graph= {} groupby = {} messagetype = {} DATA {}".format(DATETIME_OF_RUN, appId, appName,graph,groupby,messagetype, server_errors)
 
     mystring = u''
     try:
-        for series in serverrors['data']['slices']:
-            mystring += u'("{}",{}),'.format(series['label'], series['value'])
+        slices = server_errors['data']['slices']
+        if slices:
+            for series in slices:
+                mystring += u'("{}",{}),'.format(series['label'], series['value'])
 
-        print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(DATETIME_OF_RUN, messagetype, appName, appId, mystring)
+            print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(DATETIME_OF_RUN, messagetype, appName, appId, mystring)
+        else:
+            print u'{} MessageType="ApteligentError" Error: API did not return {} data for {}. Returned {}'.format(DATETIME_OF_RUN, messagetype, appId, server_errors['data'])
 
     except KeyError as e:
-        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), messagetype)
+        print u'{} MessageType="ApteligentError" Error: API returned malformed data in {} of {}. Data: {}'.format(DATETIME_OF_RUN, str(e), messagetype, server_errors)
         return (None, None)
 
 
