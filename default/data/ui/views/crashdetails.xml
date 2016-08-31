@@ -4,13 +4,13 @@
     <input type="dropdown" token="hash" searchWhenChanged="true">
       <label>hash</label>
       <populatingSearch fieldForValue="hash" fieldForLabel="reason">
-        <![CDATA[index=crittercism sourcetype=crittercism MessageType=CrashSummary earliest=-7d | dedup reason,name | top hash,reason]]>
+        <![CDATA[index=crittercism sourcetype=crittercism MessageType=CrashSummary earliest=-7d | dedup reason,name | top hash]]>
       </populatingSearch>
     </input>
     <input type="dropdown" token="app_version" searchWhenChanged="true">
       <label>Version</label>
-      <populatingSearch fieldForValue="app_version" fieldForLabel="app_version">
-        <![CDATA[index=crittercism sourcetype=crittercism hash=$hash$ MessageType=CrashDetailBreadcrumbs earliest=-7d| top app_version]]>
+      <populatingSearch fieldForValue="appVersion" fieldForLabel="appVersion">
+        <![CDATA[index=crittercism sourcetype=crittercism hash=$hash$ MessageType=CrashDetailBreadcrumbs earliest=-7d| top appVersion]]>
       </populatingSearch>
       <selectFirstChoice>true</selectFirstChoice>
     </input>
@@ -29,7 +29,7 @@
       <selectFirstChoice>true</selectFirstChoice>
     </input>
   </fieldset>
-  <row grouping="3,1">
+  <row grouping="2,1">
     <html>
       <!-- Use the web frameworks auto-discovery to create a new link switcher view -->
       <div id="switcher2" class="splunk-view" data-require="app/simple_xml_examples/components/linkswitcher/linkswitcher" data-options="{                     &quot;items&quot;: [&quot;link4&quot;,&quot;link5&quot;]                  }"/>
@@ -45,20 +45,9 @@
       <option name="drilldown">cell</option>
       <option name="count">10</option>
     </table>
-    <table id="link5">
-      <title>Symbolized Stack Trace</title>
-      <searchString>index=crittercism sourcetype=crittercism MessageType=CrashDetailSymbolizedStacktrace  hash=$hash$ | head 1 | rex "(?s)hash=(?&lt;hash2&gt;[a-z0-9]+)\s(?&lt;data&gt;.*)" | eval data2=replace(data,"(u\')|\'|\[|\]"," ") | eval data2=replace(data2,"(\\\t)"," ")| eval foo=len(data2) |eval data2=if(foo=4,"Not Available,0",data2)| makemv delim="," data2 | chart list(data2) as DETAIL</searchString>
-      <earliestTime>-7d@h</earliestTime>
-      <latestTime>now</latestTime>
-      <option name="wrap">true</option>
-      <option name="rowNumbers">false</option>
-      <option name="dataOverlayMode">none</option>
-      <option name="drilldown">cell</option>
-      <option name="count">10</option>
-    </table>
     <table>
       <title>Breadcrumbs</title>
-      <searchString>index=crittercism sourcetype=crittercism MessageType=CrashDetailBreadcrumbs hash=$hash$  os="$os$" app_version="$app_version$" device="$device$" | head 1  | `clean_ctrl(_raw)` | rex "(?s)session=crashed_session\s(?&lt;crashed&gt;.*?)\]\]"  | rex "(?s)session=current_session\s(?&lt;current&gt;.*?)\]\]"  | rex "(?s)session=previous_session\s(?&lt;previous&gt;.*?)\]\]"  |`clean_ctrl(crashed)` |`clean_json(crashed)` | eval crashed=replace(crashed,"],","") | eval crashed=replace(crashed,"\[","|") | eval crashed=split(crashed,"|") | eval crashed=mvappend("CRASHED SESSION",crashed) |`clean_ctrl(current)` |`clean_json(current)` | eval current =replace(current,"],","") | eval current =replace(current,"\[","|") | eval current =split(current,"|") | eval current = mvappend("CURRENT SESSION", current) |`clean_ctrl(previous)` |`clean_json(previous)` | eval previous =replace(previous,"],","") | eval previous =replace(previous,"\[","|") | eval previous =split(previous,"|") | eval previous = mvappend("PREVIOUS SESSION", previous)  | eval crashed=mvappend(crashed,"----",current)   | eval crashed=mvappend(crashed,"----",previous)   | eval crashed=mvappend(crashed,"----")|eval os="OS: ".os | eval crashed=mvappend(crashed,os)|eval device="DEVICE: ".device| eval crashed=mvappend(crashed,device) |eval app_version="APP VERSION: ".app_version| eval crashed=mvappend(crashed, app_version)|chart list(crashed) as DETAIL</searchString>
+      <searchString><![CDATA[index=crittercism sourcetype=crittercism MessageType=CrashDetailBreadcrumbs hash=$hash$ | head 1 | eval trace = replace(trace, "'payload': ", " ") | eval trace = split(trace, "|") | table os, appVersion, trace]]></searchString>
       <earliestTime>-7d@h</earliestTime>
       <latestTime>now</latestTime>
       <option name="wrap">true</option>
@@ -220,7 +209,7 @@
     </chart>
     <chart>
       <title>Top Breadcrumb Actions</title>
-      <searchString>* index=crittercism sourcetype=crittercism MessageType=CrashDetailBreadcrumbs hash=$hash$  os="$os$" app_version="$app_version$" device="$device$" | head 100   | eval _raw=replace(_raw,"\t|\n","")  | rex "(?s)session=crashed_session\s(?&lt;crashed&gt;.*?)\]\]"   | rex "(?s)session=current_session\s(?&lt;current&gt;.*?)\]\]"   | rex "(?s)session=previous_session\s(?&lt;previous&gt;.*?)\]\]"   | eval crashed=replace(crashed,"\t|\n","")  | eval crashed = replace(crashed,"(\[\[)|(\]\])|(u\')|\'","")  | eval crashed=replace(crashed,"],","")  | eval crashed=replace(crashed,"\[","|")  | eval crashed=split(crashed,"|")  |mvexpand crashed|  rex field=crashed "(?&lt;action&gt;.*?),(?&lt;adata&gt;.*)" | top action</searchString>
+      <searchString>* index=crittercism sourcetype=crittercism MessageType=CrashDetailBreadcrumbs hash=$hash$  os="$os$" appVersion="$app_version$" device="$device$" | head 100   | eval _raw=replace(_raw,"\t|\n","")  | rex "(?s)session=crashed_session\s(?&lt;crashed&gt;.*?)\]\]"   | rex "(?s)session=current_session\s(?&lt;current&gt;.*?)\]\]"   | rex "(?s)session=previous_session\s(?&lt;previous&gt;.*?)\]\]"   | eval crashed=replace(crashed,"\t|\n","")  | eval crashed = replace(crashed,"(\[\[)|(\]\])|(u\')|\'","")  | eval crashed=replace(crashed,"],","")  | eval crashed=replace(crashed,"\[","|")  | eval crashed=split(crashed,"|")  |mvexpand crashed|  rex field=crashed "(?&lt;action&gt;.*?),(?&lt;adata&gt;.*)" | top action</searchString>
       <earliest>-30d@d</earliest>
       <latest>now</latest>
       <option name="wrap">true</option>
@@ -251,7 +240,7 @@
     </chart>
     <chart>
       <title>Top Breadcrumb Post Items</title>
-      <searchString>* index=crittercism sourcetype=crittercism MessageType=CrashDetailBreadcrumbs hash=$hash$  os="$os$" app_version="$app_version$" device="$device$"  | head 100   | eval _raw=replace(_raw,"\t|\n","")  | rex "(?s)session=crashed_session\s(?&lt;crashed&gt;.*?)\]\]"   | rex "(?s)session=current_session\s(?&lt;current&gt;.*?)\]\]"   | rex "(?s)session=previous_session\s(?&lt;previous&gt;.*?)\]\]"   | eval crashed=replace(crashed,"\t|\n","")  | eval crashed = replace(crashed,"(\[\[)|(\]\])|(u\')|\'","")  | eval crashed=replace(crashed,"],","")  | eval crashed=replace(crashed,"\[","|")  | eval crashed=split(crashed,"|")  |mvexpand crashed|  rex field=crashed "(?&lt;action&gt;.*?),(?&lt;adata&gt;.*)" | search action="POST" | rex field=adata "(?&lt;postitem&gt;.*?),(?&lt;postdata&gt;.*)" |top postitem</searchString>
+      <searchString>* index=crittercism sourcetype=crittercism MessageType=CrashDetailBreadcrumbs hash=$hash$  os="$os$" appVersion="$app_version$" device="$device$"  | head 100   | eval _raw=replace(_raw,"\t|\n","")  | rex "(?s)session=crashed_session\s(?&lt;crashed&gt;.*?)\]\]"   | rex "(?s)session=current_session\s(?&lt;current&gt;.*?)\]\]"   | rex "(?s)session=previous_session\s(?&lt;previous&gt;.*?)\]\]"   | eval crashed=replace(crashed,"\t|\n","")  | eval crashed = replace(crashed,"(\[\[)|(\]\])|(u\')|\'","")  | eval crashed=replace(crashed,"],","")  | eval crashed=replace(crashed,"\[","|")  | eval crashed=split(crashed,"|")  |mvexpand crashed|  rex field=crashed "(?&lt;action&gt;.*?),(?&lt;adata&gt;.*)" | search action="POST" | rex field=adata "(?&lt;postitem&gt;.*?),(?&lt;postdata&gt;.*)" |top postitem</searchString>
       <earliest>-30d@d</earliest>
       <latest>now</latest>
       <option name="wrap">true</option>
