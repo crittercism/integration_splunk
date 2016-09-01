@@ -195,13 +195,15 @@ def getBreadcrumbs(crumbs, hash, appName) :
         version = crumb.get('appVersion')
         os = crumb.get('os')
         device = crumb.get('device')
-        printstring = u'{} MessageType="CrashDetailBreadcrumbs" hash={} \n'.format(DATETIME_OF_RUN, hash)
         parsed = json.dumps(crumb['parsedBreadcrumbs'])
         parsed = '}|{'.join(parsed.split('}, {'))
         parsed = parsed.replace('{', '')
         parsed = parsed.replace('}', '')
         parsed = parsed.replace('"', "'")
-        printstring += u'trace="{}" os="{}" appVersion="{}" device="{}"'.format(parsed, os, version, device)
+        printstring = u'{} MessageType="CrashDetailBreadcrumbs" ' \
+                      u'hash={} \ntrace="{}" ' \
+                      u'os="{}" appVersion="{}" device="{}"'.format(
+                      DATETIME_OF_RUN, hash, parsed, os, version, device)
         print printstring
 
 
