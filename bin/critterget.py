@@ -191,16 +191,19 @@ def getCrashSummary(appId, appName):
 
 
 def getBreadcrumbs(crumbs, hash, appName) :
-#breadcrumbs come in as a list.  need to ennumerate
-    for i,key in enumerate(crumbs):
-        #print "BREADCRUMB i %s key %s" % (i, key)
-        printstring = u'{} MessageType="CrashDetailBreadcrumbs" hash={} '.format(DATETIME_OF_RUN, hash)
-        for bkey in key.keys():
-
-            if bkey in ("current_session", "previous_session", "crashed_session") :
-               printstring += u' \nsession={} '.format(bkey) + pretty(key[bkey]) + u'\n'
-            else:
-                printstring += u' {}="{}" '.format(bkey, key[bkey])
+    for crumb in crumbs:
+        version = crumb.get('appVersion')
+        os = crumb.get('os')
+        device = crumb.get('device')
+        parsed = json.dumps(crumb['parsedBreadcrumbs'])
+        parsed = '}|{'.join(parsed.split('}, {'))
+        parsed = parsed.replace('{', '')
+        parsed = parsed.replace('}', '')
+        parsed = parsed.replace('"', "'")
+        printstring = u'{} MessageType="CrashDetailBreadcrumbs" ' \
+                      u'hash={} \ntrace="{}" ' \
+                      u'os="{}" appVersion="{}" device="{}"'.format(
+                      DATETIME_OF_RUN, hash, parsed, os, version, device)
         print printstring
 
 
@@ -335,7 +338,7 @@ def getCrashDetail(hash, appName):
     crashdetail = apicall("crash/%s" % hash, "diagnostics=True")
     printstring = u'{} MessageType="CrashDetail"  appName="{}" '.format(DATETIME_OF_RUN, appName)
     for dkey in crashdetail.keys():
-        if dkey == "breadcrumbs" :
+        if dkey == "breadcrumbTraces" :
             getBreadcrumbs(crashdetail[dkey], hash, appName)
         elif dkey == "stacktrace" :
             getStacktrace(crashdetail[dkey], hash)
