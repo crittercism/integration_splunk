@@ -236,3 +236,11 @@ Useful Shortcuts
 
 Add an appName to an event that only has a 'hash'
     (search here) join[ search index=crittercism sourcetype=crittercism MessageType=CrashSummary |fields appName]
+
+
+Running Tests
+-------------
+
+This module includes tests designed to be run with nosetests and coverage.
+With those packages installed, run:
+nosetests bin/test.py --with-coverage

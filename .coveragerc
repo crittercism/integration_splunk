@@ -1,0 +1,6 @@
+[run]
+omit = 
+	*requests*,*/.local/*,*Cookie*,*ctypes*,*lib*,*splunk_mock*
+
+[report]
+skip_covered = true
