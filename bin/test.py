@@ -110,11 +110,39 @@ class TestSplunk(unittest.TestCase):
         self.assertEqual(crashes, {'bogusHash': 'bogusName'})
 
     def test_getBreadcrumbs(self):
-        crumbs = [{'aCrumb': 'bogusCrumb'}]
+        crumbs = crumbs = [{u'appVersion': u'bogusVersion',
+                            u'device': u'bogusDevice',
+                            u'deviceId': u'bogusID',
+                            u'os': u'bogusOS',
+                            u'parsedBreadcrumbs': [
+                                {
+                                    u'deviceOccurredTs': u'bogusTime',
+                                    u'payload':
+                                        {u'priority': u'normal',
+                                         u'text': u'session_start'},
+                                    u'type': u'bogusType',
+                                    u'typeCode': 1
+                                },
+                            {u'deviceOccurredTs': u'bogusTime+1',
+                            u'payload': {u'priority': u'normal',
+                             u'text': u'Breadcrumb: RuntimeException '
+                                      u'Symbolication Test Handled Exception'},
+                            u'type': u'bogusType',
+                            u'typeCode': 1}]}]
 
-        output = self._catch_stdout(critterget.getBreadcrumbs, crumbs, 'fakeHash', 'appName')
+        output = self._catch_stdout(critterget.getBreadcrumbs,
+                                    crumbs,
+                                    'fakeHash',
+                                    'appName')
 
-        self.assertIn('MessageType="CrashDetailBreadcrumbs" hash=fakeHash  aCrumb="bogusCrumb"', output)
+        self.assertIn('trace="[\'deviceOccurredTs\': \'bogusTime\', \'type\':'
+                      ' \'bogusType\', \'payload\': \'priority\': \'normal\', '
+                      '\'text\': \'session_start\', \'typeCode\': 1|'
+                      '\'deviceOccurredTs\': \'bogusTime+1\', \'type\': '
+                      '\'bogusType\', \'payload\': \'priority\': \'normal\', '
+                      '\'text\': \'Breadcrumb: RuntimeException Symbolication '
+                      'Test Handled Exception\', \'typeCode\': 1]" os="bogusOS"'
+                      ' appVersion="bogusVersion" device="bogusDevice"', output)
 
     def test_getStacktrace(self):
         trace = [{"bogusLine": 0, "bogusTrace": "fakelib"}]
@@ -339,4 +367,4 @@ class TestSplunk(unittest.TestCase):
 
         output = self._catch_stdout(critterget.getUserflowsGroups, 'appId', 'appName', 'bogusGroup')
 
-        self.assertIn('MessageType=UserflowGroup appName="appName" appId="appId" Userflow="bogusGroup" DATA (Metric="bogusTransaction",count=bogusCount,rate=bogusRate%,moneyValue=$bogusMoney,meanDuration=bogusMean)', output)
+        self.assertIn('MessageType=UserflowGroup appId="appId" appName="appName" Userflow="bogusGroup" DATA (Metric="bogusTransaction",count=bogusCount,rate=bogusRate%,moneyValue=$bogusMoney,meanDuration=bogusMean)', output)

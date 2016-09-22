@@ -99,7 +99,7 @@ def apicall(uri, attribs=None):
     http_code, data = apicall_with_response_code(uri, attribs)
     return data
 
-def apipost_with_response_code(uri, postdata='', keyget=None):
+def apipost_with_response_code(uri, postdata=''):
     # perform an API POST
     if (debug): print u'access token is {}'.format(access_token)
     url = BASEURL + uri
@@ -110,14 +110,11 @@ def apipost_with_response_code(uri, postdata='', keyget=None):
 
     pdata = json.dumps(postdata)
 
-    if keyget:
-        headers = None
-    else:
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': "Bearer {}".format(access_token),
-            'CR-source': 'integration_splunk'
-        }
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': "Bearer {}".format(access_token),
+        'CR-source': 'integration_splunk'
+    }
 
     try:
         response = requests.post(url, headers=headers, data=pdata)
