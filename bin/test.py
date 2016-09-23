@@ -109,6 +109,14 @@ class TestSplunk(unittest.TestCase):
         crashes = critterget.getCrashSummary('bogusappID', 'bogusName')
         self.assertEqual(crashes, {'bogusHash': 'bogusName'})
 
+    def test_getCrashSummary_timeout(self):
+        self.mock_get.side_effect = [self._response_with_json_data(404, [])]
+        output = self._catch_stdout(critterget.getCrashSummary,
+                                    'bogusappID',
+                                    'bogusName')
+        self.assertIn('MessageType="CrashSummary" appId={} appName="{}" Could not get crash summaries for {}. Code: {} after retry {}', output)
+
+
     def test_getBreadcrumbs(self):
         crumbs = crumbs = [{u'appVersion': u'bogusVersion',
                             u'device': u'bogusDevice',
