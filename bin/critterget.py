@@ -99,7 +99,7 @@ def apicall(uri, attribs=None):
     http_code, data = apicall_with_response_code(uri, attribs)
     return data
 
-def apipost_with_response_code(uri, postdata='', keyget=None):
+def apipost_with_response_code(uri, postdata=''):
     # perform an API POST
     if (debug): print u'access token is {}'.format(access_token)
     url = BASEURL + uri
@@ -110,14 +110,11 @@ def apipost_with_response_code(uri, postdata='', keyget=None):
 
     pdata = json.dumps(postdata)
 
-    if keyget:
-        headers = None
-    else:
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': "Bearer {}".format(access_token),
-            'CR-source': 'integration_splunk'
-        }
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': "Bearer {}".format(access_token),
+        'CR-source': 'integration_splunk'
+    }
 
     try:
         response = requests.post(url, headers=headers, data=pdata)
@@ -176,7 +173,13 @@ def getCrashSummary(appId, appName):
 
     CrashDict = {}
     if http_code != 200:
-        print u'{} MessageType="CrashSummary" appId={} appName="{}" Could not get crash summaries for {}. Code: {} after retry {}'.format(DATETIME_OF_RUN, appId, appName, mystime, http_code, retry)
+        print u'{} MessageType="CrashSummary" appId={} appName="{}" ' \
+              u'Could not get crash summaries for {}. ' \
+              u'Code: {} after retry {}'.format(DATETIME_OF_RUN,
+                                                appId, appName,
+                                                mystime,
+                                                http_code,
+                                                retry)
     elif crashdata:
         for x, y in enumerate(crashdata):
             printstring = u'{} MessageType="CrashSummary" appId={} appName="{}" '.format(DATETIME_OF_RUN, appId, appName)
@@ -363,24 +366,22 @@ def getErrorSummary(appId,appName) :
 # errorSummary is returned as a post...
 
 # Get the current apploads
-#    params = {"params":{"appId":appId,"graph":"appLoads","duration":43200}, "filter":{"carrier":""}}
     params = {"params":{"appId":appId,"graph":"appLoads","duration":43200}}
     appload_sum=apipost("errorMonitoring/graph", params)
-#    print(pretty(appload_sum))
+
     dlist = appload_sum['data']['series'][0]['points']
     print u'{} MessageType=HourlyAppLoads AppLoads={} appId="{}" appName="{}"'.format(DATETIME_OF_RUN, dlist[len(dlist) - 1], appId, appName)
-    #print jtest['data']
 
 
 def getCrashesByOS(appId,appName):
     """Get the number of crashes for a given app sorted by OS."""
 
-    params={"params":{
-	    "graph": "crashes",
-		"duration": 1440,
-		"groupBy": "os",
-        "appId": appId
-        }}
+    params={"params": {
+            "graph": "crashes",
+            "duration": 1440,
+            "groupBy": "os",
+            "appId": appId
+            }}
 
     crashesos = apipost("errorMonitoring/pie",params)
     # is user does not have pro access for a given application, this fails.

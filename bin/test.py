@@ -109,12 +109,52 @@ class TestSplunk(unittest.TestCase):
         crashes = critterget.getCrashSummary('bogusappID', 'bogusName')
         self.assertEqual(crashes, {'bogusHash': 'bogusName'})
 
+    def test_getCrashSummary_timeout(self):
+        self.mock_get.side_effect = [self._response_with_json_data(404, [])]
+        critterget.MAX_RETRY = 0
+        output = self._catch_stdout(critterget.getCrashSummary,
+                                    'bogusappID',
+                                    'bogusName')
+
+        critterget.MAX_RETRY = 10
+        self.assertIn('MessageType="CrashSummary" appId=bogusappID appName="bogusName" Could not get crash summaries for', output)
+        self.assertIn('Code: 404 after retry 1', output)
+
+
     def test_getBreadcrumbs(self):
-        crumbs = [{'aCrumb': 'bogusCrumb'}]
+        crumbs = [{u'appVersion': u'bogusVersion',
+                            u'device': u'bogusDevice',
+                            u'deviceId': u'bogusID',
+                            u'os': u'bogusOS',
+                            u'parsedBreadcrumbs': [
+                                {
+                                    u'deviceOccurredTs': u'bogusTime',
+                                    u'payload':
+                                        {u'priority': u'normal',
+                                         u'text': u'session_start'},
+                                    u'type': u'bogusType',
+                                    u'typeCode': 1
+                                },
+                            {u'deviceOccurredTs': u'bogusTime+1',
+                            u'payload': {u'priority': u'normal',
+                             u'text': u'Breadcrumb: RuntimeException '
+                                      u'Symbolication Test Handled Exception'},
+                            u'type': u'bogusType',
+                            u'typeCode': 1}]}]
 
-        output = self._catch_stdout(critterget.getBreadcrumbs, crumbs, 'fakeHash', 'appName')
+        output = self._catch_stdout(critterget.getBreadcrumbs,
+                                    crumbs,
+                                    'fakeHash',
+                                    'appName')
 
-        self.assertIn('MessageType="CrashDetailBreadcrumbs" hash=fakeHash  aCrumb="bogusCrumb"', output)
+        self.assertIn('trace="[\'deviceOccurredTs\': \'bogusTime\', \'type\':'
+                      ' \'bogusType\', \'payload\': \'priority\': \'normal\', '
+                      '\'text\': \'session_start\', \'typeCode\': 1|'
+                      '\'deviceOccurredTs\': \'bogusTime+1\', \'type\': '
+                      '\'bogusType\', \'payload\': \'priority\': \'normal\', '
+                      '\'text\': \'Breadcrumb: RuntimeException Symbolication '
+                      'Test Handled Exception\', \'typeCode\': 1]" os="bogusOS"'
+                      ' appVersion="bogusVersion" device="bogusDevice"', output)
 
     def test_getStacktrace(self):
         trace = [{"bogusLine": 0, "bogusTrace": "fakelib"}]
@@ -211,6 +251,20 @@ class TestSplunk(unittest.TestCase):
         self.assertIn('reqstring is https://developers.crittercism.com/v1.0/crash/fakeHash?diagnostics=True', output)
         self.assertIn('MessageType="CrashDetail"  appName="fakeApp" bogusStat="bogusValue"', output)
 
+    def test_getErrorSummary(self):
+        self.mock_post.side_effect = [self._response_with_json_data(200, {'data':{'series':[{'points': ['bogusPoint']}]}})]
+
+        output = self._catch_stdout(critterget.getErrorSummary, 'fakeApp', 'appName')
+
+        self.assertIn('MessageType=HourlyAppLoads AppLoads=bogusPoint appId="fakeApp" appName="appName"', output)
+
+    def test_getCrashesByOS(self):
+        self.mock_post.side_effect = [self._response_with_json_data(200, {'data': {'slices': [{'label': 'bogusLabel', 'value': 'bogusValue'}]}})]
+
+        output = self._catch_stdout(critterget.getCrashesByOS, 'appId', 'appName')
+
+        self.assertIn('MessageType=DailyCrashesByOS appName="appName" appId="appId" DATA ("bogusLabel",bogusValue)', output)
+
     def test_getDailyAppLoads(self):
         self.mock_post.side_effect = [self._response_with_json_data(200, {'data':{'series':[{'points': ['bogusPoint']}]}})]
 
@@ -243,9 +297,23 @@ class TestSplunk(unittest.TestCase):
     def test_getGenericErrorMon(self):
         self.mock_post.side_effect = [self._response_with_json_data(200, {'data': {'slices': [{'label': 'bogusLabel', 'value': 'bogusValue'}]}})]
 
-        output = self._catch_stdout(critterget.getGenericPerfMgmt, 'appId', 'appName', 'bogusGraph', 'bogusGroup', 'bogusMessageType')
+        output = self._catch_stdout(critterget.getGenericErrorMon, 'appId', 'appName', 'bogusGraph', 'bogusGroup', 'bogusMessageType')
 
         self.assertIn('MessageType=bogusMessageType appName="appName" appId="appId"  DATA ("bogusLabel",bogusValue)', output)
+
+    def test_getGenericErrorMon_no_data(self):
+        self.mock_post.side_effect = [self._response_with_json_data(200, {'data': {'slices': []}})]
+
+        output = self._catch_stdout(critterget.getGenericErrorMon, 'appId', 'appName', 'bogusGraph', 'bogusGroup', 'bogusMessageType')
+
+        self.assertIn('MessageType="ApteligentError" Error: API did not return bogusMessageType data for appId. Returned {\'slices\': []}', output)
+
+    def test_getGenericErrorMon_bad_response(self):
+        self.mock_post.side_effect = [self._response_with_json_data(200, {'error': 'something happened'})]
+
+        output = self._catch_stdout(critterget.getGenericErrorMon, 'appId', 'appName', 'bogusGraph', 'bogusGroup', 'bogusMessageType')
+
+        self.assertIn('MessageType="ApteligentError" Error: API returned malformed data in \'data\' of bogusMessageType. Data: {\'error\': \'something happened\'}', output)
 
     def test_getAPMEndpoints(self):
         self.mock_post.side_effect = [self._response_with_json_data(200, {'data': {'endpoints': [{'d': 'bogusD', 'u': 'bogusU', 's': 'bogusS'}]}})]
@@ -339,4 +407,13 @@ class TestSplunk(unittest.TestCase):
 
         output = self._catch_stdout(critterget.getUserflowsGroups, 'appId', 'appName', 'bogusGroup')
 
-        self.assertIn('MessageType=UserflowGroup appName="appName" appId="appId" Userflow="bogusGroup" DATA (Metric="bogusTransaction",count=bogusCount,rate=bogusRate%,moneyValue=$bogusMoney,meanDuration=bogusMean)', output)
+        self.assertIn('MessageType=UserflowGroup appId="appId" appName="appName" Userflow="bogusGroup" DATA (Metric="bogusTransaction",count=bogusCount,rate=bogusRate%,moneyValue=$bogusMoney,meanDuration=bogusMean)', output)
+
+    @mock.patch.object(critterget, 'getUserflowsGroups')
+    def test_getUserflowsDetails(self, mock):
+        self.mock_get.side_effect = [self._response_with_json_data(200, {'groups': [{'name': 'bogusName'}]})]
+
+        critterget.getUserflowsDetails('appId', 'appName')
+
+        self.assertTrue(mock.called)
+
