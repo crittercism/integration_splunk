@@ -676,10 +676,11 @@ def getUserflowsRanked(app_id, app_name, category, message_type):
 
     response = apicall(uri)
     userflow_data = response[DATA]
+    print userflow_data
 
     try:
         messages = u','.join([u'("{}",{},{})'.format(group[NAME], group[FAILURE_RATE], group[UNIT][TYPE]) for group in
-                              userflow_data[GROUPS]])
+                              userflow_data])
         print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(
             DATETIME_OF_RUN, message_type, app_name, app_id, messages)
     except KeyError as e:
@@ -813,7 +814,9 @@ def getTrends(appId, appName):
     :return: None
     """
     print u'MessageType="ApteligentDebug" getTrends for {}'.format(appId)
-    trends_data = apicall(u'{}/trends'.format(appId))
+
+    trends = apicall(u'trends/{}'.format(appId))
+    trends_data = trends[DATA]
 
     getTopValues(appId, appName, trends_data)
     getTimeseriesTrends(appId, appName, trends_data)
