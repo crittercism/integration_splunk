@@ -687,3 +687,34 @@ class TestSplunk(unittest.TestCase):
 
         self.assertTrue(mock.called)
 
+    @mock.patch.object(critterget, 'getAppSummary')
+    @mock.patch.object(critterget, 'getCrashSummary')
+    def test_main(self, app_mock, crash_mock):
+        crash_mock.return_value = {'bogusHash': {'name': 'bogusApp'}}
+        app_mock.return_value = {'data':
+                 {'bogusappID':
+                      {'appName': 'bogusApp',
+                       'appType': 'bogusType',
+                       'crashPercent': 'bogusCrash',
+                       'dau': 'bogusDAU',
+                       'latency': 'bogusLatency',
+                       'latestAppStoreReleaseDate': 'bogusDate',
+                       'latestVersionString': 'bogusVersion',
+                       'linkToAppStore': 'bogusLink',
+                       'iconURL': 'bogusURL',
+                       'mau': 'bogusMAU',
+                       'rating': 'bogusRating',
+                       'role': 'bogusRole',
+                       'appVersions': ['bogus.version']}
+                  }
+                                 }
+        old_in = sys.stdin
+        sys.stdin = mock.MagicMock
+        readline = mock.MagicMock(return_value="bogusKey")
+        sys.stdin.readline = readline
+        my_main = critterget.main()
+        sys.stdin = old_in
+
+        self.assertTrue(crash_mock.called)
+        self.assertTrue(app_mock.called)
+
