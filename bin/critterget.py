@@ -4,6 +4,7 @@ import json
 import sys
 import requests
 import time
+import argparse
 
 try:
     import splunk.entity as entity
@@ -12,8 +13,7 @@ except ImportError:
 
 # The splunk name for the app. Needed for the auth storage
 myapp = 'crittercism_integration'
-access_token = ''
-debug = True
+
 DUMP_DIAGS = 1
 interval = 10  # minutes between runs of this script as performed by Splunk
 MAX_RETRY = 10
@@ -95,8 +95,6 @@ BASEURL = "https://developers.crittercism.com/v2/"
 
 def apicall_with_response_code(uri, attribs=None):
     # perform an API call
-    if debug:
-        print u'access token is {}'.format(access_token)
     url = BASEURL + uri
 
     if debug:
@@ -205,9 +203,6 @@ def getCrashSummary(appId, appName):
     # given an appID and an appName, produce a Splunk KV summary of the
     # crashes for a given timeframe
 
-    if debug:
-        print u'{} MessageType="ApteligentDebug" running getCrashSummary'
-
     mystime = scopetime()
     crashdata = None
 
@@ -234,8 +229,6 @@ def getCrashSummary(appId, appName):
                                                 http_code,
                                                 retry)
     elif crashdata:
-        if debug:
-            print u'{} MessageType="ApteligentDebug" getCrashData got data'
         for i, y in enumerate(crashdata[DATA]):
             printstring = u'{} MessageType="CrashSummary" ' \
                           u'appId={} appName="{}" '.format(
@@ -276,8 +269,6 @@ def getBreadcrumbs(crumbs, crash_hash, appName):
 
 
 def getStacktrace(stacktrace, crash_hash):
-    if debug:
-        print u'MessageType="ApteligentDebug" running getStacktrace'
     print u'{} MessageType="CrashDetailStacktrace"  hash={} '.format(
         DATETIME_OF_RUN,
         crash_hash
@@ -285,8 +276,6 @@ def getStacktrace(stacktrace, crash_hash):
 
 
 def diag_geo(data, crash_hash):
-    if debug:
-        print "into diag_geo"
 
     for country in data.keys():
         for city in data[country].keys():
@@ -363,8 +352,6 @@ def diag_cont(data, crash_hash):
 #############
 def getDiagnostics(diags, crash_hash):
 # Dump and prettyprint the diags -- might want to expand on this...
-    if debug:
-        print u'MessageType="ApteligentDebug" running getDiagnostics {}'.format(diags)
     if not DUMP_DIAGS:
         print u'{} MessageType="CrashDetailDiagnostics" ' \
               u'DISABLED PER CONFIG FILE '.format(DATETIME_OF_RUN, crash_hash)
@@ -422,23 +409,17 @@ def getSymStacktrace(stacktrace, crash_hash):
 def getCrashDetail(crash_hash, app_id, app_name):
 # given a crashhash, get all of the detail about that crash
 
-
-    if debug:
-        print u'{} MessageType="ApteligentDebug" running getCrashDetail'
-
     crashes = apicall(
         "crash/{}/{}".format(app_id, crash_hash),
         {'diagnostics': True}
     )
-    if debug:
-        print u'{} MessageType="ApteligentDebug" getCrashDetail is {}'.format(DATETIME_OF_RUN, crashes)
+
     crash_detail = crashes[DATA]
     print_string = u'{} MessageType="CrashDetail"  appName="{}" '.format(
         DATETIME_OF_RUN,
         app_name
     )
     for dkey in crash_detail.keys():
-        print u'MessageType="ApteligentDebug" getting detail key {}'.format(dkey)
         if dkey == "breadcrumbTraces":
             getBreadcrumbs(crash_detail[dkey], crash_hash, app_name)
         elif dkey == "stacktrace":
@@ -455,7 +436,6 @@ def getCrashDetail(crash_hash, app_id, app_name):
             getSymStacktrace(crash_detail[dkey], crash_hash)
         else:
             print_string += u'{}="{}" '.format(dkey, crash_detail[dkey])
-    print u'{} MessageType="ApteligentDebug" getCrashDetail is DONE'
     print print_string
 
 
@@ -545,7 +525,7 @@ def getAPMEndpoints(app_id, app_name, sort, message_type):
                 GEOMODE: True
             }
 
-    response = apicall("apm/endpoints", params)
+    response = apicall("performanceManagement/endpoints", params)
 
     try:
         messages = u','.join([u'("{}{}",{})'.format(ep[D], ep[U], ep[S]) for ep in
@@ -570,7 +550,7 @@ def getAPMServices(app_id, app_name, sort, message_type):
             GEOMODE: True
         }
 
-    response = apicall("apm/services", params)
+    response = apicall("performanceManagement/services", params)
 
     try:
         messages = u','.join([u'("{}",{})'.format(service['name'], service['sort']) for service in
@@ -594,7 +574,7 @@ def getAPMGeo(app_id, app_name, graph, message_type):
             DURATION: 240,
         }
 
-    response = apicall("apm/geo", params)
+    response = apicall("performanceManagement/geo", params)
 
     try:
         messages = u','.join([u'("{}",{})'.format(location, data) for location, data in
@@ -651,10 +631,11 @@ def getUserflowsSummary(app_id, app_name, message_type):
 
     response = apicall(uri)
     userflow_data = response[DATA]
+    print "USERFLOWS SUMMARY DATA", userflow_data
 
     try:
         messages = u','.join([u'("{}",{},{})'.format(metric, data[VALUE], data[CHANGE_PCT]) for metric, data in
-                              userflow_data[SERIES].iteritems()])
+                              userflow_data.iteritems()])
         print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(
             DATETIME_OF_RUN, message_type, app_name, app_id, messages)
     except KeyError as e:
@@ -676,7 +657,6 @@ def getUserflowsRanked(app_id, app_name, category, message_type):
 
     response = apicall(uri)
     userflow_data = response[DATA]
-    print userflow_data
 
     try:
         messages = u','.join([u'("{}",{},{})'.format(group[NAME], group[FAILURE_RATE], group[UNIT][TYPE]) for group in
@@ -706,7 +686,7 @@ def getUserflowsDetails(app_id, app_name):
 
     getUserflowsChangeDetails(app_id, app_name, userflow_data)
 
-    for group in userflow_data[GROUPS]:
+    for group in userflow_data:
         getUserflowsGroups(app_id, app_name, group[NAME])
 
 
@@ -719,7 +699,7 @@ def getUserflowsChangeDetails(app_id, app_name, userflow_dict):
     """
 
     try:
-        for group in userflow_dict[GROUPS]:
+        for group in userflow_dict:
             messages = u''
             messages += (u'(Name="{}",volume={},foregroundTime={}s,'
                          u'failed={},failRate={}%,successful={},'
@@ -934,10 +914,26 @@ def getCredentials(sessionKey):
 
     return auth
 
-###########
-#
 
-def main():
+def parse_arguments_for_debugging():
+    """
+    Capture command line arguments in order to run the script
+    outside of Splunk.
+    :return:
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--debug', action='store_true')
+    parser.add_argument('--token')
+    args = parser.parse_args()
+    if args.debug:
+        return args.token, args.debug
+    else:
+        return None, None
+
+###########
+
+
+def main(access_token=None, debug=None):
     #read session key sent from splunkd
     if debug:
         sessionKey = "bogus_session_key_for_debugging"
@@ -958,10 +954,7 @@ def main():
         exit(2)
 
     # now get crittercism oauth token
-    global access_token
-    if debug:
-        access_token = sys.argv[1]
-    else:
+    if not access_token:
         access_token = getCredentials(sessionKey)
 
     if debug:
@@ -972,19 +965,9 @@ def main():
 
 # Get application summary information.
     apps = getAppSummary()
-    if debug:
-        print u'{} MessageType="ApteligentDebug" Apps are {}'.format(
-            DATETIME_OF_RUN,
-            apps.keys()
-        )
     for key in apps.keys():
         crashes = getCrashSummary(key, apps[key]['name'])
         if crashes:
-            if debug:
-                print u'{} MessageType="ApteligentDebug" crashes are {}'.format(
-                    DATETIME_OF_RUN,
-                    crashes
-                )
             for ckey in crashes.keys():
                 getCrashDetail(ckey, key, apps[key]['name'])
 
@@ -1030,4 +1013,5 @@ def main():
         getUserflowsDetails(key, apps[key]['name'])
 
 if __name__=='__main__':
-    main()
+    access_token, debug = parse_arguments_for_debugging()
+    main(access_token, debug)

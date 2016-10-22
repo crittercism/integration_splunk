@@ -3,6 +3,7 @@ import sys
 from StringIO import StringIO
 import mock
 import datetime
+import argparse
 
 import critterget
 
@@ -579,10 +580,8 @@ class TestSplunk(unittest.TestCase):
         self.mock_get.side_effect = [self._response_with_json_data(
             200,
             {'data':
-                 {'series':
-                      {'bogusMetric':
-                           {'value': 'bogusValue', 'changePct': 'bogusPct'}}
-                  }
+                 {'bogusMetric':
+                       {'value': 'bogusValue', 'changePct': 'bogusPct'}}
              }
         )]
 
@@ -600,12 +599,9 @@ class TestSplunk(unittest.TestCase):
     def test_getUserflowsRanked(self):
         self.mock_get.side_effect = [self._response_with_json_data(
             200,
-            {'data':
-                 {'groups':
-                      [{'name': 'bogusName',
+            {'data':[{'name': 'bogusName',
                         'failureRate': 'bogusRate',
                         'unit':{'type':'bogusType'}}]
-                  }
              }
         )]
 
@@ -622,7 +618,7 @@ class TestSplunk(unittest.TestCase):
                       output)
 
     def test_getUserflowsChangeDetails(self):
-        userflows_data = {'groups': [
+        userflows_data = [
             {'name': "Bogus",
              'series': {
                  'startedTransactions': {'value':'bogusVol'},
@@ -632,7 +628,7 @@ class TestSplunk(unittest.TestCase):
                  'succeededTransactions': {'value':'bogusSuccess'},
                  'failedMoneyValue': {'value':'bogusRev'}
              }}
-        ]}
+        ]
 
         output = self._catch_stdout(
             critterget.getUserflowsChangeDetails,
@@ -680,7 +676,7 @@ class TestSplunk(unittest.TestCase):
     def test_getUserflowsDetails(self, mock):
         self.mock_get.side_effect = [self._response_with_json_data(
             200,
-            {'data': {'groups': [{'name': 'bogusName'}]}}
+            {'data': [{'name': 'bogusName'}]}
         )]
 
         critterget.getUserflowsDetails('appId', 'appName')
@@ -718,3 +714,8 @@ class TestSplunk(unittest.TestCase):
         self.assertTrue(crash_mock.called)
         self.assertTrue(app_mock.called)
 
+    @mock.patch.object(argparse, 'ArgumentParser')
+    def test_parse_arguments_for_testing(self, mock_parser):
+        critterget.parse_arguments_for_debugging()
+
+        self.assertTrue(mock_parser.called)
