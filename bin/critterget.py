@@ -971,8 +971,8 @@ def main(access_token=None, debug=None):
         )
 
     if len(sessionKey) == 0:
-        print u'{} MessageType="ApteligentError" ' \
-              u'Did not receive a session key from splunk. '.format(
+        print (u'{} MessageType="ApteligentError" '
+              u'Did not receive a session key from splunk. ').format(
                DATETIME_OF_RUN
                )
         exit(2)
