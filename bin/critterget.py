@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import datetime
 import json
+import os
 import sys
 import requests
 import time
@@ -17,50 +18,74 @@ DUMP_DIAGS = 1
 interval = 10  # minutes between runs of this script as performed by Splunk
 MAX_RETRY = 10
 
+debug = os.environ.get('CR_SPLUNK_DEBUG')
+
 TODAY = datetime.datetime.now() # calculate a common time for all summary data
 DATETIME_OF_RUN = TODAY.strftime('%Y-%m-%d %H:%M:%S %Z')
 
 # a quick command to format quasi json output nicely
 pretty=(lambda a:lambda v,t="\t",n="\n",i=0:a(a,v,t,n,i))(lambda f,v,t,n,i:"{%s%s%s}"%(",".join(["%s%s%s: %s"%(n,t*(i+1),repr(k),f(f,v[k],t,n,i+1))for k in v]),n,(t*i)) if type(v)in[dict] else (type(v)in[list]and"[%s%s%s]"or"(%s%s%s)")%(",".join(["%s%s%s"%(n,t*(i+1),f(f,k,t,n,i+1))for k in v]),n,(t*i)) if type(v)in[list,tuple] else repr(v))
 
-PARAMS = 'params'
 APPID = 'appId'
-SORT = 'sort'
-LATENCY = 'latency'
-VOLUME = 'volume'
-ERRORS = 'errors'
-DATA = 'data'
-LIMIT = 'limit'
-GRAPH = 'graph'
-DURATION = 'duration'
-GEOMODE = 'geoMode'
-GROUPBY = 'groupBy'
-FILTERS = 'filters'
-COUNTRY = 'country'
-US = 'US'
-U = 'u'
-S = 's'
-D = 'd'
-ENDPOINTS = 'endpoints'
-FAILED = 'failed'
+APPLOADS = 'appLoads'
+APPNAME = 'appName'
+APPS = 'apps'
+APPVERSION = 'appVersion'
+APPVERSIONS = 'appVersions'
+ATTRIBUTES = 'attributes'
+CATEGORIES = 'categories'
 CHANGE_PCT = 'changePct'
-VALUE = 'value'
-SERIES = 'series'
-NAME = 'name'
-GROUPS = 'groups'
-FAILURE_RATE = 'failureRate'
-FAIL_RATE = 'failRate'
-UNIT = 'unit'
-TYPE = 'type'
-STARTED_TRANSACTIONS = 'startedTransactions'
-MEAN_FOREGROUND_TIME = 'meanForegroundTime'
-FAILED_TRANSACTIONS = 'failedTransactions'
-SUCCEEDED_TRANSACTIONS = 'succeededTransactions'
-FAILED_MONEY_VALUE = 'failedMoneyValue'
 COUNT = 'count'
-RATE = 'rate'
-MONEY_VALUE = 'moneyValue'
+COUNTRY = 'country'
+CRASHES = 'crashes'
+CRASHESBYVERSION = 'crashesByVersion'
+CRASHPERCENT = 'crashPercent'
+D = 'd'
+DATA = 'data'
+DATE = 'date'
+DAU = 'dau'
+DEVICE = 'device'
+DURATION = 'duration'
+ENDPOINTS = 'endpoints'
+ERRORS = 'errors'
+GEO = 'geo'
+GEOMODE = 'geoMode'
+GRAPH = 'graph'
+GROUPBY = 'groupBy'
+GROUPS = 'groups'
+FAILED = 'failed'
+FAILED_MONEY_VALUE = 'failedMoneyValue'
+FAILED_TRANSACTIONS = 'failedTransactions'
+FAIL_RATE = 'failRate'
+FAILURE_RATE = 'failureRate'
+FILTERS = 'filters'
+LABEL = 'label'
+LATENCY = 'latency'
+LIMIT = 'limit'
 MEAN_DURATION = 'meanDuration'
+MEAN_FOREGROUND_TIME = 'meanForegroundTime'
+MONEY_VALUE = 'moneyValue'
+NAME = 'name'
+OS = 'os'
+PARAMS = 'params'
+PARSEDBREADCRUMBS = 'parsedBreadcrumbs'
+RATE = 'rate'
+S = 's'
+SERIES = 'series'
+SERVICE = 'service'
+SERVICES = 'services'
+SLICES = 'slices'
+SORT = 'sort'
+START = 'start'
+STARTED_TRANSACTIONS = 'startedTransactions'
+SUCCEEDED_TRANSACTIONS = 'succeededTransactions'
+TYPE = 'type'
+U = 'u'
+UNIT = 'unit'
+US = 'US'
+VALUE = 'value'
+VERSIONS = 'versions'
+VOLUME = 'volume'
 
 SUMMARY_ATTRIBUTES = [
     'appName',
@@ -151,9 +176,9 @@ def apipost_with_response_code(uri, postdata=''):
         return response.status_code, response.json()
 
     except requests.exceptions.RequestException as e:
-        print u'{} MessageType="ApteligentError" Apteligent API retuned an ' \
-              u'error code: {} for the call to {}.  ' \
-              u'Maybe an ENTERPRISE feature?'.format(DATETIME_OF_RUN, e, url)
+        print (u'{} MessageType="ApteligentError" Apteligent API retuned an '
+              u'error code: {} for the call to {}.  '
+              u'Maybe an ENTERPRISE feature?').format(DATETIME_OF_RUN, e, url)
         return "ERROR"
 
 
@@ -174,8 +199,8 @@ def getAppSummary():
     # Print out in Splunk KV format.
     # Return a dict with appId and appName.
 
-    params = {'attributes': ','.join(SUMMARY_ATTRIBUTES)}
-    summary_data = apicall("apps", params)
+    params = {ATTRIBUTES: ','.join(SUMMARY_ATTRIBUTES)}
+    summary_data = apicall(APPS, params)
 
     AppDict = {}
     for appId in summary_data[DATA].keys():
@@ -188,10 +213,10 @@ def getAppSummary():
                 attribute_name,
                 summary_data[DATA][appId][attribute_name]
             )
-            if attribute_name == "appName":
+            if attribute_name == APPNAME:
                 AppDict[appId] = {
-                    'name': summary_data[DATA][appId][attribute_name],
-                    'versions': summary_data[DATA][appId]['appVersions']
+                    NAME: summary_data[DATA][appId][attribute_name],
+                    VERSIONS: summary_data[DATA][appId][APPVERSIONS]
                 }
         print printstring
 
@@ -220,17 +245,17 @@ def getCrashSummary(appId, appName):
 
     CrashDict = {}
     if http_code != 200:
-        print u'{} MessageType="CrashSummary" appId={} appName="{}" ' \
-              u'Could not get crash summaries for {}. ' \
-              u'Code: {} after retry {}'.format(DATETIME_OF_RUN,
+        print (u'{} MessageType="CrashSummary" appId={} appName="{}" '
+              u'Could not get crash summaries for {}. '
+              u'Code: {} after retry {}').format(DATETIME_OF_RUN,
                                                 appId, appName,
                                                 mystime,
                                                 http_code,
                                                 retry)
     elif crashdata:
         for i, y in enumerate(crashdata[DATA]):
-            printstring = u'{} MessageType="CrashSummary" ' \
-                          u'appId={} appName="{}" '.format(
+            printstring = (u'{} MessageType="CrashSummary" '
+                          u'appId={} appName="{}" ').format(
                 DATETIME_OF_RUN, appId, appName
             )
             for attribute_name in CRASH_ATTRIBUTES:
@@ -242,8 +267,8 @@ def getCrashSummary(appId, appName):
                     CrashDict[crashdata[DATA][i][attribute_name]] = appName
             print printstring
     else:
-        print u'{} MessageType="CrashSummary" appId={} appName="{}" ' \
-              u'No crashes found for {}.'.format(DATETIME_OF_RUN,
+        print (u'{} MessageType="CrashSummary" appId={} appName="{}" '
+              u'No crashes found for {}.').format(DATETIME_OF_RUN,
                                                  appId,
                                                  appName,
                                                  mystime)
@@ -252,17 +277,17 @@ def getCrashSummary(appId, appName):
 
 def getBreadcrumbs(crumbs, crash_hash, appName):
     for crumb in crumbs:
-        version = crumb.get('appVersion')
-        os = crumb.get('os')
-        device = crumb.get('device')
-        parsed = json.dumps(crumb['parsedBreadcrumbs'])
+        version = crumb.get(APPVERSIONS)
+        os = crumb.get(OS)
+        device = crumb.get(DEVICE)
+        parsed = json.dumps(crumb[PARSEDBREADCRUMBS])
         parsed = '}|{'.join(parsed.split('}, {'))
         parsed = parsed.replace('{', '')
         parsed = parsed.replace('}', '')
         parsed = parsed.replace('"', "'")
-        printstring = u'{} MessageType="CrashDetailBreadcrumbs" ' \
-                      u'hash={} \ntrace="{}" ' \
-                      u'os="{}" appVersion="{}" device="{}"'.format(
+        printstring = (u'{} MessageType="CrashDetailBreadcrumbs" '
+                      u'hash={} \ntrace="{}" '
+                      u'os="{}" appVersion="{}" device="{}"').format(
                       DATETIME_OF_RUN, crash_hash, parsed, os, version, device)
         print printstring
 
@@ -283,8 +308,8 @@ def diag_geo(data, crash_hash):
             (lat,lon,crashes) = (str(data[country][city][0]),
                                 str(data[country][city][1]),
                                 str(data[country][city][2]))
-            print u'{} MessageType="CrashDiagsGeo" hash={} country="{}" ' \
-                  u'city="{}" lat={} lon={} crashes="{}"'.format(DATETIME_OF_RUN,
+            print (u'{} MessageType="CrashDiagsGeo" hash={} country="{}" '
+                  u'city="{}" lat={} lon={} crashes="{}"').format(DATETIME_OF_RUN,
                                                                  crash_hash,
                                                                  country,
                                                                  city,
@@ -445,13 +470,13 @@ def getErrorSummary(appId,appName) :
 # Get the current app loads
     params = {
         APPID: appId,
-        GRAPH: "appLoads",
+        GRAPH: APPLOADS,
         DURATION: 43200
     }
 
     app_load_sum = apicall("errorMonitoring/graph", params)
 
-    dlist = app_load_sum['data']['series'][0]['points']
+    dlist = app_load_sum[DATA][SERIES][0]['points']
     print u'{} MessageType=HourlyAppLoads AppLoads={} appId="{}" appName="{}"'.format(DATETIME_OF_RUN, dlist[len(dlist) - 1], appId, appName)
 
 
@@ -459,9 +484,9 @@ def getCrashesByOS(appId, appName):
     """Get the number of crashes for a given app sorted by OS."""
 
     params = {
-            GRAPH: "crashes",
+            GRAPH: CRASHES,
             DURATION: 1440,
-            GROUPBY: "os",
+            GROUPBY: OS,
             APPID: appId
             }
 
@@ -472,8 +497,8 @@ def getCrashesByOS(appId, appName):
 
     print_string = u''
     try:
-        for series in crashesos['data']['slices']:
-            print_string += u'("{}",{}),'.format(series['label'], series['value'])
+        for series in crashesos[DATA][SLICES]:
+            print_string += u'("{}",{}),'.format(series[LABEL], series[VALUE])
 
         print u'{} MessageType=DailyCrashesByOS appName="{}" appId="{}" DATA {}'.format(DATETIME_OF_RUN, appName, appId, print_string)
         return
@@ -500,10 +525,10 @@ def getGenericPerfMgmt(appId, appName, graph, groupby, messagetype):
 
     print_string = u''
     try:
-        slices = server_errors['data']['slices']
+        slices = server_errors[DATA][SLICES]
         if slices:
-            for series in server_errors['data']['slices']:
-                print_string += u'("{}",{}),'.format(series['label'], series['value'])
+            for series in server_errors[DATA][SLICES]:
+                print_string += u'("{}",{}),'.format(series[LABEL], series[VALUE])
 
             print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(DATETIME_OF_RUN, messagetype, appName, appId, print_string)
         else:
@@ -552,8 +577,8 @@ def getAPMServices(app_id, app_name, sort, message_type):
     response = apicall("performanceManagement/services", params)
 
     try:
-        messages = u','.join([u'("{}",{})'.format(service['name'], service['sort']) for service in
-                              response['data']['services']])
+        messages = u','.join([u'("{}",{})'.format(service[NAME], service[SORT]) for service in
+                              response[DATA][SERVICES]])
         print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(
             DATETIME_OF_RUN, message_type, app_name, app_id, messages)
 
@@ -577,7 +602,7 @@ def getAPMGeo(app_id, app_name, graph, message_type):
 
     try:
         messages = u','.join([u'("{}",{})'.format(location, data) for location, data in
-                      response['data']['series'][0]['geo'].iteritems()])
+                      response[DATA][SERIES][0][GEO].iteritems()])
         print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(
             DATETIME_OF_RUN, message_type, app_name, app_id, messages)
     except KeyError as e:
@@ -602,14 +627,14 @@ def getGenericErrorMon(appId, appName,graph,groupby,messagetype):
 
     mystring = u''
     try:
-        slices = server_errors['data']['slices']
+        slices = server_errors[DATA][SLICES]
         if slices:
             for series in slices:
-                mystring += u'("{}",{}),'.format(series['label'], series['value'])
+                mystring += u'("{}",{}),'.format(series[LABEL], series[VALUE])
 
             print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(DATETIME_OF_RUN, messagetype, appName, appId, mystring)
         else:
-            print u'{} MessageType="ApteligentError" Error: API did not return {} data for {}. Returned {}'.format(DATETIME_OF_RUN, messagetype, appId, server_errors['data'])
+            print u'{} MessageType="ApteligentError" Error: API did not return {} data for {}. Returned {}'.format(DATETIME_OF_RUN, messagetype, appId, server_errors[DATA])
 
     except KeyError as e:
         print u'{} MessageType="ApteligentError" Error: API returned malformed data in {} of {}. Data: {}'.format(DATETIME_OF_RUN, str(e), messagetype, server_errors)
@@ -756,7 +781,7 @@ def getDailyAppLoads(appId, appName):
     """Get the number of daily app loads for a given app."""
 
     params = {
-        GRAPH: "appLoads",
+        GRAPH: APPLOADS,
         DURATION: 1440,
         APPID: appId,
         }
@@ -764,7 +789,7 @@ def getDailyAppLoads(appId, appName):
     apploadsD = apicall("errorMonitoring/graph", params)
 
     try:
-        print u'{} MessageType=DailyAppLoads appName="{}" appId="{}" dailyAppLoads={}'.format(DATETIME_OF_RUN, appName, appId, apploadsD['data']['series'][0]['points'][0])
+        print u'{} MessageType=DailyAppLoads appName="{}" appId="{}" dailyAppLoads={}'.format(DATETIME_OF_RUN, appName, appId, apploadsD[DATA][SERIES][0]['points'][0])
     except KeyError as e:
         print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), 'get_daily_app_loads')
         return None
@@ -777,7 +802,7 @@ def getDailyCrashes(appId, appName):
     crashdata = apicall("app/%s/crash/counts" % appId)[DATA]
 
     try:
-        print u'{} MessageType=DailyCrashes appName="{}" appId="{}" dailyCrashes={}'.format(DATETIME_OF_RUN, appName, appId, crashdata[len(crashdata) - 1]['value'])
+        print u'{} MessageType=DailyCrashes appName="{}" appId="{}" dailyCrashes={}'.format(DATETIME_OF_RUN, appName, appId, crashdata[len(crashdata) - 1][VALUE])
     except KeyError as e:
         print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), 'get_daily_crashes')
         return None
@@ -816,7 +841,7 @@ def getTopValues(appId, appName, trendsData):
 
     for trend in trend_names:
         messages = u''
-        for version, value in trendsData[u'series'][trend][u'todayTopValues'].iteritems():
+        for version, value in trendsData[SERIES][trend]['todayTopValues'].iteritems():
             messages += u'("{}",{}),'.format(version, value)
         try:
             print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(DATETIME_OF_RUN, trend, appName, appId, messages)
@@ -835,10 +860,10 @@ def getTimeseriesTrends(appId,appName,trendsData):
     :return: None
     """
 
-    for version in trendsData['series']['crashesByVersion']['categories'].keys():
+    for version in trendsData[SERIES][CRASHESBYVERSION][CATEGORIES].keys():
         messages = u''
-        for bucket in trendsData['series']['crashesByVersion']['categories'][version]['buckets']:
-            messages += u'({},{}),'.format(bucket['start'][:10], bucket['value'])
+        for bucket in trendsData[SERIES][CRASHESBYVERSION][CATEGORIES][version]['buckets']:
+            messages += u'({},{}),'.format(bucket[START][:10], bucket[VALUE])
         try:
             print u'{} MessageType={} appName="{}" appId="{}" appVersion="{}" DATA {}'.format(DATETIME_OF_RUN, "TimeseriesTrends",
                                                                                               appName, appId, version, messages)
@@ -856,7 +881,7 @@ def getCrashCounts(appId, appName):
 
     try:
         for series in crash_data[DATA]:
-            print_string += u'({},{}),'.format(series['date'], series['value'])
+            print_string += u'({},{}),'.format(series[DATE], series[VALUE])
 
         print u'{} MessageType=CrashCounts appName="{}" appId="{}" DATA ' \
               u'{}'.format(DATETIME_OF_RUN, appName, appId, print_string)
@@ -965,51 +990,51 @@ def main(access_token=None, debug=None):
 # Get application summary information.
     apps = getAppSummary()
     for key in apps.keys():
-        crashes = getCrashSummary(key, apps[key]['name'])
+        crashes = getCrashSummary(key, apps[key][NAME])
         if crashes:
             for ckey in crashes.keys():
-                getCrashDetail(ckey, key, apps[key]['name'])
+                getCrashDetail(ckey, key, apps[key][NAME])
 
-        getTrends(key, apps[key]['name'])
+        getTrends(key, apps[key][NAME])
 
-        getDailyAppLoads(key, apps[key]['name'])
-        getDailyCrashes(key, apps[key]['name'])
-        getCrashCounts(key, apps[key]['name'])
+        getDailyAppLoads(key, apps[key][NAME])
+        getDailyCrashes(key, apps[key][NAME])
+        getCrashCounts(key, apps[key][NAME])
 
-        getGenericPerfMgmt(key, apps[key]['name'], 'volume', 'device', 'DailyVolumeByDevice')
-        getGenericPerfMgmt(key, apps[key]['name'], 'errors', 'service', 'DailyServiceErrorRates')
-        getGenericPerfMgmt(key, apps[key]['name'], 'volume', 'os', 'DailyVolumeByOS')
-        getGenericPerfMgmt(key, apps[key]['name'], 'volume', 'appVersion', 'VolumeByAppVersion')
+        getGenericPerfMgmt(key, apps[key][NAME], VOLUME, DEVICE, 'DailyVolumeByDevice')
+        getGenericPerfMgmt(key, apps[key][NAME], ERRORS, SERVICE, 'DailyServiceErrorRates')
+        getGenericPerfMgmt(key, apps[key][NAME], VOLUME, OS, 'DailyVolumeByOS')
+        getGenericPerfMgmt(key, apps[key][NAME], VOLUME, APPVERSION, 'VolumeByAppVersion')
 
-        getGenericErrorMon(key, apps[key]['name'], 'crashes', 'device', 'CrashesByDevice')
-        getGenericErrorMon(key, apps[key]['name'], 'crashPercent', 'device', 'CrashPerByDevice')
-        getGenericErrorMon(key, apps[key]['name'], 'appLoads', 'os', 'ApploadsByOs')
-        getGenericErrorMon(key, apps[key]['name'], 'crashes', 'os', 'DailyCrashesByOs')
-        getGenericErrorMon(key, apps[key]['name'], 'crashPercent', 'os', 'CrashPerByOs')
-        getGenericErrorMon(key, apps[key]['name'], 'crashPercent', 'appVersion', 'CrashPerByAppVersion')
-        getGenericErrorMon(key, apps[key]['name'], 'crashes', 'appVersion', 'CrashByAppVersion')
-        getGenericErrorMon(key, apps[key]['name'], 'appLoads', 'appVersion', 'LoadsByAppVersion')
-        getGenericErrorMon(key, apps[key]['name'], 'dau', 'appVersion', 'DauByAppVersion')
-        getGenericErrorMon(key, apps[key]['name'], 'appLoads', 'device', 'ApploadsByDevice')
+        getGenericErrorMon(key, apps[key][NAME], CRASHES, DEVICE, 'CrashesByDevice')
+        getGenericErrorMon(key, apps[key][NAME], CRASHPERCENT, DEVICE, 'CrashPerByDevice')
+        getGenericErrorMon(key, apps[key][NAME], APPLOADS, OS, 'ApploadsByOs')
+        getGenericErrorMon(key, apps[key][NAME], CRASHES, OS, 'DailyCrashesByOs')
+        getGenericErrorMon(key, apps[key][NAME], CRASHPERCENT, OS, 'CrashPerByOs')
+        getGenericErrorMon(key, apps[key][NAME], CRASHPERCENT, APPVERSION, 'CrashPerByAppVersion')
+        getGenericErrorMon(key, apps[key][NAME], CRASHES, APPVERSION, 'CrashByAppVersion')
+        getGenericErrorMon(key, apps[key][NAME], APPLOADS, APPVERSION, 'LoadsByAppVersion')
+        getGenericErrorMon(key, apps[key][NAME], DAU, APPVERSION, 'DauByAppVersion')
+        getGenericErrorMon(key, apps[key][NAME], APPLOADS, DEVICE, 'ApploadsByDevice')
 
-        getAPMEndpoints(key, apps[key]['name'], LATENCY, 'ApmEndpointsLatency')
-        getAPMEndpoints(key, apps[key]['name'], VOLUME, 'ApmEndpointsVolume')
-        getAPMEndpoints(key, apps[key]['name'], ERRORS, 'ApmEndpointsErrors')
-        getAPMEndpoints(key, apps[key]['name'], DATA, 'ApmEndpointsData')
+        getAPMEndpoints(key, apps[key][NAME], LATENCY, 'ApmEndpointsLatency')
+        getAPMEndpoints(key, apps[key][NAME], VOLUME, 'ApmEndpointsVolume')
+        getAPMEndpoints(key, apps[key][NAME], ERRORS, 'ApmEndpointsErrors')
+        getAPMEndpoints(key, apps[key][NAME], DATA, 'ApmEndpointsData')
 
-        getAPMServices(key, apps[key]['name'], LATENCY, 'ApmServicesLatency')
-        getAPMServices(key, apps[key]['name'], VOLUME, 'ApmServicesVolume')
-        getAPMServices(key, apps[key]['name'], ERRORS, 'ApmServicesErrors')
-        getAPMServices(key, apps[key]['name'], DATA, 'ApmServicesData')
+        getAPMServices(key, apps[key][NAME], LATENCY, 'ApmServicesLatency')
+        getAPMServices(key, apps[key][NAME], VOLUME, 'ApmServicesVolume')
+        getAPMServices(key, apps[key][NAME], ERRORS, 'ApmServicesErrors')
+        getAPMServices(key, apps[key][NAME], DATA, 'ApmServicesData')
 
-        getAPMGeo(key, apps[key]['name'], LATENCY, 'ApmGeoLatency')
-        getAPMGeo(key, apps[key]['name'], VOLUME, 'ApmGeoVolume')
-        getAPMGeo(key, apps[key]['name'], ERRORS, 'ApmGeoErrors')
-        getAPMGeo(key, apps[key]['name'], DATA, 'ApmGeoData')
+        getAPMGeo(key, apps[key][NAME], LATENCY, 'ApmGeoLatency')
+        getAPMGeo(key, apps[key][NAME], VOLUME, 'ApmGeoVolume')
+        getAPMGeo(key, apps[key][NAME], ERRORS, 'ApmGeoErrors')
+        getAPMGeo(key, apps[key][NAME], DATA, 'ApmGeoData')
 
-        getUserflowsSummary(key, apps[key]['name'], 'UserflowsSummary')
-        getUserflowsRanked(key, apps[key]['name'], FAILED, 'UserflowsRankedFailed')
-        getUserflowsDetails(key, apps[key]['name'])
+        getUserflowsSummary(key, apps[key][NAME], 'UserflowsSummary')
+        getUserflowsRanked(key, apps[key][NAME], FAILED, 'UserflowsRankedFailed')
+        getUserflowsDetails(key, apps[key][NAME])
 
 if __name__=='__main__':
     access_token, debug = parse_arguments_for_debugging()
