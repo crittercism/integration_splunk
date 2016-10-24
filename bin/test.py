@@ -9,7 +9,7 @@ import critterget
 class TestSplunk(unittest.TestCase):
     def setUp(self):
         # Turn on critterget's debug messages
-        critterget.debug = 1
+        critterget.DEBUG = 1
 
         # By default, critterget's access_token variable is an empty string
         # The access_token must be NOT an empty string

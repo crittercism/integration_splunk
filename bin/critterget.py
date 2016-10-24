@@ -1091,14 +1091,14 @@ def getExceptionCounts(app_id, app_name):
 
     try:
         for series in exception_data[DATA]:
-            print_string += u'({},{}),'.format(series['date'], series['value'])
+            print_string += u'({},{}),'.format(series[DATE], series[VALUE])
 
-        print u'{} MessageType=ExceptionCounts appName="{}" appId="{}" DATA ' \
-              u'{}'.format(DATETIME_OF_RUN, app_name, app_id, print_string)
+        print (u'{} MessageType=ExceptionCounts appName="{}" appId="{}" DATA '
+              u'{}').format(DATETIME_OF_RUN, app_name, app_id, print_string)
 
     except KeyError as e:
-        print u'{} MessageType="ApteligentError" Error: Could not access ' \
-              u'{} in {}.'.format(DATETIME_OF_RUN, str(e), 'get_exception_counts')
+        print (u'{} MessageType="ApteligentError" Error: Could not access '
+              u'{} in {}.').format(DATETIME_OF_RUN, str(e), 'get_exception_counts')
         return None
 
     return
@@ -1112,11 +1112,19 @@ def getExceptionDetails(app_id, app_name, app_versions):
     :return: None
     """
 
-    exceptions = getAllPages(
-        u'exception/paginatedtable/{}'.format(app_id),
-        ERRORS
-    )
-
+    for version in app_versions:
+        exceptions = getAllPages(
+            u'exception/paginatedtable/{}?appVersion={}'.format(app_id, version),
+            ERRORS
+        )
+        for exception in exceptions:
+            printstring = (u'{} MessageType="ExceptionDetail" appId={} appName={} appVersion="{}" exceptionHash={}').format(DATETIME_OF_RUN, app_id, app_name, version, exception['hash'])
+            for key, value in exception.iteritems():
+                if key == 'hash':
+                    continue
+                elif value:
+                    printstring += u'{}={}'.format(key, value)
+            print printstring
 
 
 def getAllPages(base_url, param_to_get):
