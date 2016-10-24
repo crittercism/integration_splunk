@@ -18,7 +18,7 @@ DUMP_DIAGS = 1
 interval = 10  # minutes between runs of this script as performed by Splunk
 MAX_RETRY = 10
 
-debug = os.environ.get('CR_SPLUNK_DEBUG')
+DEBUG = os.environ.get('CR_SPLUNK_DEBUG')
 
 TODAY = datetime.datetime.now() # calculate a common time for all summary data
 DATETIME_OF_RUN = TODAY.strftime('%Y-%m-%d %H:%M:%S %Z')
@@ -121,7 +121,7 @@ def apicall_with_response_code(uri, attribs=None):
     # perform an API call
     url = BASEURL + uri
 
-    if debug:
+    if DEBUG:
         print u'reqstring is {}'.format(url)
 
     headers = {
@@ -154,10 +154,10 @@ def apicall(uri, attribs=None):
 
 def apipost_with_response_code(uri, postdata=''):
     # perform an API POST
-    if (debug): print u'access token is {}'.format(access_token)
+    if (DEBUG): print u'access token is {}'.format(access_token)
     url = BASEURL + uri
 
-    if (debug):
+    if (DEBUG):
         print u'reqstring is {}'.format(url)
         print u'postdata is {}'.format(postdata)
 
@@ -171,14 +171,14 @@ def apipost_with_response_code(uri, postdata=''):
 
     try:
         response = requests.post(url, headers=headers, data=pdata)
-        if debug:
+        if DEBUG:
             print 'response is {}'.format(response.text)
         return response.status_code, response.json()
 
     except requests.exceptions.RequestException as e:
         print (u'{} MessageType="ApteligentError" Apteligent API retuned an '
-              u'error code: {} for the call to {}.  '
-              u'Maybe an ENTERPRISE feature?').format(DATETIME_OF_RUN, e, url)
+               u'error code: {} for the call to {}.  '
+               u'Maybe an ENTERPRISE feature?').format(DATETIME_OF_RUN, e, url)
         return "ERROR"
 
 
@@ -246,8 +246,8 @@ def getCrashSummary(appId, appName):
     CrashDict = {}
     if http_code != 200:
         print (u'{} MessageType="CrashSummary" appId={} appName="{}" '
-              u'Could not get crash summaries for {}. '
-              u'Code: {} after retry {}').format(DATETIME_OF_RUN,
+               u'Could not get crash summaries for {}. '
+               u'Code: {} after retry {}').format(DATETIME_OF_RUN,
                                                 appId, appName,
                                                 mystime,
                                                 http_code,
@@ -255,7 +255,7 @@ def getCrashSummary(appId, appName):
     elif crashdata:
         for i, y in enumerate(crashdata[DATA]):
             printstring = (u'{} MessageType="CrashSummary" '
-                          u'appId={} appName="{}" ').format(
+                           u'appId={} appName="{}" ').format(
                 DATETIME_OF_RUN, appId, appName
             )
             for attribute_name in CRASH_ATTRIBUTES:
@@ -263,12 +263,12 @@ def getCrashSummary(appId, appName):
                     attribute_name,
                     crashdata[DATA][i][attribute_name]
                 )
-                if attribute_name == "hash":
+                if attribute_name == 'hash':
                     CrashDict[crashdata[DATA][i][attribute_name]] = appName
             print printstring
     else:
         print (u'{} MessageType="CrashSummary" appId={} appName="{}" '
-              u'No crashes found for {}.').format(DATETIME_OF_RUN,
+               u'No crashes found for {}.').format(DATETIME_OF_RUN,
                                                  appId,
                                                  appName,
                                                  mystime)
@@ -286,8 +286,8 @@ def getBreadcrumbs(crumbs, crash_hash, appName):
         parsed = parsed.replace('}', '')
         parsed = parsed.replace('"', "'")
         printstring = (u'{} MessageType="CrashDetailBreadcrumbs" '
-                      u'hash={} \ntrace="{}" '
-                      u'os="{}" appVersion="{}" device="{}"').format(
+                       u'hash={} \ntrace="{}" '
+                       u'os="{}" appVersion="{}" device="{}"').format(
                       DATETIME_OF_RUN, crash_hash, parsed, os, version, device)
         print printstring
 
@@ -309,7 +309,7 @@ def diag_geo(data, crash_hash):
                                 str(data[country][city][1]),
                                 str(data[country][city][2]))
             print (u'{} MessageType="CrashDiagsGeo" hash={} country="{}" '
-                  u'city="{}" lat={} lon={} crashes="{}"').format(DATETIME_OF_RUN,
+                   u'city="{}" lat={} lon={} crashes="{}"').format(DATETIME_OF_RUN,
                                                                  crash_hash,
                                                                  country,
                                                                  city,
@@ -701,9 +701,9 @@ def getUserflowsDetails(app_id, app_name):
     """
     uri = 'transactions/{}/details/change/P1M'.format(app_id)
     params = {'pageNum': 1,
-             'pageSize': 10,
-             'sortBy': 'name',
-             'sortOrder': 'ascending'}
+              'pageSize': 10,
+              'sortBy': NAME,
+              'sortOrder': 'ascending'}
 
     response = apicall(uri, params)
     userflow_data = response[DATA]
@@ -897,7 +897,7 @@ def getCrashCounts(appId, appName):
 def getCredentials(sessionKey):
 # access the credentials in /servicesNS/nobody/<MyApp>/admin/passwords
 
-    if debug:
+    if DEBUG:
         print u'{} MessageType="ApteligentDebug"  Into getCredentials'.format(
             DATETIME_OF_RUN
         )
@@ -907,7 +907,7 @@ def getCredentials(sessionKey):
     retry = 1
 
     while auth is None and retry < MAX_RETRY:
-        if debug:
+        if DEBUG:
             print u'Attempt to get credentials {}'.format(retry)
         try:
             # list all credentials
@@ -915,14 +915,15 @@ def getCredentials(sessionKey):
                 ['admin', 'passwords'],
                 namespace=myapp,
                 owner='nobody',
-                sessionKey=sessionKey)
+                sessionKey=sessionKey
+            )
         except Exception, e:
             print (u'{} MessageType="ApteligentDebug" '
                    u'Could not get {} credentials from splunk. '
                    u'Error: {}'.format(DATETIME_OF_RUN, myapp, str(e)))
 
         # return first set of credentials
-        if debug:
+        if DEBUG:
             print "Entities is ", entities
         if entities:
             auth = entities.items()[0][1].get('clear_password')
@@ -1037,5 +1038,5 @@ def main(access_token=None, debug=None):
         getUserflowsDetails(key, apps[key][NAME])
 
 if __name__=='__main__':
-    access_token, debug = parse_arguments_for_debugging()
-    main(access_token, debug)
+    access_token, DEBUG = parse_arguments_for_debugging()
+    main(access_token, DEBUG)
