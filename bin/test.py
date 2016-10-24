@@ -3,7 +3,6 @@ import sys
 from StringIO import StringIO
 import mock
 import datetime
-import argparse
 
 import critterget
 
