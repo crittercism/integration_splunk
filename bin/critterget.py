@@ -4,7 +4,6 @@ import json
 import sys
 import requests
 import time
-import argparse
 
 try:
     import splunk.entity as entity
@@ -66,28 +65,28 @@ MEAN_DURATION = 'meanDuration'
 SUMMARY_ATTRIBUTES = [
     'appName',
     'appType',
+    'appVersions',
     'crashPercent',
     'dau',
+    'iconURL',
     'latency',
     'latestAppStoreReleaseDate',
     'latestVersionString',
     'linkToAppStore',
-    'iconURL',
     'mau',
     'rating',
-    'role',
-    'appVersions'
+    'role'
 ]
 
 CRASH_ATTRIBUTES = [
+    'displayReason',
     'hash',
     'lastOccurred',
-    'sessionCount',
-    'uniqueSessionCount',
+    'name',
     'reason',
+    'sessionCount',
     'status',
-    'displayReason',
-    'name'
+    'uniqueSessionCount'
 ]
 
 BASEURL = "https://developers.crittercism.com/v2/"
