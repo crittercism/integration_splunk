@@ -15,7 +15,7 @@ class TestSplunk(unittest.TestCase):
         # By default, critterget's access_token variable is an empty string
         # The access_token must be NOT an empty string
         # for critterget to run properly
-        critterget.access_token = "bogustoken"
+        critterget.ACCESS_TOKEN = "bogustoken"
 
         # patch out requests
         get_patcher = mock.patch.object(critterget.requests, 'get')
@@ -63,17 +63,6 @@ class TestSplunk(unittest.TestCase):
             {'bogusappID': {'bogusresponse': 'bogusdata'}}
         )]
         test_response = critterget.apicall('endpoint', 'attribute string')
-        self.assertEqual(
-            test_response,
-            {'bogusappID': {'bogusresponse': 'bogusdata'}}
-        )
-
-    def test_apipost(self):
-        self.mock_post.side_effect = [self._response_with_json_data(
-            200,
-            {'bogusappID': {'bogusresponse': 'bogusdata'}}
-        )]
-        test_response = critterget.apipost('endpoint', 'attribute string')
         self.assertEqual(
             test_response,
             {'bogusappID': {'bogusresponse': 'bogusdata'}}
@@ -145,7 +134,7 @@ class TestSplunk(unittest.TestCase):
         self.assertIn('Code: 404 after retry 1', output)
 
 
-    def test_getBreadcrumbs(self):
+    def test_get_breadcrumbs(self):
         crumbs = [{u'appVersion': u'bogusVersion',
                             u'device': u'bogusDevice',
                             u'deviceId': u'bogusID',
@@ -166,7 +155,7 @@ class TestSplunk(unittest.TestCase):
                             u'type': u'bogusType',
                             u'typeCode': 1}]}]
 
-        output = self._catch_stdout(critterget.getBreadcrumbs,
+        output = self._catch_stdout(critterget.get_breadcrumbs,
                                     crumbs,
                                     'fakeHash',
                                     'appName')
@@ -713,9 +702,3 @@ class TestSplunk(unittest.TestCase):
 
         self.assertTrue(crash_mock.called)
         self.assertTrue(app_mock.called)
-
-    @mock.patch.object(argparse, 'ArgumentParser')
-    def test_parse_arguments_for_testing(self, mock_parser):
-        critterget.parse_arguments_for_debugging()
-
-        self.assertTrue(mock_parser.called)

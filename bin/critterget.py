@@ -3,8 +3,8 @@ import datetime
 import json
 import os
 import sys
-import requests
 import time
+import requests
 
 try:
     import splunk.entity as entity
@@ -15,16 +15,17 @@ except ImportError:
 myapp = 'crittercism_integration'
 
 DUMP_DIAGS = 1
-interval = 10  # minutes between runs of this script as performed by Splunk
+INTERVAL = 10  # minutes between runs of this script as performed by Splunk
 MAX_RETRY = 10
-
+ACCESS_TOKEN = ''
 DEBUG = os.environ.get('CR_SPLUNK_DEBUG')
 
-TODAY = datetime.datetime.now() # calculate a common time for all summary data
+TODAY = datetime.datetime.now()  # calculate a common time for all summary data
 DATETIME_OF_RUN = TODAY.strftime('%Y-%m-%d %H:%M:%S %Z')
 
 # a quick command to format quasi json output nicely
-pretty=(lambda a:lambda v,t="\t",n="\n",i=0:a(a,v,t,n,i))(lambda f,v,t,n,i:"{%s%s%s}"%(",".join(["%s%s%s: %s"%(n,t*(i+1),repr(k),f(f,v[k],t,n,i+1))for k in v]),n,(t*i)) if type(v)in[dict] else (type(v)in[list]and"[%s%s%s]"or"(%s%s%s)")%(",".join(["%s%s%s"%(n,t*(i+1),f(f,k,t,n,i+1))for k in v]),n,(t*i)) if type(v)in[list,tuple] else repr(v))
+#TODO (sf) figure out what this does and then find a better way
+pretty = (lambda a: lambda v, t="\t", n="\n", i=0: a(a, v, t, n, i))(lambda f, v, t, n, i: "{%s%s%s}" % (",".join(["%s%s%s: %s" % (n, t * (i + 1), repr(k), f(f, v[k], t, n, i + 1)) for k in v]), n, (t * i)) if type(v) in [dict] else (type(v) in [list] and "[%s%s%s]" or "(%s%s%s)") % (",".join(["%s%s%s" % (n, t *(i + 1), f(f, k, t, n, i + 1)) for k in v]), n, (t * i)) if type(v) in [list, tuple] else repr(v))
 
 APPID = 'appId'
 APPLOADS = 'appLoads'
@@ -118,7 +119,13 @@ BASEURL = "https://developers.crittercism.com/v2/"
 
 
 def apicall_with_response_code(uri, attribs=None):
-    # perform an API call
+    """
+    Call the Apteligent API
+
+    :param uri: string
+    :param attribs: dict
+    :return: status_code string and json object of data from the endpoint
+    """
     url = BASEURL + uri
 
     if DEBUG:
@@ -126,78 +133,62 @@ def apicall_with_response_code(uri, attribs=None):
 
     headers = {
         'Content-Type': 'application/json',
-        'Authorization': "Bearer {}".format(access_token),
+        'Authorization': "Bearer {}".format(ACCESS_TOKEN),
         'CR-source': 'integration_splunk'
     }
 
     try:
         response = requests.get(url, headers=headers, params=attribs)
         return response.status_code, response.json()
-    except requests.exceptions.Timeout as e:
-        print 'Connection timeout. Apteligent API returned an error code:', e
+    except requests.exceptions.Timeout as error:
+        print 'Connection timeout. Apteligent API returned an error code:', error
         sys.exit(0)
-    except requests.exceptions.ConnectionError as e:
-        print 'Connection error. Apteligent API returned an error code:', e
+    except requests.exceptions.ConnectionError as error:
+        print 'Connection error. Apteligent API returned an error code:', error
         sys.exit(0)
-    except requests.exceptions.HTTPError as e:
-        print 'HTTP error. Apteligent API returned an error code:', e
+    except requests.exceptions.HTTPError as error:
+        print 'HTTP error. Apteligent API returned an error code:', error
         sys.exit(0)
-    except requests.exceptions.RequestException as e:
-        print 'Apteligent API retuned an error code:', e
+    except requests.exceptions.RequestException as error:
+        print 'Apteligent API retuned an error code:', error
         sys.exit(0)
 
 
 def apicall(uri, attribs=None):
-    http_code, data = apicall_with_response_code(uri, attribs)
-    return data
+    """
+    For API calls that do not need to know their http response code
 
-
-def apipost_with_response_code(uri, postdata=''):
-    # perform an API POST
-    if (DEBUG): print u'access token is {}'.format(access_token)
-    url = BASEURL + uri
-
-    if (DEBUG):
-        print u'reqstring is {}'.format(url)
-        print u'postdata is {}'.format(postdata)
-
-    pdata = json.dumps(postdata)
-
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': "Bearer {}".format(access_token),
-        'CR-source': 'integration_splunk'
-    }
-
-    try:
-        response = requests.post(url, headers=headers, data=pdata)
-        if DEBUG:
-            print 'response is {}'.format(response.text)
-        return response.status_code, response.json()
-
-    except requests.exceptions.RequestException as e:
-        print (u'{} MessageType="ApteligentError" Apteligent API retuned an '
-               u'error code: {} for the call to {}.  '
-               u'Maybe an ENTERPRISE feature?').format(DATETIME_OF_RUN, e, url)
-        return "ERROR"
-
-
-def apipost(uri, attribs=None):
-    http_code, data = apipost_with_response_code(uri, attribs)
+    :param uri: string
+    :param attribs: dict
+    :return: json object of data from the endpoint
+    """
+    _, data = apicall_with_response_code(uri, attribs)
     return data
 
 
 def scopetime():
-    # return an ISO8601 timestring based on NOW - Interval
-    newtime=(datetime.datetime.utcnow() - datetime.timedelta(minutes=interval))
+    """
+    return an ISO8601 timestring based on NOW - Interval
+
+    :return: string, time in ISO format
+    """
+    newtime = (
+        datetime.datetime.utcnow() -
+        datetime.timedelta(
+            minutes=INTERVAL))
 
     return newtime.isoformat()
 
 
 def getAppSummary():
-    # read app summary information.
-    # Print out in Splunk KV format.
-    # Return a dict with appId and appName.
+    """
+    read app summary information.
+    Print out in Splunk KV format.
+    Return a dict with appId and appName.
+
+    :return: dict
+    """
+
 
     params = {ATTRIBUTES: ','.join(SUMMARY_ATTRIBUTES)}
     summary_data = apicall(APPS, params)
@@ -224,9 +215,14 @@ def getAppSummary():
 
 
 def getCrashSummary(appId, appName):
-    # given an appID and an appName, produce a Splunk KV summary of the
-    # crashes for a given timeframe
+    """
+    given an appID and an appName, produce a Splunk KV summary of the
+    crashes for a given timeframe
 
+    :param appId: string
+    :param appName: string
+    :return: dict of crash data
+    """
     mystime = scopetime()
     crashdata = None
 
@@ -234,10 +230,8 @@ def getCrashSummary(appId, appName):
     retry = 0
     while http_code != 200:
         http_code, crashdata = apicall_with_response_code(
-            "app/crash/summaries/{}".format(
-                appId,
-                {'lastOccurredStart': mystime}
-            )
+            "app/crash/summaries/{}".format(appId),
+            {'lastOccurredStart': mystime}
         )
         retry += 1
         if retry > MAX_RETRY:
@@ -248,16 +242,16 @@ def getCrashSummary(appId, appName):
         print (u'{} MessageType="CrashSummary" appId={} appName="{}" '
                u'Could not get crash summaries for {}. '
                u'Code: {} after retry {}').format(DATETIME_OF_RUN,
-                                                appId, appName,
-                                                mystime,
-                                                http_code,
-                                                retry)
+                                                  appId, appName,
+                                                  mystime,
+                                                  http_code,
+                                                  retry)
     elif crashdata:
         for i, y in enumerate(crashdata[DATA]):
             printstring = (u'{} MessageType="CrashSummary" '
                            u'appId={} appName="{}" ').format(
-                DATETIME_OF_RUN, appId, appName
-            )
+                               DATETIME_OF_RUN, appId, appName
+                           )
             for attribute_name in CRASH_ATTRIBUTES:
                 printstring += u'{}="{}" '.format(
                     attribute_name,
@@ -269,16 +263,16 @@ def getCrashSummary(appId, appName):
     else:
         print (u'{} MessageType="CrashSummary" appId={} appName="{}" '
                u'No crashes found for {}.').format(DATETIME_OF_RUN,
-                                                 appId,
-                                                 appName,
-                                                 mystime)
+                                                   appId,
+                                                   appName,
+                                                   mystime)
     return CrashDict
 
 
-def getBreadcrumbs(crumbs, crash_hash, appName):
+def get_breadcrumbs(crumbs, crash_hash, appName):
     for crumb in crumbs:
-        version = crumb.get(APPVERSIONS)
-        os = crumb.get(OS)
+        version = crumb.get(APPVERSION)
+        device_os = crumb.get(OS)
         device = crumb.get(DEVICE)
         parsed = json.dumps(crumb[PARSEDBREADCRUMBS])
         parsed = '}|{'.join(parsed.split('}, {'))
@@ -288,7 +282,13 @@ def getBreadcrumbs(crumbs, crash_hash, appName):
         printstring = (u'{} MessageType="CrashDetailBreadcrumbs" '
                        u'hash={} \ntrace="{}" '
                        u'os="{}" appVersion="{}" device="{}"').format(
-                      DATETIME_OF_RUN, crash_hash, parsed, os, version, device)
+                           DATETIME_OF_RUN,
+                           crash_hash,
+                           parsed,
+                           device_os,
+                           version,
+                           device
+                       )
         print printstring
 
 
@@ -305,80 +305,100 @@ def diag_geo(data, crash_hash):
         for city in data[country].keys():
             if city == '--NAME--':
                 continue
-            (lat,lon,crashes) = (str(data[country][city][0]),
-                                str(data[country][city][1]),
-                                str(data[country][city][2]))
+            (lat, lon, crashes) = (str(data[country][city][0]),
+                                   str(data[country][city][1]),
+                                   str(data[country][city][2]))
             print (u'{} MessageType="CrashDiagsGeo" hash={} country="{}" '
                    u'city="{}" lat={} lon={} crashes="{}"').format(DATETIME_OF_RUN,
-                                                                 crash_hash,
-                                                                 country,
-                                                                 city,
-                                                                 lat,
-                                                                 lon,
-                                                                 crashes)
+                                                                   crash_hash,
+                                                                   country,
+                                                                   city,
+                                                                   lat,
+                                                                   lon,
+                                                                   crashes)
 
 
 def diag_discrete(data, crash_hash):
-    datastring= ""
+    datastring = ""
     for dstat in data.keys():
-        for (var,val) in data[dstat]:
-            datastring += " \"%s:%s\"=\"%s\"" % (dstat, str(var).replace(" ","_"),str(val))
+        for (var, val) in data[dstat]:
+            datastring += " \"%s:%s\"=\"%s\"" % (dstat,
+                                                 str(var).replace(" ", "_"), str(val))
 
-    print u'{} MessageType="CrashDiagsDiscrete"  hash={} {} '.format(DATETIME_OF_RUN, crash_hash, datastring)
+    print (u'{} MessageType="CrashDiagsDiscrete"  hash={} {} ').format(
+        DATETIME_OF_RUN,
+        crash_hash,
+        datastring
+    )
 
 
 def diag_affected_users(data, crash_hash):
     for uhash in data.keys():
-        datastring= ""
+        datastring = ""
         for vhash in data[uhash]:
-            datastring += " %s=\"%s\"" % (str(vhash).replace(" ","_"),str(data[uhash][vhash]))
+            datastring += " %s=\"%s\"" % (str(vhash).replace(" ",
+                                                             "_"), str(data[uhash][vhash]))
 
-        print u'{} MessageType="CrashDiagsAffectedUser"  hash={}  userhash={} {} '.format(DATETIME_OF_RUN, crash_hash, uhash, datastring)
+        print (u'{} MessageType="CrashDiagsAffectedUser"  hash={}  '
+               u'userhash={} {} ').format(DATETIME_OF_RUN,
+                                          crash_hash,
+                                          uhash,
+                                          datastring)
 
 
 def diag_affected_versions(data, crash_hash):
     datastring = ""
-    for x,vpair in data:
-        datastring += " \"%s\"=%s" % (str(x).replace(" ","_"),str(vpair))
+    for x, vpair in data:
+        datastring += " \"%s\"=%s" % (str(x).replace(" ", "_"), str(vpair))
 
-    print u'{} MessageType="CrashDiagsAffectedVersions"  hash={} {} '.format(DATETIME_OF_RUN, crash_hash, datastring)
+    print (u'{} MessageType="CrashDiagsAffectedVersions"  '
+           u'hash={} {} ').format(DATETIME_OF_RUN, crash_hash, datastring)
 
 
 def diag_cont_bar(data, crash_hash):
-# The continuous_bar_diagnostic_data data comes back as two arrays per datapoint
-# we Zip them back together to make them KV for Splunk
+    # The continuous_bar_diagnostic_data data comes back as two arrays per datapoint
+    # we Zip them back together to make them KV for Splunk
 
     for dstat in data.keys():
-        x=0
+        x = 0
         valstr = ""
-        tmp={}
+        tmp = {}
         for vstat in data[dstat]:
-            tmp[x]=data[dstat][vstat]
-            x+=1
-        zipped = zip(tmp[1],tmp[0])
-        for var,val in zipped:
-            valstr += " \"%s\"=%s" %(val,var)
+            tmp[x] = data[dstat][vstat]
+            x += 1
+        zipped = zip(tmp[1], tmp[0])
+        for var, val in zipped:
+            valstr += " \"%s\"=%s" % (val, var)
 
-        print u'{} MessageType="CrashDiagsContBar"  hash={} datatype={} {} '.format(DATETIME_OF_RUN, crash_hash, dstat, valstr)
+        print (u'{} MessageType="CrashDiagsContBar"  hash={} '
+               u'datatype={} {} ').format(DATETIME_OF_RUN,
+                                          crash_hash,
+                                          dstat,
+                                          valstr)
 
 
 def diag_cont(data, crash_hash):
-# Grab all of the continuous data from Apteligent and format into a splunk event
-    datastring= ""
+    # Grab all of the continuous data from Apteligent and format into a splunk
+    # event
+    datastring = ""
     for uhash in data.keys():
 
         for vhash in data[uhash]:
-            datastring += " %s_%s=\"%s\"" % (uhash,str(vhash).replace(" ","_"),str(data[uhash][vhash]))
+            datastring += " %s_%s=\"%s\"" % (uhash,
+                                             str(vhash).replace(" ",
+                                                                "_"),
+                                             str(data[uhash][vhash]))
 
-    print u'{} MessageType="CrashDiagsContinuous"  hash={} {} '.format(DATETIME_OF_RUN, crash_hash, datastring)
+    print (u'{} MessageType="CrashDiagsContinuous"  '
+           u'hash={} {} ').format(DATETIME_OF_RUN, crash_hash, datastring)
 
 
 #############
 def getDiagnostics(diags, crash_hash):
-# Dump and prettyprint the diags -- might want to expand on this...
+    # Dump and prettyprint the diags -- might want to expand on this...
     if not DUMP_DIAGS:
-        print u'{} MessageType="CrashDetailDiagnostics" ' \
-              u'DISABLED PER CONFIG FILE '.format(DATETIME_OF_RUN, crash_hash)
+        print (u'{} MessageType="CrashDetailDiagnostics" '
+               u'DISABLED PER CONFIG FILE ').format(DATETIME_OF_RUN)
         return
 
     for key in diags.keys():
@@ -411,27 +431,31 @@ def getDiagnostics(diags, crash_hash):
 
 
 def getDOBV(stacktrace, crash_hash):
-# handle the DailyOccurrencesByVersion coming back from a crashdetail
-    print u'{} MessageType="CrashDetailDailyOccurrencesByVersion"  hash={} '.format(DATETIME_OF_RUN, crash_hash), pretty(stacktrace)
+    # handle the DailyOccurrencesByVersion coming back from a crashdetail
+    print (u'{} MessageType="CrashDetailDailyOccurrencesByVersion"  '
+           u'hash={} ').format(DATETIME_OF_RUN, crash_hash), pretty(stacktrace)
 
 
 def getUSCBV(stacktrace, crash_hash):
-# handle the UniqueSessionCountsByVersion coming back from a crashdetail
-    print u'{} MessageType="CrashDetailUniqueSessionCountsByVersion"  hash={} '.format(DATETIME_OF_RUN, crash_hash), pretty(stacktrace)
+    # handle the UniqueSessionCountsByVersion coming back from a crashdetail
+    print (u'{} MessageType="CrashDetailUniqueSessionCountsByVersion"  '
+           u'hash={} ').format(DATETIME_OF_RUN, crash_hash), pretty(stacktrace)
 
 
 def getSCBV(stacktrace, crash_hash):
-# handle the SessionCountsByVersion coming back from a crashdetail
-    print u'{} MessageType="CrashDetailSessionCountsByVersion"  hash={} '.format(DATETIME_OF_RUN, crash_hash), pretty(stacktrace)
+    # handle the SessionCountsByVersion coming back from a crashdetail
+    print (u'{} MessageType="CrashDetailSessionCountsByVersion"  '
+           u'hash={} ').format(DATETIME_OF_RUN, crash_hash), pretty(stacktrace)
 
 
 def getSymStacktrace(stacktrace, crash_hash):
-# handle the lSymbolizedStacktrace coming back from a crashdetail
-    print u'{} MessageType="CrashDetailSymbolizedStacktrace"  hash={} '.format(DATETIME_OF_RUN, crash_hash), pretty(stacktrace)
+    # handle the lSymbolizedStacktrace coming back from a crashdetail
+    print (u'{} MessageType="CrashDetailSymbolizedStacktrace"  '
+           u'hash={} ').format(DATETIME_OF_RUN, crash_hash), pretty(stacktrace)
 
 
 def getCrashDetail(crash_hash, app_id, app_name):
-# given a crashhash, get all of the detail about that crash
+    # given a crashhash, get all of the detail about that crash
 
     crashes = apicall(
         "crash/{}/{}".format(app_id, crash_hash),
@@ -445,7 +469,7 @@ def getCrashDetail(crash_hash, app_id, app_name):
     )
     for dkey in crash_detail.keys():
         if dkey == "breadcrumbTraces":
-            getBreadcrumbs(crash_detail[dkey], crash_hash, app_name)
+            get_breadcrumbs(crash_detail[dkey], crash_hash, app_name)
         elif dkey == "stacktrace":
             getStacktrace(crash_detail[dkey], crash_hash)
         elif dkey == "diagnostics":
@@ -463,11 +487,14 @@ def getCrashDetail(crash_hash, app_id, app_name):
     print print_string
 
 
-def getErrorSummary(appId,appName) :
-# Grab the elements we need from errorMonitoring endpoint
-# errorSummary is returned as a post...
+def getErrorSummary(appId, appName):
+    """
+    Grab the elements we need from errorMonitoring endpoints
 
-# Get the current app loads
+    :param appId:
+    :param appName:
+    :return:
+    """
     params = {
         APPID: appId,
         GRAPH: APPLOADS,
@@ -477,18 +504,22 @@ def getErrorSummary(appId,appName) :
     app_load_sum = apicall("errorMonitoring/graph", params)
 
     dlist = app_load_sum[DATA][SERIES][0]['points']
-    print u'{} MessageType=HourlyAppLoads AppLoads={} appId="{}" appName="{}"'.format(DATETIME_OF_RUN, dlist[len(dlist) - 1], appId, appName)
+    print (u'{} MessageType=HourlyAppLoads AppLoads={} appId="{}" '
+           u'appName="{}"').format(DATETIME_OF_RUN,
+                                   dlist[len(dlist) - 1],
+                                   appId,
+                                   appName)
 
 
 def getCrashesByOS(appId, appName):
     """Get the number of crashes for a given app sorted by OS."""
 
     params = {
-            GRAPH: CRASHES,
-            DURATION: 1440,
-            GROUPBY: OS,
-            APPID: appId
-            }
+        GRAPH: CRASHES,
+        DURATION: 1440,
+        GROUPBY: OS,
+        APPID: appId
+    }
 
     crashesos = apicall("errorMonitoring/pie", params)
     # is user does not have pro access for a given application, this fails.
@@ -500,15 +531,24 @@ def getCrashesByOS(appId, appName):
         for series in crashesos[DATA][SLICES]:
             print_string += u'("{}",{}),'.format(series[LABEL], series[VALUE])
 
-        print u'{} MessageType=DailyCrashesByOS appName="{}" appId="{}" DATA {}'.format(DATETIME_OF_RUN, appName, appId, print_string)
+        print (u'{} MessageType=DailyCrashesByOS appName="{}" appId="{}" '
+               u'DATA {}').format(DATETIME_OF_RUN,
+                                  appName,
+                                  appId,
+                                  print_string)
         return
 
     except KeyError as e:
-        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), 'get_crashes_by_os')
+        print (u'{} MessageType="ApteligentError" Error: '
+               u'Could not access {} in {}.').format(DATETIME_OF_RUN,
+                                                     str(e),
+                                                     'get_crashes_by_os')
         return None, None
 
 
-"""--------------------------------------------------------------"""
+# --------------------------------------------------------------
+
+
 def getGenericPerfMgmt(appId, appName, graph, groupby, messagetype):
     """Generic data return for performanceManagement/pie end point."""
 
@@ -517,37 +557,53 @@ def getGenericPerfMgmt(appId, appName, graph, groupby, messagetype):
         GRAPH: graph,
         DURATION: 1440,
         APPID: appId
-        }
+    }
 
     server_errors = apicall("performanceManagement/pie", params)
-
-#    print "%s DEBUG Into getGenericPerfMgmt appId = %s  appName = %s graph= %s groupby = %s messagetype = %s" %(DATETIME_OF_RUN, appId, appName,graph,groupby,messagetype)
 
     print_string = u''
     try:
         slices = server_errors[DATA][SLICES]
         if slices:
             for series in server_errors[DATA][SLICES]:
-                print_string += u'("{}",{}),'.format(series[LABEL], series[VALUE])
+                print_string += u'("{}",{}),'.format(
+                    series[LABEL], series[VALUE])
 
-            print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(DATETIME_OF_RUN, messagetype, appName, appId, print_string)
+            print (u'{} MessageType={} appName="{}" appId="{}"  '
+                   u'DATA {}').format(DATETIME_OF_RUN,
+                                      messagetype,
+                                      appName,
+                                      appId,
+                                      print_string)
         else:
-            print u'{} MessageType="ApteligentError" Error: API did not return {} data for {}. Returned {}'.format(DATETIME_OF_RUN, messagetype, appId, server_errors['data'])
+            print (u'{} MessageType="ApteligentError" Error: '
+                   u'API did not return {} data for {}. Returned {}').format(
+                       DATETIME_OF_RUN,
+                       messagetype,
+                       appId,
+                       server_errors['data']
+                   )
     except KeyError as e:
-        print u'{} MessageType="ApteligentError" Error: API returned malformed data in {} of {}. Data: {}'.format(DATETIME_OF_RUN, str(e), messagetype, server_errors)
-        return (None, None)
+        print (u'{} MessageType="ApteligentError" Error: '
+               u'API returned malformed data in {} of {}. Data: {}').format(
+                   DATETIME_OF_RUN,
+                   str(e),
+                   messagetype,
+                   server_errors
+               )
+        return None, None
 
 
 def getAPMEndpoints(app_id, app_name, sort, message_type):
     """Get APM Endpoint data."""
 
     params = {
-                APPID: app_id,
-                SORT: sort,
-                LIMIT: 10,
-                DURATION: 240,
-                GEOMODE: True
-            }
+        APPID: app_id,
+        SORT: sort,
+        LIMIT: 10,
+        DURATION: 240,
+        GEOMODE: True
+    }
 
     response = apicall("performanceManagement/endpoints", params)
 
@@ -564,15 +620,23 @@ def getAPMEndpoints(app_id, app_name, sort, message_type):
 
 
 def getAPMServices(app_id, app_name, sort, message_type):
-    """Get APM services data"""
+    """
+    Get APM services data
+
+    :param app_id: string
+    :param app_name: string
+    :param sort: string, sort metric for the API
+    :param message_type: string, message type to print
+    :return:
+    """
 
     params = {
-            APPID: app_id,
-            SORT: sort,
-            LIMIT: 10,
-            DURATION: 240,
-            GEOMODE: True
-        }
+        APPID: app_id,
+        SORT: sort,
+        LIMIT: 10,
+        DURATION: 240,
+        GEOMODE: True
+    }
 
     response = apicall("performanceManagement/services", params)
 
@@ -592,17 +656,17 @@ def getAPMGeo(app_id, app_name, graph, message_type):
     """Get APM geographical data"""
 
     params = {
-            APPID: app_id,
-            GRAPH: graph,
-            LIMIT: 10,
-            DURATION: 240,
-        }
+        APPID: app_id,
+        GRAPH: graph,
+        LIMIT: 10,
+        DURATION: 240,
+    }
 
     response = apicall("performanceManagement/geo", params)
 
     try:
         messages = u','.join([u'("{}",{})'.format(location, data) for location, data in
-                      response[DATA][SERIES][0][GEO].iteritems()])
+                              response[DATA][SERIES][0][GEO].iteritems()])
         print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(
             DATETIME_OF_RUN, message_type, app_name, app_id, messages)
     except KeyError as e:
@@ -611,7 +675,7 @@ def getAPMGeo(app_id, app_name, graph, message_type):
         return None, None
 
 
-def getGenericErrorMon(appId, appName,graph,groupby,messagetype):
+def getGenericErrorMon(appId, appName, graph, groupby, messagetype):
     """Generic data return for errorMonitoring/pie end point."""
 
     params = {
@@ -619,11 +683,9 @@ def getGenericErrorMon(appId, appName,graph,groupby,messagetype):
         GRAPH: graph,
         DURATION: 1440,
         APPID: appId
-        }
+    }
 
-    server_errors = apicall("errorMonitoring/pie",params)
-
-    # print "{} DEBUG Into getGenericErrorMon appId = {}  appName = {} graph= {} groupby = {} messagetype = {} DATA {}".format(DATETIME_OF_RUN, appId, appName,graph,groupby,messagetype, server_errors)
+    server_errors = apicall("errorMonitoring/pie", params)
 
     mystring = u''
     try:
@@ -632,16 +694,34 @@ def getGenericErrorMon(appId, appName,graph,groupby,messagetype):
             for series in slices:
                 mystring += u'("{}",{}),'.format(series[LABEL], series[VALUE])
 
-            print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(DATETIME_OF_RUN, messagetype, appName, appId, mystring)
+            print (u'{} MessageType={} appName="{}" appId="{}"  '
+                   u'DATA {}').format(DATETIME_OF_RUN,
+                                      messagetype,
+                                      appName,
+                                      appId,
+                                      mystring)
         else:
-            print u'{} MessageType="ApteligentError" Error: API did not return {} data for {}. Returned {}'.format(DATETIME_OF_RUN, messagetype, appId, server_errors[DATA])
+            print (u'{} MessageType="ApteligentError" Error: '
+                   u'API did not return {} data for {}. Returned {}').format(
+                       DATETIME_OF_RUN,
+                       messagetype,
+                       appId,
+                       server_errors[DATA]
+                   )
 
     except KeyError as e:
-        print u'{} MessageType="ApteligentError" Error: API returned malformed data in {} of {}. Data: {}'.format(DATETIME_OF_RUN, str(e), messagetype, server_errors)
+        print (u'{} MessageType="ApteligentError" Error: '
+               u'API returned malformed data in {} of {}. Data: {}').format(
+                   DATETIME_OF_RUN,
+                   str(e),
+                   messagetype,
+                   server_errors
+               )
         return (None, None)
 
 
-"""--------------------------------------------------------------"""
+# -------------------------------------------------------------
+
 
 def getUserflowsSummary(app_id, app_name, message_type):
     """Calls the transactions summary endpoint for an app
@@ -658,14 +738,19 @@ def getUserflowsSummary(app_id, app_name, message_type):
     print "USERFLOWS SUMMARY DATA", userflow_data
 
     try:
-        messages = u','.join([u'("{}",{},{})'.format(metric, data[VALUE], data[CHANGE_PCT]) for metric, data in
-                              userflow_data.iteritems()])
+        messages = u','.join(
+            [u'("{}",{},{})'.format(
+                metric,
+                data[VALUE],
+                data[CHANGE_PCT]) for metric, data in userflow_data.iteritems()]
+        )
         print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(
             DATETIME_OF_RUN, message_type, app_name, app_id, messages)
     except KeyError as e:
         print (u'{} MessageType="ApteligentError" Error: Could not access {} '
                u'in {}.'.format(DATETIME_OF_RUN, str(e), message_type))
         return None, None
+
 
 def getUserflowsRanked(app_id, app_name, category, message_type):
     """Calls the transactions ranked endpoint to get the top failed transactions
@@ -683,8 +768,13 @@ def getUserflowsRanked(app_id, app_name, category, message_type):
     userflow_data = response[DATA]
 
     try:
-        messages = u','.join([u'("{}",{},{})'.format(group[NAME], group[FAILURE_RATE], group[UNIT][TYPE]) for group in
-                              userflow_data])
+        messages = u','.join(
+            [u'("{}",{},{})'.format(
+                group[NAME],
+                group[FAILURE_RATE],
+                group[UNIT][TYPE]
+            ) for group in userflow_data]
+        )
         print u'{} MessageType={} appName="{}" appId="{}"  DATA {}'.format(
             DATETIME_OF_RUN, message_type, app_name, app_id, messages)
     except KeyError as e:
@@ -728,18 +818,25 @@ def getUserflowsChangeDetails(app_id, app_name, userflow_dict):
             messages += (u'(Name="{}",volume={},foregroundTime={}s,'
                          u'failed={},failRate={}%,successful={},'
                          u'revenueAtRisk=${})'.format(
-                              group[NAME],
-                              group[SERIES][STARTED_TRANSACTIONS][VALUE],
-                              group[SERIES][MEAN_FOREGROUND_TIME][VALUE],
-                              group[SERIES][FAILED_TRANSACTIONS][VALUE],
-                              group[SERIES][FAIL_RATE][VALUE],
-                              group[SERIES][SUCCEEDED_TRANSACTIONS][VALUE],
-                              group[SERIES][FAILED_MONEY_VALUE][VALUE]))
-            print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(
-                DATETIME_OF_RUN, 'UserflowsChangeDetails', app_name, app_id, messages)
+                             group[NAME],
+                             group[SERIES][STARTED_TRANSACTIONS][VALUE],
+                             group[SERIES][MEAN_FOREGROUND_TIME][VALUE],
+                             group[SERIES][FAILED_TRANSACTIONS][VALUE],
+                             group[SERIES][FAIL_RATE][VALUE],
+                             group[SERIES][SUCCEEDED_TRANSACTIONS][VALUE],
+                             group[SERIES][FAILED_MONEY_VALUE][VALUE]))
+            print (u'{} MessageType={} appName="{}" appId="{}" '
+                   u'DATA {}').format(DATETIME_OF_RUN,
+                                      'UserflowsChangeDetails',
+                                      app_name,
+                                      app_id,
+                                      messages)
     except KeyError as e:
         print (u'{} MessageType="ApteligentError" Error: Could not access {} '
-               u'in {}.'.format(DATETIME_OF_RUN, str(e), 'UserflowsChangeDetails'))
+               u'in {}.'.format(DATETIME_OF_RUN,
+                                str(e),
+                                'UserflowsChangeDetails'))
+
 
 def getUserflowsGroups(app_id, app_name, group):
     """Call the transactions group endpoint for a group
@@ -758,19 +855,23 @@ def getUserflowsGroups(app_id, app_name, group):
     try:
         for transaction in userflow_data[SERIES].keys():
             messages = u''
-            messages += u'(Metric="{}",count={},rate={}%,moneyValue=${},meanDuration={})'.format(
-                transaction,
-                userflow_data[SERIES][transaction][COUNT][VALUE],
-                userflow_data[SERIES][transaction][RATE][VALUE],
-                userflow_data[SERIES][transaction][MONEY_VALUE][VALUE],
-                userflow_data[SERIES][transaction][MEAN_DURATION][VALUE])
-            print u'{} MessageType={} appId="{}" appName="{}" Userflow="{}" DATA {}'.format(
-                DATETIME_OF_RUN,
-                'UserflowGroup',
-                app_id,
-                app_name,
-                group,
-                messages)
+            messages += (u'(Metric="{}",count={},rate={}%,moneyValue=${},'
+                         u'meanDuration={})').format(
+                             transaction,
+                             userflow_data[SERIES][transaction][COUNT][VALUE],
+                             userflow_data[SERIES][transaction][RATE][VALUE],
+                             userflow_data[SERIES][transaction][MONEY_VALUE][VALUE],
+                             userflow_data[SERIES][transaction][MEAN_DURATION][VALUE]
+                         )
+            print (u'{} MessageType={} appId="{}" appName="{}" Userflow="{}" '
+                   u'DATA {}').format(
+                       DATETIME_OF_RUN,
+                       'UserflowGroup',
+                       app_id,
+                       app_name,
+                       group,
+                       messages
+                   )
 
     except KeyError as e:
         print (u'{} MessageType="ApteligentError" Error: Could not access {} '
@@ -784,27 +885,43 @@ def getDailyAppLoads(appId, appName):
         GRAPH: APPLOADS,
         DURATION: 1440,
         APPID: appId,
-        }
+    }
 
     apploadsD = apicall("errorMonitoring/graph", params)
 
     try:
-        print u'{} MessageType=DailyAppLoads appName="{}" appId="{}" dailyAppLoads={}'.format(DATETIME_OF_RUN, appName, appId, apploadsD[DATA][SERIES][0]['points'][0])
+        print (u'{} MessageType=DailyAppLoads appName="{}" appId="{}" '
+               u'dailyAppLoads={}').format(
+                   DATETIME_OF_RUN,
+                   appName,
+                   appId,
+                   apploadsD[DATA][SERIES][0]['points'][0]
+               )
     except KeyError as e:
-        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), 'get_daily_app_loads')
+        print (u'{} MessageType="ApteligentError" Error: '
+               u'Could not access {} in {}.').format(DATETIME_OF_RUN,
+                                                     str(e),
+                                                     'get_daily_app_loads')
         return None
 
 
 def getDailyCrashes(appId, appName):
-    """Get the number of daily app crashes for a given app."""
-    """good candidate for 'backfill' data if needed"""
+    """Get the number of daily app crashes for a given app.
+    good candidate for 'backfill' data if needed"""
 
     crashdata = apicall("app/%s/crash/counts" % appId)[DATA]
 
     try:
-        print u'{} MessageType=DailyCrashes appName="{}" appId="{}" dailyCrashes={}'.format(DATETIME_OF_RUN, appName, appId, crashdata[len(crashdata) - 1][VALUE])
+        print (u'{} MessageType=DailyCrashes appName="{}" appId="{}" '
+               u'dailyCrashes={}').format(DATETIME_OF_RUN,
+                                          appName,
+                                          appId,
+                                          crashdata[len(crashdata) - 1][VALUE])
     except KeyError as e:
-        print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), 'get_daily_crashes')
+        print (u'{} MessageType="ApteligentError" Error: '
+               u'Could not access {} in {}.').format(DATETIME_OF_RUN,
+                                                     str(e),
+                                                     'get_daily_crashes')
         return None
 
     return
@@ -827,7 +944,8 @@ def getTrends(appId, appName):
 
 
 def getTopValues(appId, appName, trendsData):
-    """Pulls todayTopValues data out of the trends dictionary for specific trends, and prints to Splunk.
+    """Pulls todayTopValues data out of the trends dictionary
+    for specific trends, and prints to Splunk.
     :param appId: (string) App ID
     :param appName: (string) Human-readable app name
     :param trendsData: (dict) A dictionary of trends data
@@ -841,19 +959,29 @@ def getTopValues(appId, appName, trendsData):
 
     for trend in trend_names:
         messages = u''
-        for version, value in trendsData[SERIES][trend]['todayTopValues'].iteritems():
+        for version, value in trendsData[SERIES][
+                trend]['todayTopValues'].iteritems():
             messages += u'("{}",{}),'.format(version, value)
         try:
-            print u'{} MessageType={} appName="{}" appId="{}" DATA {}'.format(DATETIME_OF_RUN, trend, appName, appId, messages)
+            print (u'{} MessageType={} appName="{}" appId="{}" '
+                   u'DATA {}').format(DATETIME_OF_RUN,
+                                      trend,
+                                      appName,
+                                      appId,
+                                      messages)
         except KeyError as e:
-            print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), 'TopValues')
+            print (u'{} MessageType="ApteligentError" Error: '
+                   u'Could not access {} in {}.').format(DATETIME_OF_RUN,
+                                                         str(e),
+                                                         'TopValues')
             continue
 
     return
 
 
-def getTimeseriesTrends(appId,appName,trendsData):
-    """Pulls time series data out of the trends dictionary for crashes by version, and prints to Splunk.
+def getTimeseriesTrends(appId, appName, trendsData):
+    """Pulls time series data out of the trends dictionary for
+    crashes by version, and prints to Splunk.
     :param appId: (string) App ID
     :param appName: (string) Human-readable app name
     :param trendsData: (dict) A dictionary of trends data
@@ -862,18 +990,28 @@ def getTimeseriesTrends(appId,appName,trendsData):
 
     for version in trendsData[SERIES][CRASHESBYVERSION][CATEGORIES].keys():
         messages = u''
-        for bucket in trendsData[SERIES][CRASHESBYVERSION][CATEGORIES][version]['buckets']:
+        for bucket in trendsData[SERIES][CRASHESBYVERSION][
+                CATEGORIES][version]['buckets']:
             messages += u'({},{}),'.format(bucket[START][:10], bucket[VALUE])
         try:
-            print u'{} MessageType={} appName="{}" appId="{}" appVersion="{}" DATA {}'.format(DATETIME_OF_RUN, "TimeseriesTrends",
-                                                                                              appName, appId, version, messages)
+            print (u'{} MessageType={} appName="{}" appId="{}" appVersion="{}" '
+                   u'DATA {}').format(DATETIME_OF_RUN,
+                                      "TimeseriesTrends",
+                                      appName,
+                                      appId,
+                                      version,
+                                      messages)
         except KeyError as e:
-            print u'{} MessageType="ApteligentError" Error: Could not access {} in {}.'.format(DATETIME_OF_RUN, str(e), 'TimeseriesTrends')
+            print (u'{} MessageType="ApteligentError" Error: '
+                   u'Could not access {} in {}.').format(DATETIME_OF_RUN,
+                                                         str(e),
+                                                         'TimeseriesTrends')
     return
 
+
 def getCrashCounts(appId, appName):
-    """Get the number of daily app crashes for a given app."""
-    """good candidate for 'backfill' data if needed"""
+    """Get the number of daily app crashes for a given app.
+    good candidate for 'backfill' data if needed"""
 
     crash_data = apicall("app/crash/counts/{}".format(appId))
 
@@ -883,19 +1021,19 @@ def getCrashCounts(appId, appName):
         for series in crash_data[DATA]:
             print_string += u'({},{}),'.format(series[DATE], series[VALUE])
 
-        print u'{} MessageType=CrashCounts appName="{}" appId="{}" DATA ' \
-              u'{}'.format(DATETIME_OF_RUN, appName, appId, print_string)
+        print (u'{} MessageType=CrashCounts appName="{}" appId="{}" '
+               u'DATA {}').format(DATETIME_OF_RUN, appName, appId, print_string)
 
     except KeyError as e:
-        print u'{} MessageType="ApteligentError" Error: Could not access ' \
-              u'{} in {}.'.format(DATETIME_OF_RUN, str(e), 'get_crash_counts')
+        print (u'{} MessageType="ApteligentError" Error: Could not access {} '
+               u'in {}.').format(DATETIME_OF_RUN, str(e), 'get_crash_counts')
         return None
 
     return
 
 
 def getCredentials(sessionKey):
-# access the credentials in /servicesNS/nobody/<MyApp>/admin/passwords
+    # access the credentials in /servicesNS/nobody/<MyApp>/admin/passwords
 
     if DEBUG:
         print u'{} MessageType="ApteligentDebug"  Into getCredentials'.format(
@@ -917,7 +1055,7 @@ def getCredentials(sessionKey):
                 owner='nobody',
                 sessionKey=sessionKey
             )
-        except Exception, e:
+        except Exception as e:
             print (u'{} MessageType="ApteligentDebug" '
                    u'Could not get {} credentials from splunk. '
                    u'Error: {}'.format(DATETIME_OF_RUN, myapp, str(e)))
@@ -939,33 +1077,17 @@ def getCredentials(sessionKey):
 
     return auth
 
-
-def parse_arguments_for_debugging():
-    """
-    Capture command line arguments in order to run the script
-    outside of Splunk.
-    :return:
-    """
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--debug', action='store_true')
-    parser.add_argument('--token')
-    args = parser.parse_args()
-    if args.debug:
-        return args.token, args.debug
-    else:
-        return None, None
-
 ###########
 
 
-def main(access_token=None, debug=None):
-    #read session key sent from splunkd
-    if debug:
+def main():
+    # read session key sent from splunkd
+    if DEBUG:
         sessionKey = "bogus_session_key_for_debugging"
     else:
         sessionKey = sys.stdin.readline().strip()
 
-    if debug:
+    if DEBUG:
         print u'{} MessageType="ApteligentDebug" sessionKey is {}'.format(
             DATETIME_OF_RUN,
             sessionKey
@@ -973,19 +1095,19 @@ def main(access_token=None, debug=None):
 
     if len(sessionKey) == 0:
         print (u'{} MessageType="ApteligentError" '
-              u'Did not receive a session key from splunk. ').format(
-               DATETIME_OF_RUN
+               u'Did not receive a session key from splunk. ').format(
+                   DATETIME_OF_RUN
                )
         exit(2)
 
     # now get crittercism oauth token
-    if not access_token:
-        access_token = getCredentials(sessionKey)
+    global ACCESS_TOKEN
+    ACCESS_TOKEN = getCredentials(sessionKey)
 
-    if debug:
+    if DEBUG:
         print u'{} MessageType="ApteligentDebug" OAuth token is {}'.format(
             DATETIME_OF_RUN,
-            access_token
+            ACCESS_TOKEN
         )
 
 # Get application summary information.
@@ -1002,21 +1124,81 @@ def main(access_token=None, debug=None):
         getDailyCrashes(key, apps[key][NAME])
         getCrashCounts(key, apps[key][NAME])
 
-        getGenericPerfMgmt(key, apps[key][NAME], VOLUME, DEVICE, 'DailyVolumeByDevice')
-        getGenericPerfMgmt(key, apps[key][NAME], ERRORS, SERVICE, 'DailyServiceErrorRates')
+        getGenericPerfMgmt(
+            key,
+            apps[key][NAME],
+            VOLUME,
+            DEVICE,
+            'DailyVolumeByDevice')
+        getGenericPerfMgmt(
+            key,
+            apps[key][NAME],
+            ERRORS,
+            SERVICE,
+            'DailyServiceErrorRates')
         getGenericPerfMgmt(key, apps[key][NAME], VOLUME, OS, 'DailyVolumeByOS')
-        getGenericPerfMgmt(key, apps[key][NAME], VOLUME, APPVERSION, 'VolumeByAppVersion')
+        getGenericPerfMgmt(
+            key,
+            apps[key][NAME],
+            VOLUME,
+            APPVERSION,
+            'VolumeByAppVersion')
 
-        getGenericErrorMon(key, apps[key][NAME], CRASHES, DEVICE, 'CrashesByDevice')
-        getGenericErrorMon(key, apps[key][NAME], CRASHPERCENT, DEVICE, 'CrashPerByDevice')
+        getGenericErrorMon(
+            key,
+            apps[key][NAME],
+            CRASHES,
+            DEVICE,
+            'CrashesByDevice')
+        getGenericErrorMon(
+            key,
+            apps[key][NAME],
+            CRASHPERCENT,
+            DEVICE,
+            'CrashPerByDevice')
         getGenericErrorMon(key, apps[key][NAME], APPLOADS, OS, 'ApploadsByOs')
-        getGenericErrorMon(key, apps[key][NAME], CRASHES, OS, 'DailyCrashesByOs')
-        getGenericErrorMon(key, apps[key][NAME], CRASHPERCENT, OS, 'CrashPerByOs')
-        getGenericErrorMon(key, apps[key][NAME], CRASHPERCENT, APPVERSION, 'CrashPerByAppVersion')
-        getGenericErrorMon(key, apps[key][NAME], CRASHES, APPVERSION, 'CrashByAppVersion')
-        getGenericErrorMon(key, apps[key][NAME], APPLOADS, APPVERSION, 'LoadsByAppVersion')
-        getGenericErrorMon(key, apps[key][NAME], DAU, APPVERSION, 'DauByAppVersion')
-        getGenericErrorMon(key, apps[key][NAME], APPLOADS, DEVICE, 'ApploadsByDevice')
+        getGenericErrorMon(
+            key,
+            apps[key][NAME],
+            CRASHES,
+            OS,
+            'DailyCrashesByOs')
+        getGenericErrorMon(
+            key,
+            apps[key][NAME],
+            CRASHPERCENT,
+            OS,
+            'CrashPerByOs')
+        getGenericErrorMon(
+            key,
+            apps[key][NAME],
+            CRASHPERCENT,
+            APPVERSION,
+            'CrashPerByAppVersion')
+        getGenericErrorMon(
+            key,
+            apps[key][NAME],
+            CRASHES,
+            APPVERSION,
+            'CrashByAppVersion')
+        getGenericErrorMon(
+            key,
+            apps[key][NAME],
+            APPLOADS,
+            APPVERSION,
+            'LoadsByAppVersion')
+        getGenericErrorMon(
+            key,
+            apps[key][NAME],
+            DAU,
+            APPVERSION,
+            'DauByAppVersion')
+        getGenericErrorMon(
+            key,
+            apps[key][NAME],
+            APPLOADS,
+            DEVICE,
+            'ApploadsByDevice')
 
         getAPMEndpoints(key, apps[key][NAME], LATENCY, 'ApmEndpointsLatency')
         getAPMEndpoints(key, apps[key][NAME], VOLUME, 'ApmEndpointsVolume')
@@ -1034,9 +1216,12 @@ def main(access_token=None, debug=None):
         getAPMGeo(key, apps[key][NAME], DATA, 'ApmGeoData')
 
         getUserflowsSummary(key, apps[key][NAME], 'UserflowsSummary')
-        getUserflowsRanked(key, apps[key][NAME], FAILED, 'UserflowsRankedFailed')
+        getUserflowsRanked(
+            key,
+            apps[key][NAME],
+            FAILED,
+            'UserflowsRankedFailed')
         getUserflowsDetails(key, apps[key][NAME])
 
-if __name__=='__main__':
-    access_token, DEBUG = parse_arguments_for_debugging()
-    main(access_token, DEBUG)
+if __name__ == '__main__':
+    main()
