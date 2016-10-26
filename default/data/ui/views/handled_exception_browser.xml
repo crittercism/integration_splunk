@@ -68,7 +68,7 @@
     <panel>
       <table>
         <title>Exception Summary</title>
-        <searchString>index=crittercism sourcetype="crittercism" MessageType=ExceptionSummary $appName$ | dedup reason,name | table reason, status, name, lastOccurred, uniqueSessionCount, sessionCount,hash</searchString>
+        <searchString>index=crittercism sourcetype="crittercism" MessageType=ExceptionSummary $appName$ | dedup reason, name | table reason, status, name, last_occurred_time, num_unique_sessions, num_sessions, hash, suspect_line</searchString>
         <earliestTime>-7d@h</earliestTime>
         <latestTime>now</latestTime>
         <option name="wrap">true</option>
@@ -78,7 +78,7 @@
         <option name="count">10</option>
         <drilldown target="exceptiondetails">
           <!-- Access the input on the target form, which is in the same app  -->
-          <!-- sourcetype.tok is the token for an input to the target form    -->
+          <!-- todo: fix this    -->
           <link>crashdetails?form.hash=$row.hash$</link>
         </drilldown>
       </table>

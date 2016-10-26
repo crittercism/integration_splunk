@@ -1,12 +1,14 @@
 import unittest
 import sys
 from StringIO import StringIO
-import mock
 import datetime
+import mock
 
 import critterget
 
+
 class TestSplunk(unittest.TestCase):
+
     def setUp(self):
         # Turn on critterget's debug messages
         critterget.DEBUG = 1
@@ -71,22 +73,22 @@ class TestSplunk(unittest.TestCase):
         self.mock_get.side_effect = [self._response_with_json_data(
             200,
             {'data':
-                 {'bogusappID':
-                      {'appName': 'bogusApp',
-                       'appType': 'bogusType',
-                       'crashPercent': 'bogusCrash',
-                       'dau': 'bogusDAU',
-                       'latency': 'bogusLatency',
-                       'latestAppStoreReleaseDate': 'bogusDate',
-                       'latestVersionString': 'bogusVersion',
-                       'linkToAppStore': 'bogusLink',
-                       'iconURL': 'bogusURL',
-                       'mau': 'bogusMAU',
-                       'rating': 'bogusRating',
-                       'role': 'bogusRole',
-                       'appVersions': ['bogus.version']}
-                  }
+             {'bogusappID':
+              {'appName': 'bogusApp',
+               'appType': 'bogusType',
+               'crashPercent': 'bogusCrash',
+               'dau': 'bogusDAU',
+               'latency': 'bogusLatency',
+               'latestAppStoreReleaseDate': 'bogusDate',
+               'latestVersionString': 'bogusVersion',
+               'linkToAppStore': 'bogusLink',
+               'iconURL': 'bogusURL',
+               'mau': 'bogusMAU',
+               'rating': 'bogusRating',
+               'role': 'bogusRole',
+               'appVersions': ['bogus.version']}
              }
+            }
         )]
         apps = critterget.getAppSummary()
         self.assertEqual(apps.keys()[0], 'bogusappID')
@@ -104,15 +106,15 @@ class TestSplunk(unittest.TestCase):
         self.mock_get.side_effect = [self._response_with_json_data(
             200,
             {'data': [{
-                        'hash': 'bogusHash',
-                        'lastOccurred': 'bogusLast',
-                        'sessionCount': 'bogusCount',
-                        'uniqueSessionCount': 'bogusUniqueCount',
-                        'reason': 'bogusReason',
-                        'status': 'bogusStatus',
-                        'displayReason': 'bogusDisplayReason',
-                        'name': 'bogusName'
-                    }]
+                'hash': 'bogusHash',
+                'lastOccurred': 'bogusLast',
+                'sessionCount': 'bogusCount',
+                'uniqueSessionCount': 'bogusUniqueCount',
+                'reason': 'bogusReason',
+                'status': 'bogusStatus',
+                'displayReason': 'bogusDisplayReason',
+                'name': 'bogusName'
+            }]
             }
 
         )]
@@ -132,27 +134,29 @@ class TestSplunk(unittest.TestCase):
                       output)
         self.assertIn('Code: 404 after retry 1', output)
 
-
     def test_get_breadcrumbs(self):
         crumbs = [{u'appVersion': u'bogusVersion',
-                            u'device': u'bogusDevice',
-                            u'deviceId': u'bogusID',
-                            u'os': u'bogusOS',
-                            u'parsedBreadcrumbs': [
-                                {
-                                    u'deviceOccurredTs': u'bogusTime',
-                                    u'payload':
-                                        {u'priority': u'normal',
-                                         u'text': u'session_start'},
-                                    u'type': u'bogusType',
-                                    u'typeCode': 1
-                                },
-                            {u'deviceOccurredTs': u'bogusTime+1',
-                            u'payload': {u'priority': u'normal',
-                             u'text': u'Breadcrumb: RuntimeException '
-                                      u'Symbolication Test Handled Exception'},
-                            u'type': u'bogusType',
-                            u'typeCode': 1}]}]
+                   u'device': u'bogusDevice',
+                   u'deviceId': u'bogusID',
+                   u'os': u'bogusOS',
+                   u'parsedBreadcrumbs': [
+                       {
+                           u'deviceOccurredTs': u'bogusTime',
+                           u'payload': {
+                               u'priority': u'normal',
+                               u'text': u'session_start'
+                           },
+                           u'type': u'bogusType',
+                           u'typeCode': 1
+                       },
+                       {u'deviceOccurredTs': u'bogusTime+1',
+                        u'payload': {
+                            u'priority': u'normal',
+                            u'text': u'Breadcrumb: RuntimeException '
+                                     u'Symbolication Test Handled Exception'
+                        },
+                        u'type': u'bogusType',
+                        u'typeCode': 1}]}]
 
         output = self._catch_stdout(critterget.get_breadcrumbs,
                                     crumbs,
@@ -171,7 +175,8 @@ class TestSplunk(unittest.TestCase):
     def test_getStacktrace(self):
         trace = [{"bogusLine": 0, "bogusTrace": "fakelib"}]
 
-        output = self._catch_stdout(critterget.getStacktrace, trace, 'fakeHash')
+        output = self._catch_stdout(
+            critterget.getStacktrace, trace, 'fakeHash')
 
         self.assertIn('MessageType="CrashDetailStacktrace"  hash=fakeHash  '
                       '[\n\t{\n\t\t\'bogusTrace\': \'fakelib\',\n\t\t\'bogusLine'
@@ -179,8 +184,8 @@ class TestSplunk(unittest.TestCase):
 
     def test_diag_geo(self):
         geo_data = {'fakeCountry':
-                        {'fakeCity': ['fakeLat', 'fakeLon', 'fakeCrashes']}
-                    }
+                    {'fakeCity': ['fakeLat', 'fakeLon', 'fakeCrashes']}
+                   }
 
         output = self._catch_stdout(critterget.diag_geo, geo_data, 'fakeHash')
 
@@ -222,9 +227,9 @@ class TestSplunk(unittest.TestCase):
 
     def test_diag_cont_bar(self):
         data = {'bogusStat':
-                    {'bogusCategories': ['bogusCategory'],
-                     'bogusData': ['bogusPoint']}
-                }
+                {'bogusCategories': ['bogusCategory'],
+                 'bogusData': ['bogusPoint']}
+               }
 
         output = self._catch_stdout(critterget.diag_cont_bar, data, 'fakeHash')
 
@@ -234,8 +239,8 @@ class TestSplunk(unittest.TestCase):
 
     def test_diag_cont(self):
         data = {'bogusStat': {'bogusAve': 'X.X',
-                'bogusMax': 'Y.Y',
-                'bogusMin': 'Z.Z'}}
+                              'bogusMax': 'Y.Y',
+                              'bogusMin': 'Z.Z'}}
 
         output = self._catch_stdout(critterget.diag_cont, data, 'fakeHash')
 
@@ -255,7 +260,7 @@ class TestSplunk(unittest.TestCase):
         self.assertIn('--UNPROCESSED----bogusKey - bogusData', output)
 
     def test_getDOBV(self):
-        data = {'bogusVersion': ['bogusDate',['bogusData']]}
+        data = {'bogusVersion': ['bogusDate', ['bogusData']]}
 
         output = self._catch_stdout(critterget.getDOBV, data, 'fakeHash')
 
@@ -297,7 +302,7 @@ class TestSplunk(unittest.TestCase):
     def test_getCrashDetail(self):
         self.mock_get.side_effect = [self._response_with_json_data(
             200,
-            {'data': {'bogusStat':'bogusValue'}}
+            {'data': {'bogusStat': 'bogusValue'}}
         )]
 
         output = self._catch_stdout(
@@ -307,8 +312,7 @@ class TestSplunk(unittest.TestCase):
             'fakeApp'
         )
 
-        self.assertIn('reqstring is https://developers.crittercism.com/v2'
-                      '/crash/fakeId/fakeHash', output)
+        self.assertIn('/crash/fakeId/fakeHash', output)
         self.assertIn('MessageType="CrashDetail"  appName="fakeApp" '
                       'bogusStat="bogusValue"', output)
 
@@ -330,8 +334,8 @@ class TestSplunk(unittest.TestCase):
         self.mock_get.side_effect = [self._response_with_json_data(
             200,
             {'data':
-                 {'slices': [{'label': 'bogusLabel', 'value': 'bogusValue'}]}
-             }
+             {'slices': [{'label': 'bogusLabel', 'value': 'bogusValue'}]}
+            }
         )]
 
         output = self._catch_stdout(
@@ -346,7 +350,7 @@ class TestSplunk(unittest.TestCase):
     def test_getDailyAppLoads(self):
         self.mock_get.side_effect = [self._response_with_json_data(
             200,
-            {'data':{'series':[{'points': ['bogusPoint']}]}}
+            {'data': {'series': [{'points': ['bogusPoint']}]}}
         )]
 
         output = self._catch_stdout(
@@ -377,10 +381,10 @@ class TestSplunk(unittest.TestCase):
         self.mock_get.side_effect = [self._response_with_json_data(
             200,
             {'data':
-                 [
-                     {'date': 'bogusDateOne', 'value': 'bogusValueOne'},
-                     {'date': 'bogusDateTwo', 'value': 'bogusValueTwo'}
-                 ]}
+             [
+                 {'date': 'bogusDateOne', 'value': 'bogusValueOne'},
+                 {'date': 'bogusDateTwo', 'value': 'bogusValueTwo'}
+             ]}
         )]
 
         output = self._catch_stdout(
@@ -397,14 +401,14 @@ class TestSplunk(unittest.TestCase):
         self.mock_get.side_effect = [self._response_with_json_data(
             200,
             {'data':
-                 {'slices': [{'label': 'bogusLabel', 'value': 'bogusValue'}]}
-             }
+             {'slices': [{'label': 'bogusLabel', 'value': 'bogusValue'}]}
+            }
         )]
 
         output = self._catch_stdout(critterget.getGenericPerfMgmt,
                                     'appId', 'appName', 'bogusGraph',
                                     'bogusGroup', 'bogusMessageType'
-                                    )
+                                   )
 
         self.assertIn('MessageType=bogusMessageType appName="appName" '
                       'appId="appId"  DATA ("bogusLabel",bogusValue)', output)
@@ -413,8 +417,8 @@ class TestSplunk(unittest.TestCase):
         self.mock_get.side_effect = [self._response_with_json_data(
             200,
             {'data':
-                 {'slices': [{'label': 'bogusLabel', 'value': 'bogusValue'}]}
-             }
+             {'slices': [{'label': 'bogusLabel', 'value': 'bogusValue'}]}
+            }
         )]
 
         output = self._catch_stdout(critterget.getGenericErrorMon,
@@ -456,8 +460,8 @@ class TestSplunk(unittest.TestCase):
         self.mock_get.side_effect = [self._response_with_json_data(
             200,
             {'data':
-                 {'endpoints': [{'d': 'bogusD', 'u': 'bogusU', 's': 'bogusS'}]}
-             }
+             {'endpoints': [{'d': 'bogusD', 'u': 'bogusU', 's': 'bogusS'}]}
+            }
         )]
 
         output = self._catch_stdout(
@@ -474,7 +478,8 @@ class TestSplunk(unittest.TestCase):
     def test_getAPMServices(self):
         self.mock_get.side_effect = [self._response_with_json_data(
             200,
-            {'data': {'services': [{'name': 'bogusName', 'sort': 'bogusSort'}]}}
+            {'data': {'services': [
+                {'name': 'bogusName', 'sort': 'bogusSort'}]}}
         )]
 
         output = self._catch_stdout(
@@ -509,12 +514,12 @@ class TestSplunk(unittest.TestCase):
             u'series':
                 {u'crashesByVersion':
                      {u'todayTopValues':
-                          {'bogusVersion': 'bogusCrashes'}},
-                      u'appLoadsByVersion':
-                          {u'todayTopValues': {'bogusVersion': 'bogusAppLoads'}},
-                      u'appLoadsByOs':
-                          {u'todayTopValues': {'bogusOS': 'bogusAppLoads'}},
-                      u'crashesByOs':
+                      {'bogusVersion': 'bogusCrashes'}},
+                 u'appLoadsByVersion':
+                 {u'todayTopValues': {'bogusVersion': 'bogusAppLoads'}},
+                 u'appLoadsByOs':
+                 {u'todayTopValues': {'bogusOS': 'bogusAppLoads'}},
+                 u'crashesByOs':
                      {u'todayTopValues': {'bogusOS': 'bogusCrashes'}}
                 }
         }
@@ -538,20 +543,20 @@ class TestSplunk(unittest.TestCase):
     def test_getTimeseriesTrends(self):
         trendsData = {
             u'series':
-                  {u'crashesByVersion':
-                       {u'categories':
-                            {'bogusVersion':
-                                 {'buckets': [
-                                     {u'start':
-                                          'YYYY-MM-DDTHH:MM:SS+TZ:TZ',
-                                      u'value': 'bogusVal'
-                                      }
-                                        ]
-                                  }
-                             }
-                        }
-                  }
+            {u'crashesByVersion':
+             {u'categories':
+              {'bogusVersion':
+               {'buckets': [
+                   {u'start':
+                    'YYYY-MM-DDTHH:MM:SS+TZ:TZ',
+                    u'value': 'bogusVal'
+                   }
+               ]
+               }
+              }
              }
+            }
+        }
 
         output = self._catch_stdout(
             critterget.getTimeseriesTrends,
@@ -568,9 +573,9 @@ class TestSplunk(unittest.TestCase):
         self.mock_get.side_effect = [self._response_with_json_data(
             200,
             {'data':
-                 {'bogusMetric':
-                       {'value': 'bogusValue', 'changePct': 'bogusPct'}}
-             }
+             {'bogusMetric':
+              {'value': 'bogusValue', 'changePct': 'bogusPct'}}
+            }
         )]
 
         output = self._catch_stdout(
@@ -587,10 +592,10 @@ class TestSplunk(unittest.TestCase):
     def test_getUserflowsRanked(self):
         self.mock_get.side_effect = [self._response_with_json_data(
             200,
-            {'data':[{'name': 'bogusName',
-                        'failureRate': 'bogusRate',
-                        'unit':{'type':'bogusType'}}]
-             }
+            {'data': [{'name': 'bogusName',
+                       'failureRate': 'bogusRate',
+                       'unit': {'type': 'bogusType'}}]
+            }
         )]
 
         output = self._catch_stdout(
@@ -609,12 +614,12 @@ class TestSplunk(unittest.TestCase):
         userflows_data = [
             {'name': "Bogus",
              'series': {
-                 'startedTransactions': {'value':'bogusVol'},
-                 'meanForegroundTime': {'value':'bogusTime'},
-                 'failedTransactions': {'value':'bogusFailed'},
-                 'failRate': {'value':'bogusRate'},
-                 'succeededTransactions': {'value':'bogusSuccess'},
-                 'failedMoneyValue': {'value':'bogusRev'}
+                 'startedTransactions': {'value': 'bogusVol'},
+                 'meanForegroundTime': {'value': 'bogusTime'},
+                 'failedTransactions': {'value': 'bogusFailed'},
+                 'failRate': {'value': 'bogusRate'},
+                 'succeededTransactions': {'value': 'bogusSuccess'},
+                 'failedMoneyValue': {'value': 'bogusRev'}
              }}
         ]
 
@@ -635,16 +640,16 @@ class TestSplunk(unittest.TestCase):
         self.mock_get.side_effect = [self._response_with_json_data(
             200,
             {'data':
-                 {'series':
-                      {'bogusTransaction':
-                           {'count': {'value': 'bogusCount'},
-                            'rate': {'value': 'bogusRate'},
-                            'moneyValue': {'value': 'bogusMoney'},
-                            'meanDuration': {'value': 'bogusMean'}
-                            }
-                       }
-                  }
+             {'series':
+              {'bogusTransaction':
+               {'count': {'value': 'bogusCount'},
+                'rate': {'value': 'bogusRate'},
+                'moneyValue': {'value': 'bogusMoney'},
+                'meanDuration': {'value': 'bogusMean'}
+               }
+              }
              }
+            }
         )]
 
         output = self._catch_stdout(
@@ -661,43 +666,143 @@ class TestSplunk(unittest.TestCase):
                       'meanDuration=bogusMean)', output)
 
     @mock.patch.object(critterget, 'getUserflowsGroups')
-    def test_getUserflowsDetails(self, mock):
+    def test_getUserflowsDetails(self, mock_userflow):
         self.mock_get.side_effect = [self._response_with_json_data(
             200,
-            {'data': [{'name': 'bogusName'}]}
+            {'data': [
+                {
+                    'name': 'bogusName'
+                }
+                ]
+            }
         )]
 
         critterget.getUserflowsDetails('appId', 'appName')
 
-        self.assertTrue(mock.called)
+        self.assertTrue(mock_userflow.called)
 
-    @mock.patch.object(critterget, 'getAppSummary')
+    def test_get_exception_summary(self):
+        self.mock_get.side_effect = [self._response_with_json_data(
+            200,
+            {'data': [{
+                'displayReason': None,
+                'hash': 'bogusHash',
+                'lastOccurred': '2016-10-25T15:02:33.861761',
+                'name': 'bogusName',
+                'reason': 'because',
+                'sessionCount': 1,
+                'status': 'known',
+                'uniqueSessionCount': 1
+            }]}
+        )]
+        output = self._catch_stdout(
+            critterget.get_exception_summary,
+            'appId',
+            'appName'
+        )
+
+        self.assertIn('MessageType="ExceptionSummary" appId=appId '
+                      'appName="appName" displayReason="None" hash="bogusHash" '
+                      'lastOccurred="2016-10-25T15:02:33.861761" '
+                      'name="bogusName" reason="because" sessionCount="1" '
+                      'status="known" uniqueSessionCount="1"',
+                      output)
+
+    def test_get_exception_counts(self):
+        self.mock_get.side_effect = [self._response_with_json_data(
+            200,
+            {'data': [
+                {
+                    'date': 'bogusDate',
+                    'value': 'bogusValue'
+                }
+            ]}
+        )]
+        output = self._catch_stdout(
+            critterget.get_exception_counts,
+            'appId',
+            'appName'
+        )
+        self.assertIn('MessageType=ExceptionCounts appName="appName" '
+                      'appId="appId" DATA (bogusDate,bogusValue)',
+                      output)
+
+    @mock.patch.object(critterget, 'get_all_pages')
+    def test_get_exception_details(self, all_pages_mock):
+        all_pages_mock.return_value = [
+            {'hash': 'bogusHash',
+             'bogusAttr': 'bogusValue'}
+            ]
+
+        output = self._catch_stdout(
+            critterget.get_exception_details,
+            'appId',
+            'appName'
+        )
+        self.assertIn('MessageType="ExceptionDetail" appId=appId '
+                      'appName=appName exceptionHash="bogusHash"'
+                      'bogusAttr="bogusValue"',
+                      output)
+
+    def test_get_all_pages(self):
+        self.mock_get.side_effect = [
+            self._response_with_json_data(
+                200,
+                {
+                    'data': {
+                        'bogusParam': ['foo', 'bar'],
+                        'pagination': {
+                            'nextPage': 2
+                        }
+                    }
+                }
+            ),
+            self._response_with_json_data(
+                200,
+                {
+                    'data': {
+                        'bogusParam': ['baz', 'qux'],
+                        'pagination': {
+                        }
+                    }
+                }
+            )
+        ]
+
+        all_pages = critterget.get_all_pages('bogusUrl', 'bogusParam')
+
+        _, kwargs = self.mock_get.call_args
+
+        self.assertEqual(all_pages, ['foo', 'bar', 'baz', 'qux'])
+        self.assertEqual(kwargs['params'], {'pageNum': 2})
+
+    @mock.patch.object(critterget, 'get_all_pages')
     @mock.patch.object(critterget, 'getCrashSummary')
-    def test_main(self, app_mock, crash_mock):
+    @mock.patch.object(critterget, 'getAppSummary')
+    def test_main(self, app_mock, crash_mock, all_pages_mock):
         crash_mock.return_value = {'bogusHash': {'name': 'bogusApp'}}
-        app_mock.return_value = {'data':
-                 {'bogusappID':
-                      {'appName': 'bogusApp',
-                       'appType': 'bogusType',
-                       'crashPercent': 'bogusCrash',
-                       'dau': 'bogusDAU',
-                       'latency': 'bogusLatency',
-                       'latestAppStoreReleaseDate': 'bogusDate',
-                       'latestVersionString': 'bogusVersion',
-                       'linkToAppStore': 'bogusLink',
-                       'iconURL': 'bogusURL',
-                       'mau': 'bogusMAU',
-                       'rating': 'bogusRating',
-                       'role': 'bogusRole',
-                       'appVersions': ['bogus.version']}
-                  }
-                                 }
+        app_mock.return_value = {'bogusappID': {
+            'name': 'bogusApp',
+            'appType': 'bogusType',
+            'crashPercent': 'bogusCrash',
+            'dau': 'bogusDAU',
+            'latency': 'bogusLatency',
+            'latestAppStoreReleaseDate': 'bogusDate',
+            'latestVersionString': 'bogusVersion',
+            'linkToAppStore': 'bogusLink',
+            'iconURL': 'bogusURL',
+            'mau': 'bogusMAU',
+            'rating': 'bogusRating',
+            'role': 'bogusRole',
+            'appVersions': ['bogus.version']}
+                                }
+        all_pages_mock.return_value = {}
         old_in = sys.stdin
         sys.stdin = mock.MagicMock
         readline = mock.MagicMock(return_value="bogusKey")
         sys.stdin.readline = readline
-        my_main = critterget.main()
+        critterget.main()
         sys.stdin = old_in
 
-        self.assertTrue(crash_mock.called)
         self.assertTrue(app_mock.called)
+        self.assertTrue(crash_mock.called)

@@ -115,7 +115,7 @@ CRASH_ATTRIBUTES = [
     'uniqueSessionCount'
 ]
 
-BASEURL = "https://developers.crittercism.com/v2/"
+BASEURL = "https://developers.crit-staging.com/v2/"
 
 
 def apicall_with_response_code(uri, attribs=None):
@@ -269,7 +269,7 @@ def getCrashSummary(appId, appName):
     return CrashDict
 
 
-def getExceptionSummary(app_id, app_name):
+def get_exception_summary(app_id, app_name):
     # given an appID and an appName, produce a Splunk KV summary of the
     # exceptions for a given timeframe
 
@@ -281,9 +281,9 @@ def getExceptionSummary(app_id, app_name):
     while http_code != 200:
         http_code, exception_data = apicall_with_response_code(
             "app/exception/summaries/{}".format(
-                app_id,
-                {'lastOccurredStart': mystime}
-            )
+                app_id
+            ),
+            {'lastOccurredStart': mystime}
         )
         retry += 1
         if retry > MAX_RETRY:
@@ -291,19 +291,19 @@ def getExceptionSummary(app_id, app_name):
 
     all_exceptions = {}
     if http_code != 200:
-        print u'{} MessageType="ExceptionSummary" appId={} appName="{}" ' \
-              u'Could not get exception summaries for {}. ' \
-              u'Code: {} after retry {}'.format(DATETIME_OF_RUN,
-                                                app_id, app_name,
-                                                mystime,
-                                                http_code,
-                                                retry)
+        print (u'{} MessageType="ExceptionSummary" appId={} appName="{}" '
+               u'Could not get exception summaries for {}. '
+               u'Code: {} after retry {}').format(DATETIME_OF_RUN,
+                                                  app_id, app_name,
+                                                  mystime,
+                                                  http_code,
+                                                  retry)
     elif exception_data:
         for i, y in enumerate(exception_data[DATA]):
-            printstring = u'{} MessageType="ExceptionSummary" ' \
-                          u'appId={} appName="{}" '.format(
-                DATETIME_OF_RUN, app_id, app_name
-            )
+            printstring = (u'{} MessageType="ExceptionSummary" '
+                           u'appId={} appName="{}" ').format(
+                               DATETIME_OF_RUN, app_id, app_name
+                           )
             for attribute_name in CRASH_ATTRIBUTES:
                 printstring += u'{}="{}" '.format(
                     attribute_name,
@@ -313,11 +313,11 @@ def getExceptionSummary(app_id, app_name):
                     all_exceptions[exception_data[DATA][i][attribute_name]] = app_name
             print printstring
     else:
-        print u'{} MessageType="ExceptionSummary" appId={} appName="{}" ' \
-              u'No crashes found for {}.'.format(DATETIME_OF_RUN,
-                                                 app_id,
-                                                 app_name,
-                                                 mystime)
+        print (u'{} MessageType="ExceptionSummary" appId={} appName="{}" '
+               u'No crashes found for {}.').format(DATETIME_OF_RUN,
+                                                   app_id,
+                                                   app_name,
+                                                   mystime)
 
 
 def get_breadcrumbs(crumbs, crash_hash, appName):
@@ -786,7 +786,6 @@ def getUserflowsSummary(app_id, app_name, message_type):
 
     response = apicall(uri)
     userflow_data = response[DATA]
-    print "USERFLOWS SUMMARY DATA", userflow_data
 
     try:
         messages = u','.join(
@@ -1060,11 +1059,17 @@ def getTimeseriesTrends(appId, appName, trendsData):
     return
 
 
-def getCrashCounts(appId, appName):
-    """Get the number of daily app crashes for a given app.
-    good candidate for 'backfill' data if needed"""
+def getCrashCounts(app_id, app_name):
+    """
+    Get the number of daily app crashes for a given app.
+    good candidate for 'backfill' data if needed
 
-    crash_data = apicall("app/crash/counts/{}".format(appId))
+    :param app_id: string for API call
+    :param app_name: string for Splunk
+    :return: None
+    """
+
+    crash_data = apicall("app/crash/counts/{}".format(app_id))
 
     print_string = u''
 
@@ -1073,7 +1078,10 @@ def getCrashCounts(appId, appName):
             print_string += u'({},{}),'.format(series[DATE], series[VALUE])
 
         print (u'{} MessageType=CrashCounts appName="{}" appId="{}" '
-               u'DATA {}').format(DATETIME_OF_RUN, appName, appId, print_string)
+               u'DATA {}').format(DATETIME_OF_RUN,
+                                  app_name,
+                                  app_id,
+                                  print_string)
 
     except KeyError as e:
         print (u'{} MessageType="ApteligentError" Error: Could not access {} '
@@ -1082,8 +1090,15 @@ def getCrashCounts(appId, appName):
 
     return
 
-def getExceptionCounts(app_id, app_name):
-    """Get the number of daily handled exceptions for a given app."""
+
+def get_exception_counts(app_id, app_name):
+    """
+    Get the number of daily handled exceptions for a given app.
+
+    :param app_id: string for API call
+    :param app_name: string for Splunk
+    :return: None
+    """
 
     exception_data = apicall("app/exception/counts/{}".format(app_id))
 
@@ -1094,16 +1109,17 @@ def getExceptionCounts(app_id, app_name):
             print_string += u'({},{}),'.format(series[DATE], series[VALUE])
 
         print (u'{} MessageType=ExceptionCounts appName="{}" appId="{}" DATA '
-              u'{}').format(DATETIME_OF_RUN, app_name, app_id, print_string)
+               u'{}').format(DATETIME_OF_RUN, app_name, app_id, print_string)
 
     except KeyError as e:
         print (u'{} MessageType="ApteligentError" Error: Could not access '
-              u'{} in {}.').format(DATETIME_OF_RUN, str(e), 'get_exception_counts')
+               u'{} in {}.').format(DATETIME_OF_RUN,
+                                    str(e),
+                                    'get_exception_counts')
         return None
 
-    return
 
-def getExceptionDetails(app_id, app_name, app_versions):
+def get_exception_details(app_id, app_name):
     """
     Get paginated exception summary data and pass it to Splunk
 
@@ -1111,23 +1127,35 @@ def getExceptionDetails(app_id, app_name, app_versions):
     :param app_name: string
     :return: None
     """
+    exceptions = get_all_pages(u'exception/paginatedtable/{}'.format(app_id),
+                               ERRORS)
+    for exception in exceptions:
+        printstring = (u'{} MessageType="ExceptionDetail" appId={} appName={} '
+                       u'exceptionHash="{}"').format(
+                           DATETIME_OF_RUN,
+                           app_id,
+                           app_name,
+                           exception['hash']
+                       )
+        for key, value in exception.iteritems():
+            if key == 'class_name':
+                continue
+            if key == 'hash':
+                continue
+            elif value:
+                printstring += u'{}="{}"'.format(key, value)
+        print printstring
 
-    for version in app_versions:
-        exceptions = getAllPages(
-            u'exception/paginatedtable/{}?appVersion={}'.format(app_id, version),
-            ERRORS
-        )
-        for exception in exceptions:
-            printstring = (u'{} MessageType="ExceptionDetail" appId={} appName={} appVersion="{}" exceptionHash={}').format(DATETIME_OF_RUN, app_id, app_name, version, exception['hash'])
-            for key, value in exception.iteritems():
-                if key == 'hash':
-                    continue
-                elif value:
-                    printstring += u'{}={}'.format(key, value)
-            print printstring
 
-
-def getAllPages(base_url, param_to_get):
+def get_all_pages(base_url, param_to_get=None):
+    """
+    For paginated data, get all pages
+    use the pagination data returned by the API to get all pages
+    :param base_url: string, basic url of the endpoint
+    :param param_to_get: string, a specific parameter inside the 'data'
+        object returned by the API, e.g. 'errors'
+    :return:
+    """
     page = apicall(base_url)
     pagenum = 'pageNum'
     pagination = 'pagination'
@@ -1135,9 +1163,12 @@ def getAllPages(base_url, param_to_get):
     attribs = {pagenum: 1}
 
     while page:
-        pages = pages + page[DATA][param_to_get]
-        attribs[pagenum] += 1
-        if page.get(pagination) and page.get(pagination)['nextPage']:
+        if param_to_get:
+            pages = pages + page[DATA][param_to_get]
+        else:
+            pages = pages + page[DATA]
+        if page[DATA].get(pagination) and page[DATA].get(pagination).get('nextPage'):
+            attribs[pagenum] += 1
             page = apicall(base_url, attribs=attribs)
         else:
             page = None
@@ -1145,7 +1176,12 @@ def getAllPages(base_url, param_to_get):
     return pages
 
 def getCredentials(sessionKey):
-    # access the credentials in /servicesNS/nobody/<MyApp>/admin/passwords
+    """
+    access the credentials in /servicesNS/nobody/<MyApp>/admin/passwords
+
+    :param sessionKey: string, unique key from Splunk
+    :return:
+    """
 
     if DEBUG:
         print u'{} MessageType="ApteligentDebug"  Into getCredentials'.format(
@@ -1193,7 +1229,6 @@ def getCredentials(sessionKey):
 
 
 def main():
-    # read session key sent from splunkd
     if DEBUG:
         sessionKey = "bogus_session_key_for_debugging"
     else:
@@ -1236,9 +1271,9 @@ def main():
         getDailyCrashes(key, apps[key][NAME])
         getCrashCounts(key, apps[key][NAME])
 
-        getExceptionCounts(key, apps[key]['name'])
-        getExceptionSummary(key, apps[key]['name'])
-        getExceptionDetails(key, apps[key]['name'], apps[key]['appVersions'])
+        get_exception_counts(key, apps[key][NAME])
+        get_exception_summary(key, apps[key][NAME])
+        get_exception_details(key, apps[key][NAME])
 
         getGenericPerfMgmt(
             key,
