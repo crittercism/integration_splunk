@@ -60,6 +60,7 @@ FAILED_TRANSACTIONS = 'failedTransactions'
 FAIL_RATE = 'failRate'
 FAILURE_RATE = 'failureRate'
 FILTERS = 'filters'
+HASH = 'hash'
 LABEL = 'label'
 LATENCY = 'latency'
 LIMIT = 'limit'
@@ -115,7 +116,7 @@ CRASH_ATTRIBUTES = [
     'uniqueSessionCount'
 ]
 
-BASEURL = "https://developers.crit-staging.com/v2/"
+BASEURL = "https://developers.crittercism.com/v2/"
 
 
 def apicall_with_response_code(uri, attribs=None):
@@ -247,7 +248,7 @@ def getCrashSummary(appId, appName):
                                                   http_code,
                                                   retry)
     elif crashdata:
-        for i, y in enumerate(crashdata[DATA]):
+        for crash in crashdata[DATA]:
             printstring = (u'{} MessageType="CrashSummary" '
                            u'appId={} appName="{}" ').format(
                                DATETIME_OF_RUN, appId, appName
@@ -255,10 +256,10 @@ def getCrashSummary(appId, appName):
             for attribute_name in CRASH_ATTRIBUTES:
                 printstring += u'{}="{}" '.format(
                     attribute_name,
-                    crashdata[DATA][i][attribute_name]
+                    crash[attribute_name]
                 )
-                if attribute_name == 'hash':
-                    CrashDict[crashdata[DATA][i][attribute_name]] = appName
+                if attribute_name == HASH:
+                    CrashDict[crash[attribute_name]] = appName
             print printstring
     else:
         print (u'{} MessageType="CrashSummary" appId={} appName="{}" '
@@ -270,20 +271,23 @@ def getCrashSummary(appId, appName):
 
 
 def get_exception_summary(app_id, app_name):
-    # given an appID and an appName, produce a Splunk KV summary of the
-    # exceptions for a given timeframe
+    """
+    given an appID and an appName, produce a Splunk summary of the
+    exceptions for a given timeframe
+    :param app_id: string for API call
+    :param app_name: string for Splunk
+    :return: None
+    """
 
-    mystime = scopetime()
+    time_to_look_back = scopetime()
     exception_data = None
 
     http_code = None
     retry = 0
     while http_code != 200:
         http_code, exception_data = apicall_with_response_code(
-            "app/exception/summaries/{}".format(
-                app_id
-            ),
-            {'lastOccurredStart': mystime}
+            "app/exception/summaries/{}".format(app_id),
+            {'lastOccurredStart': time_to_look_back}
         )
         retry += 1
         if retry > MAX_RETRY:
@@ -295,11 +299,11 @@ def get_exception_summary(app_id, app_name):
                u'Could not get exception summaries for {}. '
                u'Code: {} after retry {}').format(DATETIME_OF_RUN,
                                                   app_id, app_name,
-                                                  mystime,
+                                                  time_to_look_back,
                                                   http_code,
                                                   retry)
     elif exception_data:
-        for i, y in enumerate(exception_data[DATA]):
+        for exception in exception_data[DATA]:
             printstring = (u'{} MessageType="ExceptionSummary" '
                            u'appId={} appName="{}" ').format(
                                DATETIME_OF_RUN, app_id, app_name
@@ -307,17 +311,17 @@ def get_exception_summary(app_id, app_name):
             for attribute_name in CRASH_ATTRIBUTES:
                 printstring += u'{}="{}" '.format(
                     attribute_name,
-                    exception_data[DATA][i][attribute_name]
+                    exception[attribute_name]
                 )
-                if attribute_name == "hash":
-                    all_exceptions[exception_data[DATA][i][attribute_name]] = app_name
+                if attribute_name == HASH:
+                    all_exceptions[exception[attribute_name]] = app_name
             print printstring
     else:
         print (u'{} MessageType="ExceptionSummary" appId={} appName="{}" '
                u'No crashes found for {}.').format(DATETIME_OF_RUN,
                                                    app_id,
                                                    app_name,
-                                                   mystime)
+                                                   time_to_look_back)
 
 
 def get_breadcrumbs(crumbs, crash_hash, appName):
@@ -1135,12 +1139,12 @@ def get_exception_details(app_id, app_name):
                            DATETIME_OF_RUN,
                            app_id,
                            app_name,
-                           exception['hash']
+                           exception[HASH]
                        )
         for key, value in exception.iteritems():
             if key == 'class_name':
                 continue
-            if key == 'hash':
+            if key == HASH:
                 continue
             elif value:
                 printstring += u'{}="{}"'.format(key, value)
