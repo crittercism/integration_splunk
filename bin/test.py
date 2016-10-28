@@ -102,35 +102,16 @@ class TestSplunk(unittest.TestCase):
         )
         self.assertLessEqual(test_time, interval_time.isoformat())
 
-    def test_getCrashSummary(self):
-        self.mock_get.side_effect = [self._response_with_json_data(
-            200,
-            {'data': [{
-                'hash': 'bogusHash',
-                'lastOccurred': 'bogusLast',
-                'sessionCount': 'bogusCount',
-                'uniqueSessionCount': 'bogusUniqueCount',
-                'reason': 'bogusReason',
-                'status': 'bogusStatus',
-                'displayReason': 'bogusDisplayReason',
-                'name': 'bogusName'
-            }]
-            }
-
-        )]
-        crashes = critterget.getCrashSummary('bogusappID', 'bogusName')
-        self.assertEqual(crashes, {'bogusHash': 'bogusName'})
-
-    def test_getCrashSummary_timeout(self):
+    def test_get_error_summary_timeout(self):
         self.mock_get.side_effect = [self._response_with_json_data(404, [])]
         critterget.MAX_RETRY = 0
-        output = self._catch_stdout(critterget.getCrashSummary,
+        output = self._catch_stdout(critterget.get_error_summary,
                                     'bogusappID',
                                     'bogusName')
 
         critterget.MAX_RETRY = 10
         self.assertIn('MessageType="CrashSummary" appId=bogusappID '
-                      'appName="bogusName" Could not get crash summaries for',
+                      'appName="bogusName" Could not get error summaries for',
                       output)
         self.assertIn('Code: 404 after retry 1', output)
 
@@ -376,26 +357,6 @@ class TestSplunk(unittest.TestCase):
 
         self.assertIn('MessageType=DailyCrashes appName="appName" '
                       'appId="appId" dailyCrashes=bogusValue', output)
-
-    def test_getCrashCounts(self):
-        self.mock_get.side_effect = [self._response_with_json_data(
-            200,
-            {'data':
-             [
-                 {'date': 'bogusDateOne', 'value': 'bogusValueOne'},
-                 {'date': 'bogusDateTwo', 'value': 'bogusValueTwo'}
-             ]}
-        )]
-
-        output = self._catch_stdout(
-            critterget.getCrashCounts,
-            'appId',
-            'appName'
-        )
-
-        self.assertIn('MessageType=CrashCounts appName="appName" '
-                      'appId="appId" DATA (bogusDateOne,bogusValueOne),'
-                      '(bogusDateTwo,bogusValueTwo)', output)
 
     def test_getGenericPerfMgmt(self):
         self.mock_get.side_effect = [self._response_with_json_data(
@@ -681,7 +642,7 @@ class TestSplunk(unittest.TestCase):
 
         self.assertTrue(mock_userflow.called)
 
-    def test_get_exception_summary(self):
+    def test_get_error_summary_exception(self):
         self.mock_get.side_effect = [self._response_with_json_data(
             200,
             {'data': [{
@@ -696,9 +657,10 @@ class TestSplunk(unittest.TestCase):
             }]}
         )]
         output = self._catch_stdout(
-            critterget.get_exception_summary,
+            critterget.get_error_summary,
             'appId',
-            'appName'
+            'appName',
+            is_crash=False
         )
 
         self.assertIn('MessageType="ExceptionSummary" appId=appId '
@@ -708,7 +670,35 @@ class TestSplunk(unittest.TestCase):
                       'status="known" uniqueSessionCount="1"',
                       output)
 
-    def test_get_exception_counts(self):
+    def test_get_error_summary_crash(self):
+        self.mock_get.side_effect = [self._response_with_json_data(
+            200,
+            {'data': [{
+                'displayReason': None,
+                'hash': 'bogusHash',
+                'lastOccurred': '2016-10-25T15:02:33.861761',
+                'name': 'bogusName',
+                'reason': 'because',
+                'sessionCount': 1,
+                'status': 'known',
+                'uniqueSessionCount': 1
+            }]}
+        )]
+        output = self._catch_stdout(
+            critterget.get_error_summary,
+            'appId',
+            'appName',
+            is_crash=True
+        )
+
+        self.assertIn('MessageType="CrashSummary" appId=appId '
+                      'appName="appName" displayReason="None" hash="bogusHash" '
+                      'lastOccurred="2016-10-25T15:02:33.861761" '
+                      'name="bogusName" reason="because" sessionCount="1" '
+                      'status="known" uniqueSessionCount="1"',
+                      output)
+
+    def test_get_error_counts_exceptions(self):
         self.mock_get.side_effect = [self._response_with_json_data(
             200,
             {'data': [
@@ -719,25 +709,95 @@ class TestSplunk(unittest.TestCase):
             ]}
         )]
         output = self._catch_stdout(
-            critterget.get_exception_counts,
+            critterget.get_error_counts,
             'appId',
-            'appName'
+            'appName',
+            is_crash=False
         )
         self.assertIn('MessageType=ExceptionCounts appName="appName" '
                       'appId="appId" DATA (bogusDate,bogusValue)',
                       output)
 
-    @mock.patch.object(critterget, 'get_all_pages')
-    def test_get_exception_details(self, all_pages_mock):
-        all_pages_mock.return_value = [
-            {'hash': 'bogusHash',
-             'bogusAttr': 'bogusValue'}
-            ]
+    def test_get_error_counts_crashes(self):
+        self.mock_get.side_effect = [self._response_with_json_data(
+            200,
+            {'data': [
+                {
+                    'date': 'bogusDate',
+                    'value': 'bogusValue'
+                }
+            ]}
+        )]
+        output = self._catch_stdout(
+            critterget.get_error_counts,
+            'appId',
+            'appName',
+            is_crash=True
+        )
+        self.assertIn('MessageType=CrashCounts appName="appName" '
+                      'appId="appId" DATA (bogusDate,bogusValue)',
+                      output)
+
+    def test_get_exception_details(self):
+        self.mock_get.side_effect = [
+            self._response_with_json_data(
+                200,
+                {
+                    'data': {
+                        'errors': [
+                            {
+                                'hash': 'bogusHash',
+                                'bogusAttr': 'bogusValue'
+                            }
+                        ],
+                        'pagination': {
+                            'pageNum': 1,
+                            'totalPages': 2
+                        }
+                    }
+                }
+            ),
+            self._response_with_json_data(
+                200,
+                {
+                    'data': {
+                        'errors': [
+                            {
+                                'hash': 'bogusHash',
+                                'bogusAttr': 'bogusValue'
+                            }
+                        ],
+                        'pagination': {
+                            'pageNum': 1,
+                            'totalPages': 2
+                        }
+                    }
+                }
+            ),
+            self._response_with_json_data(
+                200,
+                {
+                    'data': {
+                        'errors': [
+                            {
+                                'hash': 'bogusHashSecond',
+                                'bogusParam': 'bar'
+                            }
+                        ],
+                        'pagination': {
+                            'pageNum': 2,
+                            'totalPages': 2
+                        }
+                    }
+                }
+            )
+        ]
 
         output = self._catch_stdout(
-            critterget.get_exception_details,
+            critterget.get_error_details,
             'appId',
-            'appName'
+            'appName',
+            is_crash=False
         )
         self.assertIn('MessageType="ExceptionDetail" appId=appId '
                       'appName=appName exceptionHash="bogusHash"'
@@ -752,7 +812,20 @@ class TestSplunk(unittest.TestCase):
                     'data': {
                         'bogusParam': ['foo', 'bar'],
                         'pagination': {
-                            'nextPage': 2
+                            'pageNum': 1,
+                            'totalPages': 2
+                        }
+                    }
+                }
+            ),
+            self._response_with_json_data(
+                200,
+                {
+                    'data': {
+                        'bogusParam': ['foo', 'bar'],
+                        'pagination': {
+                            'pageNum': 1,
+                            'totalPages': 2
                         }
                     }
                 }
@@ -763,21 +836,26 @@ class TestSplunk(unittest.TestCase):
                     'data': {
                         'bogusParam': ['baz', 'qux'],
                         'pagination': {
+                            'pageNum': 2,
+                            'totalPages': 2
                         }
                     }
                 }
             )
         ]
 
-        all_pages = critterget.get_all_pages('bogusUrl', 'bogusParam')
+        all_pages = critterget.get_all_pages('bogusUrl')
+
+        page_one = all_pages.next()['data']['bogusParam']
+        page_two = all_pages.next()['data']['bogusParam']
 
         _, kwargs = self.mock_get.call_args
-
-        self.assertEqual(all_pages, ['foo', 'bar', 'baz', 'qux'])
+        self.assertEqual(page_one, ['foo', 'bar'])
+        self.assertEqual(page_two, ['baz', 'qux'])
         self.assertEqual(kwargs['params'], {'pageNum': 2})
 
     @mock.patch.object(critterget, 'get_all_pages')
-    @mock.patch.object(critterget, 'getCrashSummary')
+    @mock.patch.object(critterget, 'get_error_summary')
     @mock.patch.object(critterget, 'getAppSummary')
     def test_main(self, app_mock, crash_mock, all_pages_mock):
         crash_mock.return_value = {'bogusHash': {'name': 'bogusApp'}}
