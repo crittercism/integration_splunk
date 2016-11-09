@@ -38,6 +38,7 @@ CATEGORIES = 'categories'
 CHANGE_PCT = 'changePct'
 COUNT = 'count'
 COUNTRY = 'country'
+CRASH = 'crash'
 CRASHES = 'crashes'
 CRASHESBYVERSION = 'crashesByVersion'
 CRASHPERCENT = 'crashPercent'
@@ -49,6 +50,7 @@ DEVICE = 'device'
 DURATION = 'duration'
 ENDPOINTS = 'endpoints'
 ERRORS = 'errors'
+EXCEPTION = 'exception'
 GEO = 'geo'
 GEOMODE = 'geoMode'
 GRAPH = 'graph'
@@ -215,52 +217,47 @@ def getAppSummary():
     return AppDict
 
 
-def get_error_summary(app_id, app_name, is_crash=True):
+def get_error_summary(app_id, app_name, error_type):
     """
     given an appID and an appName, produce a Splunk summary of the
-    exceptions for a given timeframe
+    errors for a given timeframe
     :param app_id: string for API call
     :param app_name: string for Splunk
-    :param is_crash: bool, true for crash and false for handled exception
+    :param error_type: string, either 'crash' or 'exception'
     :return: None
     """
 
-    time_to_look_back = scopetime()
+    start_time = scopetime()
     error_data = None
 
-    if is_crash:
+    if error_type == 'crash':
         summary_uri = 'app/crash/summaries/{}'.format(app_id)
-        error_type = 'CrashSummary'
-    else:
+        error_type_message = 'CrashSummary'
+    elif error_type == 'exception':
         summary_uri = 'app/exception/summaries/{}'.format(app_id)
-        error_type = 'ExceptionSummary'
+        error_type_message = 'ExceptionSummary'
+    else:
+        print (u'{} MessageType="ApteligentError" Cannot get error summaries.'
+               u'No error type provided.').format(DATETIME_OF_RUN)
+        return
 
     http_code = None
     retry = 0
     while http_code != 200:
         http_code, error_data = apicall_with_response_code(
             summary_uri,
-            {'lastOccurredStart': time_to_look_back}
+            {'lastOccurredStart': start_time}
         )
         retry += 1
         if retry > MAX_RETRY:
             break
 
     all_errors = {}
-    if http_code != 200:
-        print (u'{} MessageType="{}" appId={} appName="{}" '
-               u'Could not get error summaries for {}. '
-               u'Code: {} after retry {}').format(DATETIME_OF_RUN,
-                                                  error_type,
-                                                  app_id, app_name,
-                                                  time_to_look_back,
-                                                  http_code,
-                                                  retry)
-    elif error_data:
+    if http_code == 200 and error_data:
         for error in error_data[DATA]:
             printstring = (u'{} MessageType="{}" '
                            u'appId={} appName="{}" ').format(
-                               DATETIME_OF_RUN, error_type, app_id, app_name
+                               DATETIME_OF_RUN, error_type_message, app_id, app_name
                            )
             for attribute_name in ERROR_ATTRIBUTES:
                 printstring += u'{}="{}" '.format(
@@ -270,13 +267,23 @@ def get_error_summary(app_id, app_name, is_crash=True):
                 if attribute_name == HASH:
                     all_errors[error[attribute_name]] = app_name
             print printstring
-    else:
+    elif http_code != 200:
+        print (u'{} MessageType="{}" appId={} appName="{}" '
+               u'Could not get error summaries for {}. '
+               u'Code: {} after retry {}').format(DATETIME_OF_RUN,
+                                                  error_type_message,
+                                                  app_id,
+                                                  app_name,
+                                                  start_time,
+                                                  http_code,
+                                                  retry)
+    elif not error_data:
         print (u'{} MessageType="{}" appId={} appName="{}" '
                u'No crashes found for {}.').format(DATETIME_OF_RUN,
-                                                   error_type,
+                                                   error_type_message,
                                                    app_id,
                                                    app_name,
-                                                   time_to_look_back)
+                                                   start_time)
     return all_errors
 
 
@@ -1022,21 +1029,21 @@ def getTimeseriesTrends(appId, appName, trendsData):
     return
 
 
-def get_error_counts(app_id, app_name, is_crash=True):
+def get_error_counts(app_id, app_name, error_type):
     """
     Get the number of daily handled exceptions for a given app.
 
     :param app_id: string for API call
     :param app_name: string for Splunk
-    :param is_crash: bool, true for crashes and false for handled exceptions
+    :param error_type: string, either 'crash' or 'exception'
     :return: None
     """
-    if is_crash:
+    if error_type == 'crash':
         error_data = apicall("app/crash/counts/{}".format(app_id))
-        error_type = 'CrashCounts'
-    else:
+        error_type_message = 'CrashCounts'
+    elif error_type == 'exception':
         error_data = apicall("app/exception/counts/{}".format(app_id))
-        error_type = 'ExceptionCounts'
+        error_type_message = 'ExceptionCounts'
 
     print_string = u''
 
@@ -1046,7 +1053,7 @@ def get_error_counts(app_id, app_name, is_crash=True):
 
         print (u'{} MessageType={} appName="{}" appId="{}" DATA {}').format(
             DATETIME_OF_RUN,
-            error_type,
+            error_type_message,
             app_name,
             app_id,
             print_string
@@ -1060,22 +1067,22 @@ def get_error_counts(app_id, app_name, is_crash=True):
         return None
 
 
-def get_error_details(app_id, app_name, is_crash=True):
+def get_error_details(app_id, app_name, error_type):
     """
     Get paginated exception summary data and pass it to Splunk
 
     :param app_id: string
     :param app_name: string
-    :param is_crash: bool, true for crash, false for handled exception
+    :param error_type: string, either 'crash' or 'exception'
     :return: None
     """
 
-    if is_crash:
+    if error_type:
         error_uri = u'crash/paginatedtable/{}'.format(app_id)
-        error_type = 'CrashDetail'
+        error_type_message = 'CrashDetail'
     else:
         error_uri = u'exception/paginatedtable/{}'.format(app_id)
-        error_type = 'ExceptionDetail'
+        error_type_message = 'ExceptionDetail'
 
     exceptions = get_all_pages(error_uri)
 
@@ -1084,7 +1091,7 @@ def get_error_details(app_id, app_name, is_crash=True):
             print_string = (u'{} MessageType="{}" appId={} appName={} '
                             u'exceptionHash="{}"').format(
                                 DATETIME_OF_RUN,
-                                error_type,
+                                error_type_message,
                                 app_id,
                                 app_name,
                                 error[HASH]
@@ -1106,7 +1113,7 @@ def get_all_pages(base_url):
     :param base_url: string, basic url of the endpoint
     :param param_to_get: string, a specific parameter inside the 'data'
         object returned by the API, e.g. 'errors'
-    :return:
+    :yields: the next page of data
     """
     pagenum = 'pageNum'
     attribs = {pagenum: 1}
@@ -1205,7 +1212,7 @@ def main():
 # Get application summary information.
     apps = getAppSummary()
     for key in apps.keys():
-        crashes = get_error_summary(key, apps[key][NAME], is_crash=True)
+        crashes = get_error_summary(key, apps[key][NAME], CRASH)
         if crashes:
             for ckey in crashes.keys():
                 getCrashDetail(ckey, key, apps[key][NAME])
@@ -1214,11 +1221,11 @@ def main():
 
         getDailyAppLoads(key, apps[key][NAME])
         getDailyCrashes(key, apps[key][NAME])
-        get_error_counts(key, apps[key][NAME], is_crash=True)
+        get_error_counts(key, apps[key][NAME], CRASH)
 
-        get_error_counts(key, apps[key][NAME], is_crash=False)
-        get_error_summary(key, apps[key][NAME], is_crash=False)
-        get_error_details(key, apps[key][NAME], is_crash=False)
+        get_error_counts(key, apps[key][NAME], EXCEPTION)
+        get_error_summary(key, apps[key][NAME], EXCEPTION)
+        get_error_details(key, apps[key][NAME], EXCEPTION)
 
         getGenericPerfMgmt(
             key,
