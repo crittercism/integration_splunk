@@ -107,7 +107,8 @@ class TestSplunk(unittest.TestCase):
         critterget.MAX_RETRY = 0
         output = self._catch_stdout(critterget.get_error_summary,
                                     'bogusappID',
-                                    'bogusName')
+                                    'bogusName',
+                                    'crash')
 
         critterget.MAX_RETRY = 10
         self.assertIn('MessageType="CrashSummary" appId=bogusappID '
@@ -660,7 +661,7 @@ class TestSplunk(unittest.TestCase):
             critterget.get_error_summary,
             'appId',
             'appName',
-            is_crash=False
+            'exception'
         )
 
         self.assertIn('MessageType="ExceptionSummary" appId=appId '
@@ -688,7 +689,7 @@ class TestSplunk(unittest.TestCase):
             critterget.get_error_summary,
             'appId',
             'appName',
-            is_crash=True
+            'crash'
         )
 
         self.assertIn('MessageType="CrashSummary" appId=appId '
@@ -712,7 +713,7 @@ class TestSplunk(unittest.TestCase):
             critterget.get_error_counts,
             'appId',
             'appName',
-            is_crash=False
+            'exception'
         )
         self.assertIn('MessageType=ExceptionCounts appName="appName" '
                       'appId="appId" DATA (bogusDate,bogusValue)',
@@ -732,7 +733,7 @@ class TestSplunk(unittest.TestCase):
             critterget.get_error_counts,
             'appId',
             'appName',
-            is_crash=True
+            'crash'
         )
         self.assertIn('MessageType=CrashCounts appName="appName" '
                       'appId="appId" DATA (bogusDate,bogusValue)',
@@ -797,7 +798,7 @@ class TestSplunk(unittest.TestCase):
             critterget.get_error_details,
             'appId',
             'appName',
-            is_crash=False
+            'exception'
         )
         self.assertIn('MessageType="ExceptionDetail" appId=appId '
                       'appName=appName exceptionHash="bogusHash"'

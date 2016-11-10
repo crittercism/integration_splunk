@@ -1044,6 +1044,10 @@ def get_error_counts(app_id, app_name, error_type):
     elif error_type == 'exception':
         error_data = apicall("app/exception/counts/{}".format(app_id))
         error_type_message = 'ExceptionCounts'
+    else:
+        print (u'{} MessageType="ApteligentError" Cannot get error counts.'
+               u'No error type provided.').format(DATETIME_OF_RUN)
+        return
 
     print_string = u''
 
@@ -1077,17 +1081,21 @@ def get_error_details(app_id, app_name, error_type):
     :return: None
     """
 
-    if error_type:
+    if error_type == 'crash':
         error_uri = u'crash/paginatedtable/{}'.format(app_id)
         error_type_message = 'CrashDetail'
-    else:
+    elif error_type == 'exception':
         error_uri = u'exception/paginatedtable/{}'.format(app_id)
         error_type_message = 'ExceptionDetail'
+    else:
+        print (u'{} MessageType="ApteligentError" Cannot get error details.'
+               u'No error type provided.').format(DATETIME_OF_RUN)
+        return
 
-    exceptions = get_all_pages(error_uri)
+    pages = get_all_pages(error_uri)
 
-    for exception in exceptions:
-        for error in exception[DATA][ERRORS]:
+    for page in pages:
+        for error in page[DATA][ERRORS]:
             print_string = (u'{} MessageType="{}" appId={} appName={} '
                             u'exceptionHash="{}"').format(
                                 DATETIME_OF_RUN,
