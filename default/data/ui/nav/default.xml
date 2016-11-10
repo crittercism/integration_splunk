@@ -3,6 +3,7 @@
     <view name="crittercism_overview" />
     <view name="application_browser" default="true"/>
     <view name="crash_browser" />
+    <view name="handled_exception_browser" />
     <view name="crittercism_trends" />
     <view name="portfolio_overview" />
     <view name="crashsearch" />
