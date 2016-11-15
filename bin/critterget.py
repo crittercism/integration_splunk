@@ -488,7 +488,15 @@ def getCrashDetail(crash_hash, app_id, app_name):
         {'diagnostics': True}
     )
 
-    crash_detail = crashes[DATA]
+    if crashes:
+        crash_detail = crashes[DATA]
+    else:
+        print (u'{} MessageType=ApteligentError No details found for crash {}'
+               u'in app {} ({})').format(DATETIME_OF_RUN,
+                                         crash_hash,
+                                         app_name,
+                                         app_id)
+        return
     print_string = u'{} MessageType="CrashDetail"  appName="{}" '.format(
         DATETIME_OF_RUN,
         app_name
@@ -618,6 +626,15 @@ def getGenericPerfMgmt(appId, appName, graph, groupby, messagetype):
                    server_errors
                )
         return None, None
+    except TypeError as e:
+        print (u'{} MessageType="ApteligentError" Error: API did not return '
+               u'data in {} of {}.').format(
+                   DATETIME_OF_RUN,
+                   e,
+                   messagetype
+               )
+        return None, None
+
 
 
 def getAPMEndpoints(app_id, app_name, sort, message_type):
@@ -643,6 +660,11 @@ def getAPMEndpoints(app_id, app_name, sort, message_type):
         print (u'{} MessageType="ApteligentError" Error: Could not access {} '
                u'in {}.'.format(DATETIME_OF_RUN, e, message_type))
         return None, None
+    except TypeError as e:
+        print (u'{} MessageType="ApteligentError" Error: No data returned for '
+               u'{} in {}.'.format(DATETIME_OF_RUN, e, message_type))
+        return None, None
+
 
 
 def getAPMServices(app_id, app_name, sort, message_type):
@@ -676,6 +698,12 @@ def getAPMServices(app_id, app_name, sort, message_type):
         print (u'{} MessageType="ApteligentError" Error: Could not access {} '
                u'in {}.'.format(DATETIME_OF_RUN, e, message_type))
         return None, None
+    except TypeError as e:
+        print (u'{} MessageType="ApteligentError" Error: {} '
+               u'no data returned for {}.'.format(DATETIME_OF_RUN,
+                                                  e,
+                                                  message_type))
+        return None, None
 
 
 def getAPMGeo(app_id, app_name, graph, message_type):
@@ -699,6 +727,13 @@ def getAPMGeo(app_id, app_name, graph, message_type):
         print (u'{} MessageType="ApteligentError" Error: Could not access {} '
                u'in {}.'.format(DATETIME_OF_RUN, e, message_type))
         return None, None
+    except TypeError as e:
+        print (u'{} MessageType="ApteligentError" Error: {} '
+               u'no data returned for {}.'.format(DATETIME_OF_RUN,
+                                                  e,
+                                                  message_type))
+        return None, None
+
 
 
 def getGenericErrorMon(appId, appName, graph, groupby, messagetype):
@@ -743,7 +778,16 @@ def getGenericErrorMon(appId, appName, graph, groupby, messagetype):
                    messagetype,
                    server_errors
                )
-        return (None, None)
+        return None, None
+    except TypeError as e:
+        print (u'{} MessageType="ApteligentError" Error: '
+               u'API did not return data in {} of {}.').format(
+                   DATETIME_OF_RUN,
+                   e,
+                   messagetype
+               )
+        return None, None
+
 
 
 # -------------------------------------------------------------
@@ -797,9 +841,9 @@ def getUserflowsRanked(app_id, app_name, category, message_type):
     uri = 'transactions/{}/ranked/{}/'.format(app_id, category)
 
     response = apicall(uri)
-    userflow_data = response[DATA]
 
     try:
+        userflow_data = response[DATA]
         messages = u','.join(
             [u'("{}",{},{})'.format(
                 group[NAME],
@@ -812,6 +856,11 @@ def getUserflowsRanked(app_id, app_name, category, message_type):
     except KeyError as e:
         print (u'{} MessageType="ApteligentError" Error: Could not access {} '
                u'in {}.'.format(DATETIME_OF_RUN, e, message_type))
+    except TypeError as e:
+        print (u'{} MessageType="ApteligentError" Error: {} '
+               u'no data returned for {}.'.format(DATETIME_OF_RUN,
+                                                  e,
+                                                  message_type))
 
 
 def getUserflowsDetails(app_id, app_name):
@@ -828,12 +877,24 @@ def getUserflowsDetails(app_id, app_name):
               'sortOrder': 'ascending'}
 
     response = apicall(uri, params)
-    userflow_data = response[DATA]
 
-    getUserflowsChangeDetails(app_id, app_name, userflow_data)
+    try:
+        userflow_data = response[DATA]
 
-    for group in userflow_data:
-        getUserflowsGroups(app_id, app_name, group[NAME])
+        getUserflowsChangeDetails(app_id, app_name, userflow_data)
+
+        for group in userflow_data:
+            getUserflowsGroups(app_id, app_name, group[NAME])
+    except KeyError as e:
+        print (u'{} MessageType="ApteligentError" Error: Could not access {} '
+               u'in {}.'.format(DATETIME_OF_RUN,
+                                e,
+                                'UserflowsDetails'))
+    except TypeError as e:
+        print (u'{} MessageType="ApteligentError" Error: {} '
+               u'no data returned for {}.'.format(DATETIME_OF_RUN,
+                                                  e,
+                                                  'UserflowsDetails'))
 
 
 def getUserflowsChangeDetails(app_id, app_name, userflow_dict):
@@ -910,13 +971,13 @@ def getUserflowsGroups(app_id, app_name, group):
                u'in {}.'.format(DATETIME_OF_RUN, e, "TransactionsGroup"))
 
 
-def getDailyAppLoads(appId, appName):
+def getDailyAppLoads(app_id, app_name):
     """Get the number of daily app loads for a given app."""
 
     params = {
         GRAPH: APPLOADS,
         DURATION: 1440,
-        APPID: appId,
+        APPID: app_id,
     }
 
     apploadsD = apicall("errorMonitoring/graph", params)
@@ -925,8 +986,8 @@ def getDailyAppLoads(appId, appName):
         print (u'{} MessageType=DailyAppLoads appName="{}" appId="{}" '
                u'dailyAppLoads={}').format(
                    DATETIME_OF_RUN,
-                   appName,
-                   appId,
+                   app_name,
+                   app_id,
                    apploadsD[DATA][SERIES][0]['points'][0]
                )
     except KeyError as e:
@@ -935,6 +996,11 @@ def getDailyAppLoads(appId, appName):
                                                      e,
                                                      'get_daily_app_loads')
         return None
+    except TypeError as e:
+        print (u'{} MessageType="ApteligentError" Error: '
+               u'{}. No daily app loads for {}').format(DATETIME_OF_RUN,
+                                                        e,
+                                                        app_id)
 
 
 def getDailyCrashes(appId, appName):
@@ -943,7 +1009,10 @@ def getDailyCrashes(appId, appName):
 
     daily_crashes = apicall("app/%s/crash/counts" % appId)
 
-    crashdata = daily_crashes.get(DATA)
+    if daily_crashes:
+        crashdata = daily_crashes.get(DATA)
+    else:
+        return
 
     if crashdata:
         try:
@@ -962,20 +1031,28 @@ def getDailyCrashes(appId, appName):
         return
 
 
-def getTrends(appId, appName):
+def getTrends(app_id, app_name):
     """Calls the trends endpoint for an app
 
-    :param appId: (string) App ID used to request data from the API
-    :param appName: (string) Human-readable app name
+    :param app_id: (string) App ID used to request data from the API
+    :param app_name: (string) Human-readable app name
     :return: None
     """
-    print u'MessageType="ApteligentDebug" getTrends for {}'.format(appId)
+    print u'MessageType="ApteligentDebug" getTrends for {}'.format(app_id)
 
-    trends = apicall(u'trends/{}'.format(appId))
-    trends_data = trends[DATA]
+    trends = apicall(u'trends/{}'.format(app_id))
 
-    getTopValues(appId, appName, trends_data)
-    getTimeseriesTrends(appId, appName, trends_data)
+    if trends:
+        trends_data = trends[DATA]
+    else:
+        print (u'{} MessageType=ApteligentError No trends data found for '
+               u'app {} ({})').format(DATETIME_OF_RUN,
+                                      app_name,
+                                      app_id)
+        return
+
+    getTopValues(app_id, app_name, trends_data)
+    getTimeseriesTrends(app_id, app_name, trends_data)
 
 
 def getTopValues(appId, appName, trendsData):
@@ -1046,7 +1123,7 @@ def getTimeseriesTrends(appId, appName, trendsData):
 
 def get_error_counts(app_id, app_name, error_type):
     """
-    Get the number of daily handled exceptions for a given app.
+    Get the number of daily crashes or handled exceptions for a given app.
 
     :param app_id: string for API call
     :param app_name: string for Splunk
@@ -1084,6 +1161,13 @@ def get_error_counts(app_id, app_name, error_type):
                                     e,
                                     'get_error_counts')
         return None
+    except TypeError as e:
+        print (u'{} MessageType="ApteligentError" Error: Could not get '
+               u'error counts for {} ({})').format(DATETIME_OF_RUN,
+                                                   app_id,
+                                                   app_name)
+        return None
+
 
 
 def get_error_details(app_id, app_name, error_type):
@@ -1204,12 +1288,6 @@ def getCredentials(sessionKey):
 
 
 def main():
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--debug', action='store_true')
-    parser.add_argument('--token')
-    args = parser.parse_args()
-    DEBUG = args.debug
     if DEBUG:
         sessionKey = "bogus_session_key_for_debugging"
     else:
@@ -1230,10 +1308,7 @@ def main():
 
     # now get crittercism oauth token
     global ACCESS_TOKEN
-    if DEBUG:
-        ACCESS_TOKEN = args.token
-    else:
-        ACCESS_TOKEN = getCredentials(sessionKey)
+    ACCESS_TOKEN = getCredentials(sessionKey)
 
     if DEBUG:
         print u'{} MessageType="ApteligentDebug" OAuth token is {}'.format(
