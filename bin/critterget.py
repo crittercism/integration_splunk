@@ -106,8 +106,6 @@ SUMMARY_ATTRIBUTES = [
     'role'
 ]
 
-COUNT = 1
-
 ERROR_ATTRIBUTES = [
     'displayReason',
     'hash',
@@ -881,7 +879,7 @@ def getUserflowsGroups(app_id, app_name, group):
     :return: None
     """
 
-    uri = '/transactions/{}/group/{}'.format(app_id, group)
+    uri = 'transactions/{}/group/{}'.format(app_id, group)
 
     response = apicall(uri)
     userflow_data = response[DATA]
