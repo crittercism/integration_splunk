@@ -422,7 +422,7 @@ class TestSplunk(unittest.TestCase):
         self.mock_get.side_effect = [self._response_with_json_data(
             200,
             {'data':
-             {'endpoints': [{'d': 'bogusD', 'u': 'bogusU', 's': 'bogusS'}]}
+             {'endpoints': [{'domain': 'bogusD', 'uri': 'bogusU', 'sort': 'bogusS'}]}
             }
         )]
 

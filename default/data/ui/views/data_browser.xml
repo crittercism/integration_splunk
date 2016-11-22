@@ -22,7 +22,7 @@
       <table>
         <title>Endpoints by Data</title>
         <search>
-          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmEndpointsData" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;ENDPOINTS&gt;.*?)\",(?&lt;DATA&gt;\d+\.\d{2})"|sort -DATA | table ENDPOINTS, DATA</query>
+          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmEndpointsData" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;ENDPOINTS&gt;.*?)\",(?&lt;DATA&gt;\d+\.\d+)"|sort -DATA | table ENDPOINTS, DATA</query>
           <earliest>0</earliest>
           <latest>now</latest>
         </search>
@@ -37,7 +37,7 @@
       <table>
         <title>Services by Data</title>
         <search>
-          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmServicesData" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;SERVICES&gt;.*?)\",(?&lt;DATA&gt;\d+\.\d{2})"|sort -DATA | table SERVICES, DATA</query>
+          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmServicesData" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;SERVICES&gt;.*?)\",(?&lt;DATA&gt;\d+\.\d+)"|sort -DATA | table SERVICES, DATA</query>
           <earliest>0</earliest>
           <latest>now</latest>
         </search>
