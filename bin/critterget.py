@@ -21,7 +21,7 @@ ACCESS_TOKEN = ''
 DEBUG = os.environ.get('CR_SPLUNK_DEBUG')
 
 TODAY = datetime.datetime.now()  # calculate a common time for all summary data
-DATETIME_OF_RUN = TODAY.strftime('%Y-%m-%d %H:%M:%S %Z')
+DATETIME_OF_RUN = TODAY.strftime('%Y-%m-%d %H:%M:%S')
 
 # a quick command to format quasi json output nicely
 #TODO (sf) figure out what this does and then find a better way
@@ -1284,6 +1284,15 @@ def getCredentials(sessionKey):
 
     return auth
 
+def calc_time_of_last_run():
+    """
+    Gets the timestamp of the most recent run and updates it.
+
+    :return:
+    """
+
+    print (u'MessageType="ApteligentTimestamp" DatetimeOfRun="{}"'.format(DATETIME_OF_RUN))
+
 ###########
 
 
@@ -1315,6 +1324,8 @@ def main():
             DATETIME_OF_RUN,
             ACCESS_TOKEN
         )
+
+    calc_time_of_last_run()
 
 # Get application summary information.
     apps = getAppSummary()
