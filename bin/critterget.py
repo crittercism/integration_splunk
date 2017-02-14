@@ -164,6 +164,133 @@ def apicall_with_response_code(uri, attribs=None):
         return response.status_code, None
 
 
+def time_floor(last_run_time):
+    """
+    Rounds minutes of the last run time down to the nearest ten,
+    and strips the seconds.
+    e.g. 2017-02-14 19:52:02 becomes 2017-02-14 19:50:00
+
+    :param last_run_time: datetime object, the last time the connector ran
+    :return: datetime object
+    """
+    seconds = last_run_time.second
+    minutes = last_run_time.minute % 10
+
+    floored_time = last_run_time - datetime.timedelta(minutes=minutes,
+                                                      seconds=seconds)
+
+    return floored_time
+
+
+def get_splunk_api(uri, method):
+    """
+    Connect to the local Splunk API
+
+    :param uri: string, Splunk API endpoint
+    :param method: string, either GET or POST
+    :return: a requests object
+    """
+    url = 'https://localhost:8089{}'.format(uri)
+    params = {'output_mode': 'json'}
+    auth = ('admin', 'changeme')
+    if method == 'GET':
+        splunk_response = requests.get(url,
+                                       params=params,
+                                       auth=auth,
+                                       verify=False)
+    elif method == 'POST':
+        splunk_response = requests.post(url,
+                                        params=params,
+                                        auth=auth,
+                                        verify=False)
+    else:
+        splunk_response = None
+        print (u'{} MessageType="ApteligentError" Error: Splunk API caller '
+               u'got a bad method: {}'.format(DATETIME_OF_RUN, method))
+
+    return splunk_response
+
+def run_splunk_search(search_name):
+    """
+    Dispatches a saved search via Splunk's API and returns the results.
+
+    :param search_name: string, the name of the saved search
+    :return:
+    """
+    saved_searches_uri = ('/servicesNS/admin/'
+                          'crittercism_integration/saved/searches')
+    search_jobs_uri = '/services/search/jobs/{}/results'
+    dispatch_url = None
+
+    all_saved_searches = get_splunk_api(saved_searches_uri, 'GET')
+
+    for entry in all_saved_searches.json()['entry']:
+        if entry['name'] == search_name:
+            dispatch_url = entry['links']['dispatch']
+
+    if dispatch_url:
+        r = get_splunk_api(dispatch_url, 'POST')
+        sid = r.json()['sid']
+        time.sleep(.25)
+    else:
+        print (u'{} MessageType="ApteligentError" Error: '
+               u'No saved searches returned by Splunk'.format(DATETIME_OF_RUN))
+        return
+
+    if sid:
+        search_url = search_jobs_uri.format(sid)
+        search_results = get_splunk_api(search_url, 'GET')
+    else:
+        print (u'{} MessageType="ApteligentError" Error: '
+               u'Could not dispatch search'.format(DATETIME_OF_RUN))
+        return
+
+    return search_results
+
+
+def get_last_run_time():
+    """
+    Retrieve the last time the connector ran from Splunk's API
+    :return: datetime object, time of last run
+    """
+    search_results = run_splunk_search(
+        'most recent run of the Apteligent connector'
+    )
+
+    if search_results:
+        last_run_string = search_results.json()['results'][0]['DatetimeOfRun']
+    else:
+        print (u'{} MessageType="ApteligentError" Error: '
+               u'No search resultes returned by Splunk for {}'.format(
+                'most recent run of the Apteligent connector',
+                DATETIME_OF_RUN)
+                )
+        return
+
+    return datetime.datetime.strptime(last_run_string, '%Y-%m-%d %H:%M:%S')
+
+
+def what_to_run():
+    """
+    Based on the last time the connector ran, figure out which calls should
+    be made to the Apteligent API
+
+    TODO: This function is a stub.
+    """
+    last_run = get_last_run_time()
+    floored_time = time_floor(last_run)
+    calls_to_run = ['basic calls']
+    if floored_time.minute == 0:
+        calls_to_run.append('hour calls')
+    if floored_time.hour == 0:
+        calls_to_run.append('daily calls')
+
+    print (u'MessageType="ApteligentTimestamp" LastRunTime="{}" '
+           u'floors to {}. Running {}'.format(last_run,
+                                              floored_time,
+                                              calls_to_run))
+
+
 def apicall(uri, attribs=None):
     """
     For API calls that do not need to know their http response code
@@ -1326,6 +1453,10 @@ def main():
         )
 
     calc_time_of_last_run()
+    try:
+        what_to_run()
+    except Exception as e:
+        print u'{} MessageType="ApteligentDebug" ERROR IN WHAT TO RUN {}'.format(DATETIME_OF_RUN, e)
 
 # Get application summary information.
     apps = getAppSummary()
