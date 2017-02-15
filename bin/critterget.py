@@ -46,13 +46,16 @@ DATA = 'data'
 DATE = 'date'
 DAU = 'dau'
 DEVICE = 'device'
+DISPATCH = 'dispatch'
 DOMAIN = 'domain'
 DURATION = 'duration'
 ENDPOINTS = 'endpoints'
+ENTRY = 'entry'
 ERRORS = 'errors'
 EXCEPTION = 'exception'
 GEO = 'geo'
 GEOMODE = 'geoMode'
+GET = 'GET'
 GRAPH = 'graph'
 GROUPBY = 'groupBy'
 GROUPS = 'groups'
@@ -63,20 +66,26 @@ FAIL_RATE = 'failRate'
 FAILURE_RATE = 'failureRate'
 FILTERS = 'filters'
 HASH = 'hash'
+JSON = 'json'
 LABEL = 'label'
 LATENCY = 'latency'
 LIMIT = 'limit'
+LINKS = 'links'
 MEAN_DURATION = 'meanDuration'
 MEAN_FOREGROUND_TIME = 'meanForegroundTime'
 MONEY_VALUE = 'moneyValue'
 NAME = 'name'
 OS = 'os'
+OUTPUT_MODE = 'output_mode'
 PARAMS = 'params'
 PARSEDBREADCRUMBS = 'parsedBreadcrumbs'
+POST = 'POST'
 RATE = 'rate'
+RESULTS = 'results'
 SERIES = 'series'
 SERVICE = 'service'
 SERVICES = 'services'
+SID = 'sid'
 SLICES = 'slices'
 SORT = 'sort'
 START = 'start'
@@ -89,6 +98,7 @@ US = 'US'
 VALUE = 'value'
 VERSIONS = 'versions'
 VOLUME = 'volume'
+UNDERSCORE_TIME = '_time'
 
 SUMMARY_ATTRIBUTES = [
     'appName',
@@ -182,7 +192,7 @@ def time_floor(last_run_time):
     return floored_time
 
 
-def get_splunk_api(uri, method):
+def splunk_api_call(uri, method, session_key):
     """
     Connect to the local Splunk API
 
@@ -191,17 +201,18 @@ def get_splunk_api(uri, method):
     :return: a requests object
     """
     url = 'https://localhost:8089{}'.format(uri)
-    params = {'output_mode': 'json'}
-    auth = ('admin', 'changeme')
-    if method == 'GET':
+    headers = {'Authorization': 'Splunk {}'.format(session_key)}
+    params = {OUTPUT_MODE: JSON}
+
+    if method == GET:
         splunk_response = requests.get(url,
                                        params=params,
-                                       auth=auth,
+                                       headers=headers,
                                        verify=False)
-    elif method == 'POST':
+    elif method == POST:
         splunk_response = requests.post(url,
                                         params=params,
-                                        auth=auth,
+                                        headers=headers,
                                         verify=False)
     else:
         splunk_response = None
@@ -210,7 +221,8 @@ def get_splunk_api(uri, method):
 
     return splunk_response
 
-def run_splunk_search(search_name):
+
+def run_splunk_search(search_name, session_key):
     """
     Dispatches a saved search via Splunk's API and returns the results.
 
@@ -222,15 +234,15 @@ def run_splunk_search(search_name):
     search_jobs_uri = '/services/search/jobs/{}/results'
     dispatch_url = None
 
-    all_saved_searches = get_splunk_api(saved_searches_uri, 'GET')
+    all_saved_searches = splunk_api_call(saved_searches_uri, GET, session_key)
 
-    for entry in all_saved_searches.json()['entry']:
-        if entry['name'] == search_name:
-            dispatch_url = entry['links']['dispatch']
+    for entry in all_saved_searches.json()[ENTRY]:
+        if entry[NAME] == search_name:
+            dispatch_url = entry[LINKS][DISPATCH]
 
     if dispatch_url:
-        r = get_splunk_api(dispatch_url, 'POST')
-        sid = r.json()['sid']
+        r = splunk_api_call(dispatch_url, POST, session_key)
+        sid = r.json()[SID]
         time.sleep(.25)
     else:
         print (u'{} MessageType="ApteligentError" Error: '
@@ -239,7 +251,7 @@ def run_splunk_search(search_name):
 
     if sid:
         search_url = search_jobs_uri.format(sid)
-        search_results = get_splunk_api(search_url, 'GET')
+        search_results = splunk_api_call(search_url, GET, session_key)
     else:
         print (u'{} MessageType="ApteligentError" Error: '
                u'Could not dispatch search'.format(DATETIME_OF_RUN))
@@ -248,39 +260,49 @@ def run_splunk_search(search_name):
     return search_results
 
 
-def get_last_run_time():
+def get_last_run_time(session_key):
     """
     Retrieve the last time the connector ran from Splunk's API
-    :return: datetime object, time of last run
+    :return: datetime object, time of last run, or None
     """
     search_results = run_splunk_search(
-        'last_apps_call'
+        'last_apps_call',
+        session_key
     )
 
     if search_results:
-        last_run_string = search_results.json()['results'][0]['_time']
-    else:
-        print (u'{} MessageType="ApteligentError" Error: '
-               u'No search resultes returned by Splunk for {}'.format(
-                'most recent run of the Apteligent connector',
-                DATETIME_OF_RUN)
-               )
-        return
+        if search_results.json()[RESULTS]:
+            last_run_string = search_results.json()[RESULTS][0][UNDERSCORE_TIME]
 
-    return datetime.datetime.strptime(last_run_string, '%Y-%m-%dT%H:%M:%S.%f+00:00')
+            return datetime.datetime.strptime(last_run_string,
+                                              '%Y-%m-%dT%H:%M:%S.%f+00:00')
+
+    print (u'{} MessageType="ApteligentError" Error: '
+           u'No search resultes returned by Splunk for {}'.format(
+            'most recent run of the Apteligent connector',
+            DATETIME_OF_RUN)
+           )
+    return
 
 
-def what_to_run():
+def what_to_run(session_key):
     """
     Based on the last time the connector ran, figure out which calls should
     be made to the Apteligent API
 
-    TODO: This function is a stub.
+    TODO: This function is a stub that will be hooked to factories for
+    Apteligent API calls, once those are built.
     """
-    last_run = get_last_run_time()
+    last_run = get_last_run_time(session_key)
 
     if not last_run:
         calls_to_run = ['basic calls', 'hour calls', 'daily calls']
+        print (u'{} MessageType="ApteligentTimestamp" LastRunTime="None" '
+               u'Running {}'.format(
+                DATETIME_OF_RUN,
+                calls_to_run)
+               )
+        return
     else:
         calls_to_run = ['basic calls']
 
@@ -1458,7 +1480,7 @@ def main():
         )
 
     try:
-        what_to_run()
+        what_to_run(sessionKey)
     except Exception as e:
         print u'{} MessageType="ApteligentDebug" ERROR IN WHAT TO RUN {}'.format(DATETIME_OF_RUN, e)
 
