@@ -198,6 +198,7 @@ def splunk_api_call(uri, method, session_key):
 
     :param uri: string, Splunk API endpoint
     :param method: string, either GET or POST
+    :param session_key: string, auth token for Splunk
     :return: a requests object
     """
     url = 'https://localhost:8089{}'.format(uri)
@@ -227,6 +228,7 @@ def run_splunk_search(search_name, session_key):
     Dispatches a saved search via Splunk's API and returns the results.
 
     :param search_name: string, the name of the saved search
+    :param session_key: string, auth token for Splunk
     :return:
     """
     saved_searches_uri = ('/servicesNS/admin/'
@@ -263,6 +265,7 @@ def run_splunk_search(search_name, session_key):
 def get_last_run_time(session_key):
     """
     Retrieve the last time the connector ran from Splunk's API
+    :param session_key: string, auth token for Splunk
     :return: datetime object, time of last run, or None
     """
     search_results = run_splunk_search(
@@ -279,9 +282,9 @@ def get_last_run_time(session_key):
 
     print (u'{} MessageType="ApteligentError" Error: '
            u'No search resultes returned by Splunk for {}'.format(
-            'most recent run of the Apteligent connector',
-            DATETIME_OF_RUN)
-           )
+               'most recent run of the Apteligent connector',
+               DATETIME_OF_RUN)
+          )
     return
 
 
@@ -292,6 +295,7 @@ def what_to_run(session_key):
 
     TODO: This function is a stub that will be hooked to factories for
     Apteligent API calls, once those are built.
+    :param session_key: string, auth token for Splunk
     """
     last_run = get_last_run_time(session_key)
 
@@ -299,9 +303,9 @@ def what_to_run(session_key):
         calls_to_run = ['basic calls', 'hour calls', 'daily calls']
         print (u'{} MessageType="ApteligentTimestamp" LastRunTime="None" '
                u'Running {}'.format(
-                DATETIME_OF_RUN,
-                calls_to_run)
-               )
+                   DATETIME_OF_RUN,
+                   calls_to_run)
+              )
         return
     else:
         calls_to_run = ['basic calls']
@@ -318,12 +322,12 @@ def what_to_run(session_key):
 
     print (u'{} MessageType="ApteligentTimestamp" LastRunTime="{}" '
            u'floors to {}. Time since last run: {} Running {}'.format(
-            DATETIME_OF_RUN,
-            last_run,
-            floored_time,
-            time_since_run,
-            calls_to_run)
-           )
+               DATETIME_OF_RUN,
+               last_run,
+               floored_time,
+               time_since_run,
+               calls_to_run)
+          )
 
 
 def apicall(uri, attribs=None):
@@ -1479,10 +1483,7 @@ def main():
             ACCESS_TOKEN
         )
 
-    try:
-        what_to_run(sessionKey)
-    except Exception as e:
-        print u'{} MessageType="ApteligentDebug" ERROR IN WHAT TO RUN {}'.format(DATETIME_OF_RUN, e)
+    what_to_run(sessionKey)
 
 # Get application summary information.
     all_apps = getAppSummary()
