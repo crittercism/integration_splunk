@@ -254,20 +254,20 @@ def get_last_run_time():
     :return: datetime object, time of last run
     """
     search_results = run_splunk_search(
-        'most recent run of the Apteligent connector'
+        'last_apps_call'
     )
 
     if search_results:
-        last_run_string = search_results.json()['results'][0]['DatetimeOfRun']
+        last_run_string = search_results.json()['results'][0]['_time']
     else:
         print (u'{} MessageType="ApteligentError" Error: '
                u'No search resultes returned by Splunk for {}'.format(
                 'most recent run of the Apteligent connector',
                 DATETIME_OF_RUN)
-                )
+               )
         return
 
-    return datetime.datetime.strptime(last_run_string, '%Y-%m-%d %H:%M:%S')
+    return datetime.datetime.strptime(last_run_string, '%Y-%m-%dT%H:%M:%S.%f+00:00')
 
 
 def what_to_run():
@@ -278,17 +278,30 @@ def what_to_run():
     TODO: This function is a stub.
     """
     last_run = get_last_run_time()
+
+    if not last_run:
+        calls_to_run = ['basic calls', 'hour calls', 'daily calls']
+    else:
+        calls_to_run = ['basic calls']
+
     floored_time = time_floor(last_run)
-    calls_to_run = ['basic calls']
-    if floored_time.minute == 0:
+
+    time_since_run = TODAY - floored_time
+
+    if floored_time.minute == 0 or time_since_run > datetime.timedelta(hours=1):
         calls_to_run.append('hour calls')
-    if floored_time.hour == 0:
+    if (floored_time.hour == 0 and floored_time.minute == 0) \
+            or time_since_run > datetime.timedelta(days=1):
         calls_to_run.append('daily calls')
 
-    print (u'MessageType="ApteligentTimestamp" LastRunTime="{}" '
-           u'floors to {}. Running {}'.format(last_run,
-                                              floored_time,
-                                              calls_to_run))
+    print (u'{} MessageType="ApteligentTimestamp" LastRunTime="{}" '
+           u'floors to {}. Time since last run: {} Running {}'.format(
+            DATETIME_OF_RUN,
+            last_run,
+            floored_time,
+            time_since_run,
+            calls_to_run)
+           )
 
 
 def apicall(uri, attribs=None):
@@ -1411,14 +1424,6 @@ def getCredentials(sessionKey):
 
     return auth
 
-def calc_time_of_last_run():
-    """
-    Gets the timestamp of the most recent run and updates it.
-
-    :return:
-    """
-
-    print (u'MessageType="ApteligentTimestamp" DatetimeOfRun="{}"'.format(DATETIME_OF_RUN))
 
 ###########
 
@@ -1452,128 +1457,128 @@ def main():
             ACCESS_TOKEN
         )
 
-    calc_time_of_last_run()
     try:
         what_to_run()
     except Exception as e:
         print u'{} MessageType="ApteligentDebug" ERROR IN WHAT TO RUN {}'.format(DATETIME_OF_RUN, e)
 
 # Get application summary information.
-    apps = getAppSummary()
-    for key in apps.keys():
-        crashes = get_error_summary(key, apps[key][NAME], CRASH)
+    all_apps = getAppSummary()
+
+    for app in all_apps.keys():
+        crashes = get_error_summary(app, all_apps[app][NAME], CRASH)
         if crashes:
             for ckey in crashes.keys():
-                getCrashDetail(ckey, key, apps[key][NAME])
+                getCrashDetail(ckey, app, all_apps[app][NAME])
 
-        getTrends(key, apps[key][NAME])
+        getTrends(app, all_apps[app][NAME])
 
-        getDailyAppLoads(key, apps[key][NAME])
-        getDailyCrashes(key, apps[key][NAME])
-        get_error_counts(key, apps[key][NAME], CRASH)
+        getDailyAppLoads(app, all_apps[app][NAME])
+        getDailyCrashes(app, all_apps[app][NAME])
+        get_error_counts(app, all_apps[app][NAME], CRASH)
 
-        get_error_counts(key, apps[key][NAME], EXCEPTION)
-        get_error_summary(key, apps[key][NAME], EXCEPTION)
-        get_error_details(key, apps[key][NAME], EXCEPTION)
+        get_error_counts(app, all_apps[app][NAME], EXCEPTION)
+        get_error_summary(app, all_apps[app][NAME], EXCEPTION)
+        get_error_details(app, all_apps[app][NAME], EXCEPTION)
 
         getGenericPerfMgmt(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             VOLUME,
             DEVICE,
             'DailyVolumeByDevice')
         getGenericPerfMgmt(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             ERRORS,
             SERVICE,
             'DailyServiceErrorRates')
-        getGenericPerfMgmt(key, apps[key][NAME], VOLUME, OS, 'DailyVolumeByOS')
+        getGenericPerfMgmt(app, all_apps[app][NAME], VOLUME, OS, 'DailyVolumeByOS')
         getGenericPerfMgmt(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             VOLUME,
             APPVERSION,
             'VolumeByAppVersion')
 
         getGenericErrorMon(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             CRASHES,
             DEVICE,
             'CrashesByDevice')
         getGenericErrorMon(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             CRASHPERCENT,
             DEVICE,
             'CrashPerByDevice')
-        getGenericErrorMon(key, apps[key][NAME], APPLOADS, OS, 'ApploadsByOs')
+        getGenericErrorMon(app, all_apps[app][NAME], APPLOADS, OS, 'ApploadsByOs')
         getGenericErrorMon(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             CRASHES,
             OS,
             'DailyCrashesByOs')
         getGenericErrorMon(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             CRASHPERCENT,
             OS,
             'CrashPerByOs')
         getGenericErrorMon(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             CRASHPERCENT,
             APPVERSION,
             'CrashPerByAppVersion')
         getGenericErrorMon(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             CRASHES,
             APPVERSION,
             'CrashByAppVersion')
         getGenericErrorMon(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             APPLOADS,
             APPVERSION,
             'LoadsByAppVersion')
         getGenericErrorMon(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             DAU,
             APPVERSION,
             'DauByAppVersion')
         getGenericErrorMon(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             APPLOADS,
             DEVICE,
             'ApploadsByDevice')
 
-        getAPMEndpoints(key, apps[key][NAME], LATENCY, 'ApmEndpointsLatency')
-        getAPMEndpoints(key, apps[key][NAME], VOLUME, 'ApmEndpointsVolume')
-        getAPMEndpoints(key, apps[key][NAME], ERRORS, 'ApmEndpointsErrors')
-        getAPMEndpoints(key, apps[key][NAME], DATA, 'ApmEndpointsData')
+        getAPMEndpoints(app, all_apps[app][NAME], LATENCY, 'ApmEndpointsLatency')
+        getAPMEndpoints(app, all_apps[app][NAME], VOLUME, 'ApmEndpointsVolume')
+        getAPMEndpoints(app, all_apps[app][NAME], ERRORS, 'ApmEndpointsErrors')
+        getAPMEndpoints(app, all_apps[app][NAME], DATA, 'ApmEndpointsData')
 
-        getAPMServices(key, apps[key][NAME], LATENCY, 'ApmServicesLatency')
-        getAPMServices(key, apps[key][NAME], VOLUME, 'ApmServicesVolume')
-        getAPMServices(key, apps[key][NAME], ERRORS, 'ApmServicesErrors')
-        getAPMServices(key, apps[key][NAME], DATA, 'ApmServicesData')
+        getAPMServices(app, all_apps[app][NAME], LATENCY, 'ApmServicesLatency')
+        getAPMServices(app, all_apps[app][NAME], VOLUME, 'ApmServicesVolume')
+        getAPMServices(app, all_apps[app][NAME], ERRORS, 'ApmServicesErrors')
+        getAPMServices(app, all_apps[app][NAME], DATA, 'ApmServicesData')
 
-        getAPMGeo(key, apps[key][NAME], LATENCY, 'ApmGeoLatency')
-        getAPMGeo(key, apps[key][NAME], VOLUME, 'ApmGeoVolume')
-        getAPMGeo(key, apps[key][NAME], ERRORS, 'ApmGeoErrors')
-        getAPMGeo(key, apps[key][NAME], DATA, 'ApmGeoData')
+        getAPMGeo(app, all_apps[app][NAME], LATENCY, 'ApmGeoLatency')
+        getAPMGeo(app, all_apps[app][NAME], VOLUME, 'ApmGeoVolume')
+        getAPMGeo(app, all_apps[app][NAME], ERRORS, 'ApmGeoErrors')
+        getAPMGeo(app, all_apps[app][NAME], DATA, 'ApmGeoData')
 
-        getUserflowsSummary(key, apps[key][NAME], 'UserflowsSummary')
+        getUserflowsSummary(app, all_apps[app][NAME], 'UserflowsSummary')
         getUserflowsRanked(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             FAILED,
             'UserflowsRankedFailed')
-        getUserflowsDetails(key, apps[key][NAME])
+        getUserflowsDetails(app, all_apps[app][NAME])
 
 if __name__ == '__main__':
     main()
