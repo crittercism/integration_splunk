@@ -7,7 +7,7 @@
       <prefix>"</prefix>
       <suffix>"</suffix>
       <populatingSearch fieldForValue="appId" fieldForLabel="appName" earliest="-24h" latest="now">
-        <![CDATA[index=crittercism sourcetype=crittercism | stats dc by appName, appId]]>
+        <![CDATA[sourcetype=crittercism | stats dc by appName, appId]]>
       </populatingSearch>
       <selectFirstChoice>true</selectFirstChoice>
     </input>
@@ -16,7 +16,7 @@
     <panel>
       <chart id="link4">
         <title>Application Exceptions (Daily) Over Time</title>
-        <searchString>index=crittercism index=crittercism sourcetype="crittercism"  "MessageType=ExceptionCounts"  $appName$  | head 1| rex "\((?&lt;xdate&gt;\d{4}\-\d{2}\-\d{2}?)\,(?&lt;val&gt;\d+)" max_match=32 | eval fields=mvzip(xdate,val)  | mvexpand fields | rex field=fields "(?&lt;ExceptionX&gt;\d{4}\-\d{2}\-\d{2}?),(?&lt;EXCEPTIONS&gt;\d+)" | rex field=ExceptionX "(?&lt;ExceptionYear&gt;\d{4})\-(?&lt;ExceptionMon&gt;\d{2})\-(?&lt;ExceptionDay&gt;\d{2})" | eval ExceptionDate = ExceptionMon."-".ExceptionDay | chart values(EXCEPTIONS) as ExceptionCount by  ExceptionDate</searchString>
+        <searchString>sourcetype="crittercism"  "MessageType=ExceptionCounts"  $appName$  | head 1| rex "\((?&lt;xdate&gt;\d{4}\-\d{2}\-\d{2}?)\,(?&lt;val&gt;\d+)" max_match=32 | eval fields=mvzip(xdate,val)  | mvexpand fields | rex field=fields "(?&lt;ExceptionX&gt;\d{4}\-\d{2}\-\d{2}?),(?&lt;EXCEPTIONS&gt;\d+)" | rex field=ExceptionX "(?&lt;ExceptionYear&gt;\d{4})\-(?&lt;ExceptionMon&gt;\d{2})\-(?&lt;ExceptionDay&gt;\d{2})" | eval ExceptionDate = ExceptionMon."-".ExceptionDay | chart values(EXCEPTIONS) as ExceptionCount by  ExceptionDate</searchString>
         <earliestTime>$earliest$</earliestTime>
         <latestTime>$latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
@@ -39,7 +39,7 @@
     <panel>
       <chart id="link5">
         <title>Exceptions Per Hour Split by Exception</title>
-        <searchString>index=crittercism sourcetype="crittercism"  MessageType=ExceptionSummary $appName$ | reverse |stats first(sessionCount) as p_count by hash,_time | delta p_count as pdelta | eval pdelta=if(pdelta&lt;0,0,pdelta) | timechart values(pdelta) by hash</searchString>
+        <searchString>sourcetype="crittercism"  MessageType=ExceptionSummary $appName$ | reverse |stats first(sessionCount) as p_count by hash,_time | delta p_count as pdelta | eval pdelta=if(pdelta&lt;0,0,pdelta) | timechart values(pdelta) by hash</searchString>
         <earliestTime>-24h@h</earliestTime>
         <latestTime>now</latestTime>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -68,7 +68,7 @@
     <panel>
       <table>
         <title>Exception Summary</title>
-        <searchString>index=crittercism sourcetype="crittercism" MessageType=ExceptionSummary $appName$ | dedup reason, name | table reason, status, name, last_occurred_time, num_unique_sessions, num_sessions, hash, suspect_line</searchString>
+        <searchString>sourcetype="crittercism" MessageType=ExceptionSummary $appName$ | dedup reason, name | table reason, status, name, last_occurred_time, num_unique_sessions, num_sessions, hash, suspect_line</searchString>
         <earliestTime>-7d@h</earliestTime>
         <latestTime>now</latestTime>
         <option name="wrap">true</option>

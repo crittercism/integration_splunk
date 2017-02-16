@@ -7,7 +7,7 @@
       <prefix>"</prefix>
       <suffix>"</suffix>
       <populatingSearch fieldForValue="appId" fieldForLabel="appName" earliest="-24h" latest="now">
-        <![CDATA[index=crittercism sourcetype=crittercism | stats dc by appName, appId]]>
+        <![CDATA[sourcetype=crittercism | stats dc by appName, appId]]>
       </populatingSearch>
       <selectFirstChoice>true</selectFirstChoice>
     </input>
@@ -16,7 +16,7 @@
       <prefix>"</prefix>
       <suffix>"</suffix>
       <populatingSearch fieldForValue="version" fieldForLabel="version" earliest="-24h" latest="now">
-        <![CDATA[index=crittercism index=crittercism sourcetype="crittercism"  "MessageType=TimeseriesTrends" appId=$appName$ appVersion | rex "appVersion=\"(?<version>.+?)\"" | eval fields=version | dedup version]]>
+        <![CDATA[sourcetype="crittercism"  "MessageType=TimeseriesTrends" appId=$appName$ appVersion | rex "appVersion=\"(?<version>.+?)\"" | eval fields=version | dedup version]]>
       </populatingSearch>
       <selectFirstChoice>true</selectFirstChoice>
     </input>
@@ -27,7 +27,7 @@
       <chart>
         <title>Application Crashes (Daily) Over Time</title>
         <search>
-          <query>index=crittercism index=crittercism sourcetype="crittercism"  "MessageType=TimeseriesTrends" appId=$appName$ appVersion=$version$  | head 1 | rex "\((?&lt;xdate&gt;\d{4}\-\d{2}\-\d{2}?)\,(?&lt;val&gt;\d+)" max_match=32 | eval fields=mvzip(xdate,val)  | mvexpand fields | rex field=fields "(?&lt;CrashX&gt;\d{4}\-\d{2}\-\d{2}?),(?&lt;CRASHES&gt;\d+)" | rex field=CrashX "(?&lt;CrashYear&gt;\d{4})\-(?&lt;CrashMon&gt;\d{2})\-(?&lt;CrashDay&gt;\d{2})" | eval CrashDate = CrashMon."-".CrashDay | chart values(CRASHES) as CrashCount by  CrashDate</query>
+          <query>sourcetype="crittercism"  "MessageType=TimeseriesTrends" appId=$appName$ appVersion=$version$  | head 1 | rex "\((?&lt;xdate&gt;\d{4}\-\d{2}\-\d{2}?)\,(?&lt;val&gt;\d+)" max_match=32 | eval fields=mvzip(xdate,val)  | mvexpand fields | rex field=fields "(?&lt;CrashX&gt;\d{4}\-\d{2}\-\d{2}?),(?&lt;CRASHES&gt;\d+)" | rex field=CrashX "(?&lt;CrashYear&gt;\d{4})\-(?&lt;CrashMon&gt;\d{2})\-(?&lt;CrashDay&gt;\d{2})" | eval CrashDate = CrashMon."-".CrashDay | chart values(CRASHES) as CrashCount by  CrashDate</query>
           <earliest>0</earliest>
           <latest></latest>
         </search>

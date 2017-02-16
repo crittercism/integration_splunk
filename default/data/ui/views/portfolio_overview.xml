@@ -11,7 +11,7 @@
   <row>
     <chart>
       <title>Daily Active Users (all apps)</title>
-      <searchString>index=crittercism sourcetype="crittercism" MessageType=AppSummary | timechart avg(dau) by appName</searchString>
+      <searchString>sourcetype="crittercism" MessageType=AppSummary | timechart avg(dau) by appName</searchString>
       <earliestTime>$earliest$</earliestTime>
       <latestTime>$latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -32,7 +32,7 @@
   <row>
     <chart>
       <title>Crash Rates (all apps)</title>
-      <searchString>index=crittercism sourcetype="crittercism" MessageType=AppSummary |  timechart avg(crashPercent) by appName</searchString>
+      <searchString>sourcetype="crittercism" MessageType=AppSummary |  timechart avg(crashPercent) by appName</searchString>
       <earliestTime>$earliest$</earliestTime>
       <latestTime>$latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -53,7 +53,7 @@
   <row>
     <chart>
       <title>App Loads (all apps)</title>
-      <searchString>index=crittercism DailyAppLoads | timechart avg(dailyAppLoads) by appName</searchString>
+      <searchString>DailyAppLoads | timechart avg(dailyAppLoads) by appName</searchString>
       <earliestTime>$earliest$</earliestTime>
       <latestTime>$latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>

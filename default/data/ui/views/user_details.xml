@@ -3,14 +3,14 @@
   <row>
     <single>
       <title>AppName</title>
-      <searchString>index=crittercism sourcetype=crittercism MessageType=CrashDiagsAffectedUser userhash=$userhash$|head 1| join [search index=crittercism sourcetype=crittercism MessageType=CrashSummary | fields appName] | stats list(appName)</searchString>
+      <searchString>sourcetype=crittercism MessageType=CrashDiagsAffectedUser userhash=$userhash$|head 1| join [search sourcetype=crittercism MessageType=CrashSummary | fields appName] | stats list(appName)</searchString>
       <earliestTime>-7d@h</earliestTime>
       <latestTime>now</latestTime>
       <option name="drilldown">none</option>
     </single>
     <single>
       <title>Username</title>
-      <searchString>index=crittercism sourcetype=crittercism MessageType=CrashDiagsAffectedUser userhash=$userhash$ | head 1|stats list(username)</searchString>
+      <searchString>sourcetype=crittercism MessageType=CrashDiagsAffectedUser userhash=$userhash$ | head 1|stats list(username)</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <option name="drilldown">none</option>
@@ -19,21 +19,21 @@
   <row>
     <single>
       <title>Last Login</title>
-      <searchString>index=crittercism sourcetype=crittercism MessageType=CrashDiagsAffectedUser userhash=$userhash$ | head 1|stats list(last_login_time)</searchString>
+      <searchString>sourcetype=crittercism MessageType=CrashDiagsAffectedUser userhash=$userhash$ | head 1|stats list(last_login_time)</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <option name="drilldown">none</option>
     </single>
     <single>
       <title>Most Recent Crash</title>
-      <searchString>index=crittercism sourcetype=crittercism MessageType=CrashDiagsAffectedUser userhash=$userhash$ | head 1|stats list(crash_last_occurred)</searchString>
+      <searchString>sourcetype=crittercism MessageType=CrashDiagsAffectedUser userhash=$userhash$ | head 1|stats list(crash_last_occurred)</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <option name="drilldown">none</option>
     </single>
     <single>
       <title>App Version</title>
-      <searchString>index=crittercism sourcetype=crittercism MessageType=CrashDiagsAffectedUser userhash=$userhash$ | head 1|fields app_version</searchString>
+      <searchString>sourcetype=crittercism MessageType=CrashDiagsAffectedUser userhash=$userhash$ | head 1|fields app_version</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <option name="drilldown">none</option>
@@ -42,7 +42,7 @@
   <row>
     <table>
       <title>User Also Found In: (Click for crash details)</title>
-      <searchString>index=crittercism sourcetype=crittercism MessageType="CrashDiagsAffectedUser"   "userhash=$userhash$" | append [search index=crittercism sourcetype=crittercism MessageType=CrashSummary | fields appName,hash,lastOccurred,reason] |dedup appName,reason,hash| table appName,reason,lastOccurred,hash</searchString>
+      <searchString>sourcetype=crittercism MessageType="CrashDiagsAffectedUser"   "userhash=$userhash$" | append [search sourcetype=crittercism MessageType=CrashSummary | fields appName,hash,lastOccurred,reason] |dedup appName,reason,hash| table appName,reason,lastOccurred,hash</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <drilldown target="crashdetails">

@@ -7,7 +7,7 @@
       <prefix>"</prefix>
       <suffix>"</suffix>
       <populatingSearch fieldForValue="appName" fieldForLabel="appName" earliest="-24h" latest="now">
-        <![CDATA[index=crittercism sourcetype=crittercism | stats dc by appName, appId]]>
+        <![CDATA[sourcetype=crittercism | stats dc by appName, appId]]>
       </populatingSearch>
       <selectFirstChoice>true</selectFirstChoice>
     </input>
@@ -21,7 +21,7 @@
 
       <single>
         <searchString>
-          index=crittercism sourcetype="crittercism" MessageType=CrashSummary $appName$ | dedup reason,name | stats count
+          sourcetype="crittercism" MessageType=CrashSummary $appName$ | dedup reason,name | stats count
 
         </searchString>
         <option name="drilldown">none</option>
@@ -30,7 +30,7 @@
 
       <single>
         <searchString>
-          index=crittercism sourcetype="crittercism" MessageType=CrashSummary $appName$  | stats count
+          sourcetype="crittercism" MessageType=CrashSummary $appName$  | stats count
 
         </searchString>
         <option name="drilldown">none</option>
@@ -42,7 +42,7 @@
 
       <table>
         <searchString>
-          index=crittercism sourcetype="crittercism" MessageType=CrashSummary $appName$ | dedup reason,name | table reason, status, name, lastOccurred,hash
+          sourcetype="crittercism" MessageType=CrashSummary $appName$ | dedup reason,name | table reason, status, name, lastOccurred,hash
 
         </searchString>
         <option name="wrap">true</option>

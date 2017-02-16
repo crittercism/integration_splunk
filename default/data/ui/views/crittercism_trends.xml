@@ -6,7 +6,7 @@
       <prefix>"</prefix>
       <suffix>"</suffix>
       <populatingSearch fieldForValue="appName" fieldForLabel="appName" earliest="-24h" latest="now">
-        <![CDATA[index=crittercism sourcetype=crittercism | stats dc by appName, appId]]>
+        <![CDATA[sourcetype=crittercism | stats dc by appName, appId]]>
       </populatingSearch>
       <selectFirstChoice>true</selectFirstChoice>
     </input>
@@ -14,7 +14,7 @@
   <row>
     <table>
       <title>Request Volume by App Version</title>
-      <searchString>index=crittercism sourcetype="crittercism"  "MessageType=VolumeByAppVersion" appName=$appName$  |head 1| rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+)" max_match=50| eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d+)"|sort -RATE | rename SERVICE as APP_VERSION, RATE as REQUEST_VOLUME | table APP_VERSION,REQUEST_VOLUME</searchString>
+      <searchString>sourcetype="crittercism"  "MessageType=VolumeByAppVersion" appName=$appName$  |head 1| rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+)" max_match=50| eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d+)"|sort -RATE | rename SERVICE as APP_VERSION, RATE as REQUEST_VOLUME | table APP_VERSION,REQUEST_VOLUME</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <option name="wrap">true</option>
@@ -25,7 +25,7 @@
     </table>
     <table>
       <title>Request Volume by Device</title>
-      <searchString>index=crittercism sourcetype="crittercism"  "MessageType=DailyVolumeByDevice" appName=$appName$  |head 1| rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+)" max_match=50| eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d+)"|sort -RATE | rename SERVICE as DEVICE, RATE as REQUEST_VOLUME | table DEVICE,REQUEST_VOLUME</searchString>
+      <searchString>sourcetype="crittercism"  "MessageType=DailyVolumeByDevice" appName=$appName$  |head 1| rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+)" max_match=50| eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d+)"|sort -RATE | rename SERVICE as DEVICE, RATE as REQUEST_VOLUME | table DEVICE,REQUEST_VOLUME</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <option name="wrap">true</option>
@@ -36,13 +36,13 @@
     </table>
     <table>
       <title>Request Volume by OS</title>
-      <searchString>index=crittercism sourcetype="crittercism"  "MessageType=DailyVolumeByOS" appName=$appName$  |head 1| rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+)" max_match=50| eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d+)"|sort -RATE | rename SERVICE as OS, RATE as REQUEST_VOLUME | table OS,REQUEST_VOLUME</searchString>
+      <searchString>sourcetype="crittercism"  "MessageType=DailyVolumeByOS" appName=$appName$  |head 1| rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+)" max_match=50| eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d+)"|sort -RATE | rename SERVICE as OS, RATE as REQUEST_VOLUME | table OS,REQUEST_VOLUME</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
     </table>
     <table>
       <title>DAU by AppVersion</title>
-      <searchString>index=crittercism sourcetype="crittercism"  "MessageType=DauByAppVersion" appName=$appName$  |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as APP_VERSION, RATE as DAU | table APP_VERSION,DAU</searchString>
+      <searchString>sourcetype="crittercism"  "MessageType=DauByAppVersion" appName=$appName$  |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as APP_VERSION, RATE as DAU | table APP_VERSION,DAU</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <option name="wrap">true</option>
@@ -55,7 +55,7 @@
   <row>
     <table>
       <title>App Loads By App Version</title>
-      <searchString>index=crittercism sourcetype="crittercism"  "MessageType=LoadsByAppVersion" appName=$appName$  |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as APP_VERSION, RATE as LOADS | table APP_VERSION,LOADS</searchString>
+      <searchString>sourcetype="crittercism"  "MessageType=LoadsByAppVersion" appName=$appName$  |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as APP_VERSION, RATE as LOADS | table APP_VERSION,LOADS</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <option name="wrap">true</option>
@@ -66,7 +66,7 @@
     </table>
     <table>
       <title>User Base By App Version</title>
-      <searchString>index=crittercism sourcetype="crittercism"  "MessageType=LoadsByAppVersion" appName=$appName$  |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as APP_VERSION, RATE as LOADS | eventstats sum(LOADS) as TOTAL | eval PERCENTAGE = LOADS/TOTAL| table APP_VERSION,PERCENTAGE</searchString>
+      <searchString>sourcetype="crittercism"  "MessageType=LoadsByAppVersion" appName=$appName$  |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as APP_VERSION, RATE as LOADS | eventstats sum(LOADS) as TOTAL | eval PERCENTAGE = LOADS/TOTAL| table APP_VERSION,PERCENTAGE</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <option name="wrap">true</option>
@@ -77,7 +77,7 @@
     </table>
     <table>
       <title>Crashes by App Version</title>
-      <searchString>index=crittercism sourcetype="crittercism"  "MessageType=CrashByAppVersion" appName=$appName$  |head 1| rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+)" max_match=50| eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d+)"|sort -RATE | rename SERVICE as OS, RATE as CRASHES | table OS,CRASHES</searchString>
+      <searchString>sourcetype="crittercism"  "MessageType=CrashByAppVersion" appName=$appName$  |head 1| rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+)" max_match=50| eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d+)"|sort -RATE | rename SERVICE as OS, RATE as CRASHES | table OS,CRASHES</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <option name="wrap">true</option>
@@ -88,7 +88,7 @@
     </table>
     <table>
       <title>Crash Percentage by App Version</title>
-      <searchString>index=crittercism sourcetype="crittercism"  "MessageType=CrashPerByAppVersion" appName=$appName$  |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as APP_VERSION, RATE as CRASH_PERCENTAGE | table APP_VERSION,CRASH_PERCENTAGE</searchString>
+      <searchString>sourcetype="crittercism"  "MessageType=CrashPerByAppVersion" appName=$appName$  |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as APP_VERSION, RATE as CRASH_PERCENTAGE | table APP_VERSION,CRASH_PERCENTAGE</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <option name="wrap">true</option>
@@ -101,13 +101,13 @@
   <row>
     <table>
       <title>App Loads by Device</title>
-      <searchString>index=crittercism sourcetype="crittercism"  "MessageType=ApploadsByDevice" appName=$appName$  |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as DEVICE, RATE as LOADS | table DEVICE,LOADS</searchString>
+      <searchString>sourcetype="crittercism"  "MessageType=ApploadsByDevice" appName=$appName$  |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as DEVICE, RATE as LOADS | table DEVICE,LOADS</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
     </table>
     <table>
       <title>User Base by Device</title>
-      <searchString>index=crittercism sourcetype="crittercism"  "MessageType=ApploadsByDevice" appName=$appName$ |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as DEVICE, RATE as LOADS | eventstats sum(LOADS) as TOTAL | eval PERCENTAGE = LOADS/TOTAL| table DEVICE,PERCENTAGE</searchString>
+      <searchString>sourcetype="crittercism"  "MessageType=ApploadsByDevice" appName=$appName$ |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as DEVICE, RATE as LOADS | eventstats sum(LOADS) as TOTAL | eval PERCENTAGE = LOADS/TOTAL| table DEVICE,PERCENTAGE</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <option name="wrap">true</option>
@@ -118,13 +118,13 @@
     </table>
     <table>
       <title>Crashes by Device</title>
-      <searchString>index=crittercism sourcetype="crittercism"  "MessageType=CrashesByDevice" appName=$appName$  |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as DEVICE, RATE as CRASHES | table DEVICE,CRASHES</searchString>
+      <searchString>sourcetype="crittercism"  "MessageType=CrashesByDevice" appName=$appName$  |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as DEVICE, RATE as CRASHES | table DEVICE,CRASHES</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
     </table>
     <table>
       <title>Crash Percentage by Device</title>
-      <searchString>index=crittercism sourcetype="crittercism"  "MessageType=CrashPerByDevice" appName=$appName$  |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as DEVICE, RATE as CRASH_PERCENTAGE | table DEVICE,CRASH_PERCENTAGE</searchString>
+      <searchString>sourcetype="crittercism"  "MessageType=CrashPerByDevice" appName=$appName$  |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as DEVICE, RATE as CRASH_PERCENTAGE | table DEVICE,CRASH_PERCENTAGE</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
     </table>
@@ -132,13 +132,13 @@
   <row>
     <table>
       <title>App Loads by OS</title>
-      <searchString>index=crittercism sourcetype="crittercism"  "MessageType=ApploadsByOs" appName=$appName$  |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as OS, RATE as APP_LOADS | table OS,APP_LOADS</searchString>
+      <searchString>sourcetype="crittercism"  "MessageType=ApploadsByOs" appName=$appName$  |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as OS, RATE as APP_LOADS | table OS,APP_LOADS</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
     </table>
     <table>
       <title>User Base by OS</title>
-      <searchString>index=crittercism sourcetype="crittercism"  "MessageType=ApploadsByOs" appName=$appName$ |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as OS, RATE as LOADS | eventstats sum(LOADS) as TOTAL | eval PERCENTAGE = LOADS/TOTAL| table OS,PERCENTAGE</searchString>
+      <searchString>sourcetype="crittercism"  "MessageType=ApploadsByOs" appName=$appName$ |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as OS, RATE as LOADS | eventstats sum(LOADS) as TOTAL | eval PERCENTAGE = LOADS/TOTAL| table OS,PERCENTAGE</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <option name="wrap">true</option>
@@ -149,13 +149,13 @@
     </table>
     <table>
       <title>Crashes by OS</title>
-      <searchString>index=crittercism sourcetype="crittercism"  "MessageType=DailyCrashesByOs" appName=$appName$  |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as OS, RATE as CRASHES | table OS,CRASHES</searchString>
+      <searchString>sourcetype="crittercism"  "MessageType=DailyCrashesByOs" appName=$appName$  |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as OS, RATE as CRASHES | table OS,CRASHES</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
     </table>
     <table>
       <title>Crash Percentage by OS</title>
-      <searchString>index=crittercism sourcetype="crittercism"  "MessageType=CrashPerByOs" appName=$appName$  |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as OS, RATE as CRASH_PERCENTAGE | table OS,CRASH_PERCENTAGE</searchString>
+      <searchString>sourcetype="crittercism"  "MessageType=CrashPerByOs" appName=$appName$  |head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d*[.]?\d+)" max_match=50 | eval fields=mvzip(serv,val) | mvexpand fields  | rex field=fields "(?&lt;SERVICE&gt;.*?),(?&lt;RATE&gt;\d*[.]?\d+)"|sort -RATE | rename SERVICE as OS, RATE as CRASH_PERCENTAGE | table OS,CRASH_PERCENTAGE</searchString>
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
     </table>
