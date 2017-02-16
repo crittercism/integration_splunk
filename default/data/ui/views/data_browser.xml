@@ -12,7 +12,7 @@
       <prefix>"</prefix>
       <suffix>"</suffix>
       <populatingSearch fieldForValue="appName" fieldForLabel="appName" earliest="-24h" latest="now">
-        <![CDATA[index=crittercism sourcetype=crittercism | stats dc by appName, appId]]>
+        <![CDATA[sourcetype=crittercism | stats dc by appName, appId]]>
       </populatingSearch>
       <selectFirstChoice>true</selectFirstChoice>
     </input>
@@ -22,7 +22,7 @@
       <table>
         <title>Endpoints by Data</title>
         <search>
-          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmEndpointsData" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;ENDPOINTS&gt;.*?)\",(?&lt;DATA&gt;\d+\.\d+)"|sort -DATA | table ENDPOINTS, DATA</query>
+          <query>sourcetype="crittercism" "MessageType=ApmEndpointsData" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;ENDPOINTS&gt;.*?)\",(?&lt;DATA&gt;\d+\.\d+)"|sort -DATA | table ENDPOINTS, DATA</query>
           <earliest>0</earliest>
           <latest>now</latest>
         </search>
@@ -37,7 +37,7 @@
       <table>
         <title>Services by Data</title>
         <search>
-          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmServicesData" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;SERVICES&gt;.*?)\",(?&lt;DATA&gt;\d+\.\d+)"|sort -DATA | table SERVICES, DATA</query>
+          <query>sourcetype="crittercism" "MessageType=ApmServicesData" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;SERVICES&gt;.*?)\",(?&lt;DATA&gt;\d+\.\d+)"|sort -DATA | table SERVICES, DATA</query>
           <earliest>0</earliest>
           <latest>now</latest>
         </search>
@@ -54,7 +54,7 @@
       <map>
         <title>Data by Country</title>
         <search>
-          <query>index=crittercism sourcetype="crittercism" "MessageType=ApmGeoData" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;LOC&gt;.*?)\",(?&lt;DATA&gt;\d+\.\d+)"  | eval iso2=LOC | lookup geo_attr_countries iso2 OUTPUT country  |sort -DATA | table country, DATA | geom geo_countries featureIdField=country</query>
+          <query>sourcetype="crittercism" "MessageType=ApmGeoData" appName=$appName$ | head 1 | rex "\((?&lt;serv&gt;\".*?\")\,(?&lt;val&gt;\d+\.\d+)" max_match=30 | eval fields=mvzip(serv,val) | mvexpand fields | rex field=fields "\"(?&lt;LOC&gt;.*?)\",(?&lt;DATA&gt;\d+\.\d+)"  | eval iso2=LOC | lookup geo_attr_countries iso2 OUTPUT country  |sort -DATA | table country, DATA | geom geo_countries featureIdField=country</query>
           <earliest>0</earliest>
           <latest>now</latest>
         </search>

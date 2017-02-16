@@ -5,7 +5,7 @@
       <table>
         <title>Apps Found</title>
         <searchString>
-          index=crittercism sourcetype="crittercism" MessageType=AppSummary| dedup appName | table appName, appId
+          sourcetype="crittercism" MessageType=AppSummary| dedup appName | table appName, appId
 
         </searchString>
         <option name="wrap">true</option>
@@ -18,7 +18,7 @@
       <table>
         <title>Most Recent Crashes</title>
         <searchString>
-          index=crittercism sourcetype="crittercism" MessageType=CrashSummary| dedup hash | table appName, lastOccurred, status, name, hash
+          sourcetype="crittercism" MessageType=CrashSummary| dedup hash | table appName, lastOccurred, status, name, hash
           <earliest>-7d@h</earliest>
           <latest>now</latest>
         </searchString>
@@ -33,7 +33,7 @@
       <chart>
         <title>CrashPercentage</title>
         <searchString>
-        index=crittercism sourcetype="crittercism" MessageType=AppSummary host="*"| timechart avg(crashPercent) by appName
+        sourcetype="crittercism" MessageType=AppSummary host="*"| timechart avg(crashPercent) by appName
           <earliest>@mon</earliest>
           <latest>now</latest>
         </searchString>
@@ -66,7 +66,7 @@
       <event>
         <title>Raw Data</title>
         <searchString>
-          index=crittercism sourcetype="crittercism"
+          sourcetype="crittercism"
           <earliest>rt-15m</earliest>
           <latest>rtnow</latest>
         </searchString>
@@ -88,7 +88,7 @@
       <event>
         <title>Apteligent App Errors</title>
         <searchString>
-          index=crittercism sourcetype=crittercism MessageType=ApteligentError
+          sourcetype=crittercism MessageType=ApteligentError
           <earliest>rt-10m</earliest>
           <latest>rtnow</latest>
         </searchString>

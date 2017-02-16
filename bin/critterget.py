@@ -1195,7 +1195,7 @@ def get_error_details(app_id, app_name, error_type):
 
     for page in pages:
         for error in page[DATA][ERRORS]:
-            print_string = (u'{} MessageType="{}" appId={} appName={} '
+            print_string = (u'{} MessageType="{}" appId={} appName="{}" '
                             u'exceptionHash="{}"').format(
                                 DATETIME_OF_RUN,
                                 error_type_message,

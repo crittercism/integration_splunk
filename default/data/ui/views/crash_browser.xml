@@ -7,7 +7,7 @@
       <prefix>"</prefix>
       <suffix>"</suffix>
       <populatingSearch fieldForValue="appId" fieldForLabel="appName" earliest="-24h" latest="now">
-        <![CDATA[index=crittercism sourcetype=crittercism | stats dc by appName, appId]]>
+        <![CDATA[sourcetype=crittercism | stats dc by appName, appId]]>
       </populatingSearch>
       <selectFirstChoice>true</selectFirstChoice>
     </input>
@@ -16,7 +16,7 @@
     <panel>
       <chart id="link4">
         <title>Application Crashes (Daily) Over Time</title>
-        <searchString>index=crittercism index=crittercism sourcetype="crittercism"  "MessageType=CrashCounts"  $appName$  | head 1| rex "\((?&lt;xdate&gt;\d{4}\-\d{2}\-\d{2}?)\,(?&lt;val&gt;\d+)" max_match=32 | eval fields=mvzip(xdate,val)  | mvexpand fields | rex field=fields "(?&lt;CrashX&gt;\d{4}\-\d{2}\-\d{2}?),(?&lt;CRASHES&gt;\d+)" | rex field=CrashX "(?&lt;CrashYear&gt;\d{4})\-(?&lt;CrashMon&gt;\d{2})\-(?&lt;CrashDay&gt;\d{2})" | eval CrashDate = CrashMon."-".CrashDay | chart values(CRASHES) as CrashCount by  CrashDate</searchString>
+        <searchString>sourcetype="crittercism"  "MessageType=CrashCounts"  $appName$  | head 1| rex "\((?&lt;xdate&gt;\d{4}\-\d{2}\-\d{2}?)\,(?&lt;val&gt;\d+)" max_match=32 | eval fields=mvzip(xdate,val)  | mvexpand fields | rex field=fields "(?&lt;CrashX&gt;\d{4}\-\d{2}\-\d{2}?),(?&lt;CRASHES&gt;\d+)" | rex field=CrashX "(?&lt;CrashYear&gt;\d{4})\-(?&lt;CrashMon&gt;\d{2})\-(?&lt;CrashDay&gt;\d{2})" | eval CrashDate = CrashMon."-".CrashDay | chart values(CRASHES) as CrashCount by  CrashDate</searchString>
         <earliestTime>$earliest$</earliestTime>
         <latestTime>$latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
@@ -39,7 +39,7 @@
     <panel>
       <chart id="link5">
         <title>Crashes Per Hour Split by Crash</title>
-        <searchString>index=crittercism sourcetype="crittercism"  MessageType=CrashSummary $appName$ | reverse |stats first(sessionCount) as p_count by hash,_time | delta p_count as pdelta | eval pdelta=if(pdelta&lt;0,0,pdelta) | timechart values(pdelta) by hash</searchString>
+        <searchString>sourcetype="crittercism"  MessageType=CrashSummary $appName$ | reverse |stats first(sessionCount) as p_count by hash,_time | delta p_count as pdelta | eval pdelta=if(pdelta&lt;0,0,pdelta) | timechart values(pdelta) by hash</searchString>
         <earliestTime>-24h@h</earliestTime>
         <latestTime>now</latestTime>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -68,7 +68,7 @@
     <panel>
       <table>
         <title>Crash Summary - click on crash for more detail</title>
-        <searchString>index=crittercism sourcetype="crittercism" MessageType=CrashSummary $appName$ | dedup reason,name | table reason, status, name, lastOccurred, uniqueSessionCount, sessionCount,hash</searchString>
+        <searchString>sourcetype="crittercism" MessageType=CrashSummary $appName$ | dedup reason,name | table reason, status, name, lastOccurred, uniqueSessionCount, sessionCount,hash</searchString>
         <earliestTime>-7d@h</earliestTime>
         <latestTime>now</latestTime>
         <option name="wrap">true</option>
@@ -89,7 +89,7 @@
       <table>
         <title>Crashes vs App Loads by Version</title>
         <search>
-          <query>index=crittercism sourcetype="crittercism"  CASE("MessageType=appLoadsByVersion") $appName$ | head 1 | rex "\((?&lt;version&gt;\".*?\")\,(?&lt;app_loads&gt;\d+)" max_match=30 | eval fields=mvzip(version,app_loads) | mvexpand fields | rex field=fields "\"(?&lt;VERSION&gt;.*?)\",(?&lt;APP_LOADS&gt;\d+)" | sort -VERSION | table VERSION, APP_LOADS | appendcols [search index=crittercism sourcetype="crittercism"  "MessageType=crashesByVersion" $appName$  | head 1 | rex "\((?&lt;version&gt;\".*?\")\,(?&lt;crashes&gt;\d+)" max_match=30 | eval fields=mvzip(version,crashes) | mvexpand fields | rex field=fields "\"(?&lt;VERSION&gt;.*?)\",(?&lt;CRASHES&gt;\d+)" | sort -VERSION | table VERSION, CRASHES]</query>
+          <query>sourcetype="crittercism"  CASE("MessageType=appLoadsByVersion") $appName$ | head 1 | rex "\((?&lt;version&gt;\".*?\")\,(?&lt;app_loads&gt;\d+)" max_match=30 | eval fields=mvzip(version,app_loads) | mvexpand fields | rex field=fields "\"(?&lt;VERSION&gt;.*?)\",(?&lt;APP_LOADS&gt;\d+)" | sort -VERSION | table VERSION, APP_LOADS | appendcols [search sourcetype="crittercism"  "MessageType=crashesByVersion" $appName$  | head 1 | rex "\((?&lt;version&gt;\".*?\")\,(?&lt;crashes&gt;\d+)" max_match=30 | eval fields=mvzip(version,crashes) | mvexpand fields | rex field=fields "\"(?&lt;VERSION&gt;.*?)\",(?&lt;CRASHES&gt;\d+)" | sort -VERSION | table VERSION, CRASHES]</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
         </search>
@@ -128,7 +128,7 @@
       <table>
         <title>Crashes vs App Loads by OS</title>
         <search>
-          <query>index=crittercism sourcetype="crittercism"  CASE("MessageType=appLoadsByOs") $appName$ | head 1 | rex "\((?&lt;os&gt;\".*?\")\,(?&lt;app_loads&gt;\d+)" max_match=30 | eval fields=mvzip(os,app_loads) | mvexpand fields | rex field=fields "\"(?&lt;OS&gt;.*?)\",(?&lt;APP_LOADS&gt;\d+)" | sort -OS | table OS, APP_LOADS | appendcols [search index=crittercism sourcetype="crittercism"  "MessageType=crashesByOs" $appName$  | head 1 | rex "\((?&lt;os&gt;\".*?\")\,(?&lt;crashes&gt;\d+)" max_match=30 | eval fields=mvzip(os,crashes) | mvexpand fields | rex field=fields "\"(?&lt;OS&gt;.*?)\",(?&lt;CRASHES&gt;\d+)" | sort -OS | table OS, CRASHES]</query>
+          <query>sourcetype="crittercism"  CASE("MessageType=appLoadsByOs") $appName$ | head 1 | rex "\((?&lt;os&gt;\".*?\")\,(?&lt;app_loads&gt;\d+)" max_match=30 | eval fields=mvzip(os,app_loads) | mvexpand fields | rex field=fields "\"(?&lt;OS&gt;.*?)\",(?&lt;APP_LOADS&gt;\d+)" | sort -OS | table OS, APP_LOADS | appendcols [search sourcetype="crittercism"  "MessageType=crashesByOs" $appName$  | head 1 | rex "\((?&lt;os&gt;\".*?\")\,(?&lt;crashes&gt;\d+)" max_match=30 | eval fields=mvzip(os,crashes) | mvexpand fields | rex field=fields "\"(?&lt;OS&gt;.*?)\",(?&lt;CRASHES&gt;\d+)" | sort -OS | table OS, CRASHES]</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
         </search>

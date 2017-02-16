@@ -2,19 +2,19 @@
   <label>Data Drilldown</label>
   <fieldset autoRun="true" submitButton="false">
     <html>Discrete data from $hash$ .  Choose a group to explore.
-    
+
     </html>
     <input type="dropdown" token="mygroup" searchWhenChanged="true">
       <label>Group:</label>
       <populatingSearch fieldForLabel="GROUP" fieldForValue="GROUP">
-        <![CDATA[index=crittercism sourcetype=crittercism MessageType=CrashDiagsDiscrete "hash=$hash$" | head 1| `discrete_vars`| rex field=VAR "(?<GROUP>.*:)?(?<VARX>.*)"| eval GROUP=replace(GROUP,"\:","") | dedup GROUP | table GROUP]]>
+        <![CDATA[sourcetype=crittercism MessageType=CrashDiagsDiscrete "hash=$hash$" | head 1| `discrete_vars`| rex field=VAR "(?<GROUP>.*:)?(?<VARX>.*)"| eval GROUP=replace(GROUP,"\:","") | dedup GROUP | table GROUP]]>
       </populatingSearch>
     </input>
   </fieldset>
   <row>
     <chart>
       <title>Breakdown</title>
-      <searchString>index=crittercism sourcetype=crittercism MessageType=CrashDiagsDiscrete "hash=$hash$"          | head 1| `discrete_vars`         | rex field=VAR "(?&lt;GROUP&gt;.*:)?(?&lt;VARX&gt;.*)"          | eval GROUP=replace(GROUP,"\:","")         | search GROUP=$mygroup$           | rename VARX as $mygroup$          | eval $mygroup$=replace($mygroup$,"\%26","")         | chart list(VAL) as PERCENTAGE by $mygroup$</searchString>
+      <searchString>sourcetype=crittercism MessageType=CrashDiagsDiscrete "hash=$hash$"          | head 1| `discrete_vars`         | rex field=VAR "(?&lt;GROUP&gt;.*:)?(?&lt;VARX&gt;.*)"          | eval GROUP=replace(GROUP,"\:","")         | search GROUP=$mygroup$           | rename VARX as $mygroup$          | eval $mygroup$=replace($mygroup$,"\%26","")         | chart list(VAL) as PERCENTAGE by $mygroup$</searchString>
       <earliestTime>-7d@h</earliestTime>
       <latestTime>now</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -33,7 +33,7 @@
     </chart>
     <table>
       <title>Detail</title>
-      <searchString>index=crittercism sourcetype=crittercism MessageType=CrashDiagsDiscrete "hash=$hash$"          | head 1| `discrete_vars`         | rex field=VAR "(?&lt;GROUP&gt;.*:)?(?&lt;VARX&gt;.*)"          | eval GROUP=replace(GROUP,"\:","")         | search GROUP=$mygroup$           | rename VARX as $mygroup$          | eval $mygroup$=replace($mygroup$,"\%26","")         | chart list(VAL) as Crashes by $mygroup$</searchString>
+      <searchString>sourcetype=crittercism MessageType=CrashDiagsDiscrete "hash=$hash$"          | head 1| `discrete_vars`         | rex field=VAR "(?&lt;GROUP&gt;.*:)?(?&lt;VARX&gt;.*)"          | eval GROUP=replace(GROUP,"\:","")         | search GROUP=$mygroup$           | rename VARX as $mygroup$          | eval $mygroup$=replace($mygroup$,"\%26","")         | chart list(VAL) as Crashes by $mygroup$</searchString>
       <earliestTime>-7d@h</earliestTime>
       <latestTime>now</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>

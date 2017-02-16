@@ -4,27 +4,27 @@
     <input type="dropdown" token="hash" searchWhenChanged="true">
       <label>hash</label>
       <populatingSearch fieldForValue="hash" fieldForLabel="reason">
-        <![CDATA[index=crittercism sourcetype=crittercism MessageType=CrashSummary earliest=-7d | dedup reason,name | top hash]]>
+        <![CDATA[sourcetype=crittercism MessageType=CrashSummary earliest=-7d | dedup reason,name | top hash]]>
       </populatingSearch>
     </input>
     <input type="dropdown" token="app_version" searchWhenChanged="true">
       <label>Version</label>
       <populatingSearch fieldForValue="appVersion" fieldForLabel="appVersion">
-        <![CDATA[index=crittercism sourcetype=crittercism hash=$hash$ MessageType=CrashDetailBreadcrumbs earliest=-7d| top appVersion]]>
+        <![CDATA[sourcetype=crittercism hash=$hash$ MessageType=CrashDetailBreadcrumbs earliest=-7d| top appVersion]]>
       </populatingSearch>
       <selectFirstChoice>true</selectFirstChoice>
     </input>
     <input type="dropdown" token="os" searchWhenChanged="true">
       <label>Operating System</label>
       <populatingSearch fieldForValue="os" fieldForLabel="os">
-        <![CDATA[index=crittercism sourcetype=crittercism hash=$hash$ MessageType=CrashDetailBreadcrumbs earliest=-7d| top os]]>
+        <![CDATA[sourcetype=crittercism hash=$hash$ MessageType=CrashDetailBreadcrumbs earliest=-7d| top os]]>
       </populatingSearch>
       <selectFirstChoice>true</selectFirstChoice>
     </input>
     <input type="dropdown" token="device">
       <label>Device</label>
       <populatingSearch fieldForValue="device" fieldForLabel="device">
-        <![CDATA[index=crittercism sourcetype=crittercism hash=$hash$ MessageType=CrashDetailBreadcrumbs earliest=-7d| top device]]>
+        <![CDATA[sourcetype=crittercism hash=$hash$ MessageType=CrashDetailBreadcrumbs earliest=-7d| top device]]>
       </populatingSearch>
       <selectFirstChoice>true</selectFirstChoice>
     </input>
@@ -37,7 +37,7 @@
     </html>
       <table id="link4">
         <title>Detailed Stacktrace</title>
-        <searchString>index=crittercism sourcetype=crittercism MessageType="CrashDetailStacktrace"  hash=$hash$ | head 1 | rex "(?s)hash=(?&lt;hash2&gt;[a-z0-9]+)\s(?&lt;data&gt;.*)" | eval data2=replace(data,"(u\')|\'|\[|\]"," ") | eval data2=replace(data2,"(\\\t)"," ")| makemv delim="," data2 | chart list(data2) as DETAIL</searchString>
+        <searchString>sourcetype=crittercism MessageType="CrashDetailStacktrace"  hash=$hash$ | head 1 | rex "(?s)hash=(?&lt;hash2&gt;[a-z0-9]+)\s(?&lt;data&gt;.*)" | eval data2=replace(data,"(u\')|\'|\[|\]"," ") | eval data2=replace(data2,"(\\\t)"," ")| makemv delim="," data2 | chart list(data2) as DETAIL</searchString>
         <earliestTime>-7d@h</earliestTime>
         <latestTime>now</latestTime>
         <option name="wrap">true</option>
@@ -51,7 +51,7 @@
       <table>
         <title>Breadcrumbs</title>
         <searchString>
-          <![CDATA[index=crittercism sourcetype=crittercism MessageType=CrashDetailBreadcrumbs hash=$hash$ | head 1 | eval trace = replace(trace, "'payload': ", " ") | eval trace = split(trace, "|") | table os, appVersion, trace]]>
+          <![CDATA[sourcetype=crittercism MessageType=CrashDetailBreadcrumbs hash=$hash$ | head 1 | eval trace = replace(trace, "'payload': ", " ") | eval trace = split(trace, "|") | table os, appVersion, trace]]>
         </searchString>
         <earliestTime>-7d@h</earliestTime>
         <latestTime>now</latestTime>
@@ -67,7 +67,7 @@
     <panel>
       <chart>
         <title>Crashes By Carrier</title>
-        <searchString>* index=crittercism sourcetype=crittercism MessageType=CrashDiagsDiscrete "hash=$hash$" | head 1| `discrete_vars`| search VAR=carrier* |rex field=VAR "(?&lt;GROUP&gt;.*:)?(?&lt;VARX&gt;.*)"| eval Carrier=VARX| eval Carrier=replace(Carrier,"\%26","&amp;") |  chart list(VAL) AS Percentage by Carrier</searchString>
+        <searchString>* sourcetype=crittercism MessageType=CrashDiagsDiscrete "hash=$hash$" | head 1| `discrete_vars`| search VAR=carrier* |rex field=VAR "(?&lt;GROUP&gt;.*:)?(?&lt;VARX&gt;.*)"| eval Carrier=VARX| eval Carrier=replace(Carrier,"\%26","&amp;") |  chart list(VAL) AS Percentage by Carrier</searchString>
         <earliest>-30d@d</earliest>
         <latest>now</latest>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -96,7 +96,7 @@
     <panel>
       <table>
         <title>Crashes by System Version</title>
-        <searchString>* index=crittercism sourcetype=crittercism MessageType=CrashDiagsDiscrete "hash=$hash$"  | head 1 | rex "hash=[0-9a-f]*(?&lt;DATA&gt;.*)$"  | rex field=DATA max_match=50 "\"(?&lt;var&gt;.*?)\"\=\"(?&lt;val&gt;.*?)\""  | eval fields=mvzip(var,val) | mvexpand fields  | rex field=fields "(?&lt;VAR&gt;.*),(?&lt;VAL&gt;\d+)" | rex field=VAR "(?&lt;GROUP&gt;.*:)?(?&lt;VARX&gt;.*)"  | search GROUP = "system_version:" | rename VARX as Version, VAL as Crashes | table  Version, Crashes</searchString>
+        <searchString>* sourcetype=crittercism MessageType=CrashDiagsDiscrete "hash=$hash$"  | head 1 | rex "hash=[0-9a-f]*(?&lt;DATA&gt;.*)$"  | rex field=DATA max_match=50 "\"(?&lt;var&gt;.*?)\"\=\"(?&lt;val&gt;.*?)\""  | eval fields=mvzip(var,val) | mvexpand fields  | rex field=fields "(?&lt;VAR&gt;.*),(?&lt;VAL&gt;\d+)" | rex field=VAR "(?&lt;GROUP&gt;.*:)?(?&lt;VARX&gt;.*)"  | search GROUP = "system_version:" | rename VARX as Version, VAL as Crashes | table  Version, Crashes</searchString>
         <earliest>-30d@d</earliest>
         <latest>now</latest>
         <option name="wrap">true</option>
@@ -110,7 +110,7 @@
       <table>
         <title>Top Breadcrumb URLs</title>
         <search>
-          <query>index=crittercism sourcetype=crittercism MessageType=CrashDetailBreadcrumbs hash=$hash$ | head 100 | search 'url' | rex "'url': '(?&lt;url&gt;.*?)'," | dedup url | table url</query>
+          <query>sourcetype=crittercism MessageType=CrashDetailBreadcrumbs hash=$hash$ | head 100 | search 'url' | rex "'url': '(?&lt;url&gt;.*?)'," | dedup url | table url</query>
         </search>
         <earliest>-30d@d</earliest>
         <latest>now</latest>
@@ -153,7 +153,7 @@
     <panel>
       <table id="master">
         <title>Discrete Groups Available for Report (Click for detail)</title>
-        <searchString>* index=crittercism sourcetype=crittercism MessageType=CrashDiagsDiscrete "hash=$hash$" | head 1| `discrete_vars`| rex field=VAR "(?&lt;GROUP&gt;.*:)?(?&lt;VARX&gt;.*)"| eval GROUP=replace(GROUP,"\:","") | dedup GROUP | table GROUP</searchString>
+        <searchString>* sourcetype=crittercism MessageType=CrashDiagsDiscrete "hash=$hash$" | head 1| `discrete_vars`| rex field=VAR "(?&lt;GROUP&gt;.*:)?(?&lt;VARX&gt;.*)"| eval GROUP=replace(GROUP,"\:","") | dedup GROUP | table GROUP</searchString>
         <earliestTime>$earliest$</earliestTime>
         <latestTime>$latest$</latestTime>
         <earliest>-30d@d</earliest>
@@ -180,7 +180,7 @@
     <panel>
       <table>
         <title>Users Affected - click username for more detail</title>
-        <searchString>index=crittercism sourcetype=crittercism MessageType="CrashDiagsAffectedUser"  hash=$hash$ | dedup username| table username,userhash</searchString>
+        <searchString>sourcetype=crittercism MessageType="CrashDiagsAffectedUser"  hash=$hash$ | dedup username| table username,userhash</searchString>
         <earliestTime>-7d@h</earliestTime>
         <latestTime>now</latestTime>
         <earliest>-30d@d</earliest>
@@ -203,7 +203,7 @@
     <panel>
       <chart>
         <title>Disk Stats (Continuous Diags)</title>
-        <searchString>index=crittercism sourcetype=crittercism MessageType=CrashDiagsContinuous "hash=$hash$"| head 30| rex "hash=[0-9a-f]*(?&lt;DATA&gt;.*)$" | rex field=DATA max_match=50 "(?&lt;var&gt;.*?)\=\"(?&lt;val&gt;.*?)\"" | eval pair=var."=".val | mvexpand pair  | eval disk_space_free_average=replace(disk_space_free_average,"MB","")| eval disk_space_free_max=replace(disk_space_free_max,"MB","")| eval disk_space_free_min=replace(disk_space_free_min,"MB","") |chart max(disk_space_free_max) AS MaxFree, max(disk_space_free_min) as MinFree, max(disk_space_free_average) as AvgFree  by _time</searchString>
+        <searchString>sourcetype=crittercism MessageType=CrashDiagsContinuous "hash=$hash$"| head 30| rex "hash=[0-9a-f]*(?&lt;DATA&gt;.*)$" | rex field=DATA max_match=50 "(?&lt;var&gt;.*?)\=\"(?&lt;val&gt;.*?)\"" | eval pair=var."=".val | mvexpand pair  | eval disk_space_free_average=replace(disk_space_free_average,"MB","")| eval disk_space_free_max=replace(disk_space_free_max,"MB","")| eval disk_space_free_min=replace(disk_space_free_min,"MB","") |chart max(disk_space_free_max) AS MaxFree, max(disk_space_free_min) as MinFree, max(disk_space_free_average) as AvgFree  by _time</searchString>
         <earliest>-30d@d</earliest>
         <latest>now</latest>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -231,7 +231,7 @@
     </panel>
     <panel>
       <map>
-        <searchString>index=crittercism sourcetype=crittercism CrashDiagsGeo "hash=$hash$" | dedup city | geostats latfield=lat longfield=lon list(crashes) AS crashes</searchString>
+        <searchString>sourcetype=crittercism CrashDiagsGeo "hash=$hash$" | dedup city | geostats latfield=lat longfield=lon list(crashes) AS crashes</searchString>
         <earliest>-30d@d</earliest>
         <latest>now</latest>
         <option name="mapping.data.maxClusters">100</option>
