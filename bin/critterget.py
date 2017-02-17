@@ -204,23 +204,42 @@ def splunk_api_call(uri, method, session_key):
     url = 'https://localhost:8089{}'.format(uri)
     headers = {'Authorization': 'Splunk {}'.format(session_key)}
     params = {OUTPUT_MODE: JSON}
+    splunk_response = None
 
     if method == GET:
-        splunk_response = requests.get(url,
-                                       params=params,
-                                       headers=headers,
-                                       verify=False)
+        try:
+            splunk_response = requests.get(url,
+                                           params=params,
+                                           headers=headers,
+                                           verify=False)
+        except requests.exceptions.Timeout as error:
+            print 'Connection timeout. Splunk API returned an error code:', error
+        except requests.exceptions.ConnectionError as error:
+            print 'Connection error. Splunk API returned an error code:', error
+        except requests.exceptions.HTTPError as error:
+            print 'HTTP error. Splunk API returned an error code:', error
+        except requests.exceptions.RequestException as error:
+            print 'Splunk API retuned an error code:', error
+
     elif method == POST:
-        splunk_response = requests.post(url,
-                                        params=params,
-                                        headers=headers,
-                                        verify=False)
+        try:
+            splunk_response = requests.post(url,
+                                            params=params,
+                                            headers=headers,
+                                            verify=False)
+        except requests.exceptions.Timeout as error:
+            print 'Connection timeout. Splunk API returned an error code:', error
+        except requests.exceptions.ConnectionError as error:
+            print 'Connection error. Splunk API returned an error code:', error
+        except requests.exceptions.HTTPError as error:
+            print 'HTTP error. Splunk API returned an error code:', error
+        except requests.exceptions.RequestException as error:
+            print 'Splunk API returned an error code:', error
     else:
-        splunk_response = None
         print (u'{} MessageType="ApteligentError" Error: Splunk API caller '
                u'got a bad method: {}'.format(DATETIME_OF_RUN, method))
 
-    return splunk_response
+    return splunk_response.json()
 
 
 def run_splunk_search(search_name, session_key):
@@ -238,14 +257,14 @@ def run_splunk_search(search_name, session_key):
 
     all_saved_searches = splunk_api_call(saved_searches_uri, GET, session_key)
 
-    for entry in all_saved_searches.json()[ENTRY]:
+    for entry in all_saved_searches[ENTRY]:
         if entry[NAME] == search_name:
             dispatch_url = entry[LINKS][DISPATCH]
 
     if dispatch_url:
         r = splunk_api_call(dispatch_url, POST, session_key)
-        sid = r.json()[SID]
-        time.sleep(.25)
+        sid = r[SID]
+        time.sleep(.25)  # This lets Splunk finish running the search
     else:
         print (u'{} MessageType="ApteligentError" Error: '
                u'No saved searches returned by Splunk'.format(DATETIME_OF_RUN))
@@ -273,19 +292,19 @@ def get_last_run_time(session_key):
         session_key
     )
 
-    if search_results:
-        if search_results.json()[RESULTS]:
-            last_run_string = search_results.json()[RESULTS][0][UNDERSCORE_TIME]
+    if not search_results or not search_results[RESULTS]:
+        print (u'{} MessageType="ApteligentError" Error: '
+               u'No search results returned by Splunk for {}'.format(
+                   'most recent run of the Apteligent connector',
+                   DATETIME_OF_RUN)
+              )
+        return
 
-            return datetime.datetime.strptime(last_run_string,
-                                              '%Y-%m-%dT%H:%M:%S.%f+00:00')
+    else:
+        last_run_string = search_results[RESULTS][0][UNDERSCORE_TIME]
 
-    print (u'{} MessageType="ApteligentError" Error: '
-           u'No search resultes returned by Splunk for {}'.format(
-               'most recent run of the Apteligent connector',
-               DATETIME_OF_RUN)
-          )
-    return
+        return datetime.datetime.strptime(last_run_string,
+                                          '%Y-%m-%dT%H:%M:%S.%f+00:00')
 
 
 def what_to_run(session_key):
