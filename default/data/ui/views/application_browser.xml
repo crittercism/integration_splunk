@@ -30,6 +30,7 @@
       <searchString>sourcetype=crittercism MessageType=AppSummary appName=$appName$| table crashPercent | head 1</searchString>
       <earliestTime>@d</earliestTime>
       <latestTime>now</latestTime>
+      <option name="numberPrecision">0.00</option>
     </single>
     <single>
       <title>Total Crashes</title>
