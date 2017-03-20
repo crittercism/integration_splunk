@@ -68,6 +68,9 @@ FILTERS = 'filters'
 HASH = 'hash'
 JSON = 'json'
 LABEL = 'label'
+LAST_APPS_CALL = 'last_apps_call'
+LAST_CRASH_DETAILS_CALL = 'last_crash_details_call'
+LAST_TRENDS_CALL = 'last_trends_call'
 LATENCY = 'latency'
 LIMIT = 'limit'
 LINKS = 'links'
@@ -176,26 +179,6 @@ def apicall_with_response_code(uri, attribs=None):
         return response.status_code, None
 
 
-def time_floor(last_run_time):
-    """Rounds time down
-    Rounds minutes of the last run time down to the nearest ten,
-    and strips the seconds.
-    e.g. 2017-02-14 19:52:02 becomes 2017-02-14 19:50:00
-
-    Args:
-        last_run_time: datetime object, the last time the connector ran
-    Returns:
-        datetime object
-    """
-    seconds = last_run_time.second
-    minutes = last_run_time.minute % 10
-
-    floored_time = last_run_time - datetime.timedelta(minutes=minutes,
-                                                      seconds=seconds)
-
-    return floored_time
-
-
 def splunk_api_call(uri, method, session_key):
     """Connect to the local Splunk API
 
@@ -224,8 +207,6 @@ def splunk_api_call(uri, method, session_key):
         print 'HTTP error. Splunk API returned an error code:', error
     except requests.exceptions.RequestException as error:
         print 'Splunk API returned an error code:', error
-    except Exception as e:
-        print u'{} MessageType="ApteligentError" Error: {}'.format(DATETIME_OF_RUN, e)
 
     return splunk_response.json()
 
@@ -271,7 +252,7 @@ def run_splunk_search(search_name, session_key):
     return search_results
 
 
-def get_last_run_time(session_key):
+def get_last_run_times(session_key):
     """Retrieve the last time the connector ran from Splunk's API
 
     Args:
@@ -280,30 +261,37 @@ def get_last_run_time(session_key):
     Returns:
         datetime object, time of last run, or None
     """
-    search_results = run_splunk_search(
-        'last_apps_call',
-        session_key
-    )
 
-    if not search_results or not search_results.get(RESULTS):
-        print (u'{} MessageType="ApteligentError" Error: '
-               u'No search results returned by Splunk for {}'.format(
-                   DATETIME_OF_RUN,
-                   'most recent run of the Apteligent connector')
-               )
-        return
+    searches = {LAST_APPS_CALL: datetime.timedelta(days=0),
+                LAST_TRENDS_CALL: datetime.timedelta(days=0),
+                LAST_CRASH_DETAILS_CALL: datetime.timedelta(days=0)}
 
-    else:
-        last_run_string = search_results[RESULTS][0][UNDERSCORE_TIME]
+    for search in searches.keys():
+        search_results = run_splunk_search(search, session_key)
 
-        try:
-            last_run_time = datetime.datetime.strptime(last_run_string,
-                                          '%Y-%m-%dT%H:%M:%S.%f+00:00')
-            return last_run_time
-        except Exception as e:
+        if not search_results or not search_results.get(RESULTS):
             print (u'{} MessageType="ApteligentError" Error: '
-                   u'Time formatting error: {} formatting {}'.format(DATETIME_OF_RUN, e, last_run_string))
-            return
+                   u'Could not get last run time for {}'.format(
+                       DATETIME_OF_RUN,
+                       search)
+                   )
+        else:
+            last_run_string = search_results[RESULTS][0][UNDERSCORE_TIME]
+
+            try:
+                last_run_time = datetime.datetime.strptime(
+                    last_run_string,
+                    '%Y-%m-%dT%H:%M:%S.%f+00:00'
+                )
+                searches[search] = last_run_time
+            except Exception as e:
+                print (u'{} MessageType="ApteligentError" Error: '
+                       u'Time formatting error: {} formatting {}'.format(
+                        DATETIME_OF_RUN,
+                        e,
+                        last_run_string)
+                       )
+    return searches
 
 
 def call_manager(session_key):
@@ -318,35 +306,34 @@ def call_manager(session_key):
     Args:
         session_key: string, auth token for Splunk
     """
-    last_run = get_last_run_time(session_key)
+    last_runs = get_last_run_times(session_key)
 
-    if not last_run:
+    if not last_runs.get(LAST_APPS_CALL):
         calls_to_run = ['basic calls', 'hour calls', 'daily calls']
-        print (u'{} MessageType="ApteligentTimestamp" LastRunTime="None" '
+        print (u'{} MessageType="ApteligentTimestamp" LastRunTimes="{}" '
                u'Running {}'.format(
                    DATETIME_OF_RUN,
+                   last_runs,
                    calls_to_run)
               )
         return
     else:
         calls_to_run = ['basic calls']
 
-    floored_time = time_floor(last_run)
+    if last_runs.get(LAST_TRENDS_CALL):
+        time_since_trends = TODAY - last_runs[LAST_TRENDS_CALL]
+        if time_since_trends > datetime.timedelta(hours=1):
+            calls_to_run.append('hour calls')
 
-    time_since_run = TODAY - floored_time
-
-    if floored_time.minute == 0 or time_since_run > datetime.timedelta(hours=1):
-        calls_to_run.append('hour calls')
-    if ((floored_time.hour == 0 and floored_time.minute == 0)
-            or time_since_run > datetime.timedelta(days=1)):
-        calls_to_run.append('daily calls')
+    if last_runs.get(LAST_CRASH_DETAILS_CALL):
+        time_since_crash_details = TODAY - last_runs[LAST_CRASH_DETAILS_CALL]
+        if time_since_crash_details > datetime.timedelta(days=1):
+            calls_to_run.append('daily calls')
 
     print (u'{} MessageType="ApteligentTimestamp" LastRunTime="{}" '
-           u'floors to {}. Time since last run: {} Running {}'.format(
+           u'Running {}'.format(
                DATETIME_OF_RUN,
-               last_run,
-               floored_time,
-               time_since_run,
+               last_runs,
                calls_to_run)
           )
 
@@ -1249,7 +1236,10 @@ def getTrends(app_id, app_name):
     Return:
         None
     """
-    print u'MessageType="ApteligentDebug" getTrends for {}'.format(app_id)
+    print u'{} MessageType="getTrends" for {}'.format(
+        DATETIME_OF_RUN,
+        app_id
+    )
 
     trends = apicall(u'trends/{}'.format(app_id))
 
