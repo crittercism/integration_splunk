@@ -885,3 +885,54 @@ class TestSplunk(unittest.TestCase):
 
         self.assertTrue(app_mock.called)
         self.assertTrue(crash_mock.called)
+
+    def test_time_floor(self):
+        sample_time = datetime.datetime(2016, 2, 10, 12, 4, 32, 123456)
+        floored_time = critterget.time_floor(sample_time)
+
+        self.assertEqual(floored_time,
+                         datetime.datetime(2016, 2, 10, 12, 0, 0, 123456))
+
+    def test_splunk_api_call(self):
+        self.mock_get.side_effect = [self._response_with_json_data(
+            200,
+            {'splunk response'}
+        )]
+
+        splunk_call = critterget.splunk_api_call('/bogus/endpoint',
+                                                 'GET',
+                                                 'bogus_key')
+
+        self.assertEqual(splunk_call, {'splunk response'})
+        self.assertEqual(self.mock_get.call_args[0],
+                         ('https://localhost:8089/bogus/endpoint',))
+        self.assertEqual(self.mock_get.call_args[1],
+                          {'verify': False, 'params': {'output_mode': 'json'},
+                           'headers': {'Authorization': 'Splunk bogus_key'}})
+
+    def test_run_splunk_search(self):
+        self.mock_get.side_effect = [
+            self._response_with_json_data(
+                200,
+                {'entry': [
+                {'name': 'wrong_search',
+                 'links': 'bogus.com'},
+                {'name': 'right_search',
+                 'links': {
+                     'dispatch': '/dispatch/search'
+                 }}
+            ]}),
+            self._response_with_json_data(
+                200, {'results': 'bogus_search_results'}
+            )
+        ]
+        self.mock_post.side_effect = [
+            self._response_with_json_data(
+                200,
+            {'sid': 'bogus_sid'}
+            )
+        ]
+        results = critterget.run_splunk_search('right_search',
+                                               'bogus_session_key')
+        print results
+        self.assertEqual(results, {'results': 'bogus_search_results'})

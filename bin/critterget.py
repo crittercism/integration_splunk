@@ -20,8 +20,8 @@ MAX_RETRY = 10
 ACCESS_TOKEN = ''
 DEBUG = os.environ.get('CR_SPLUNK_DEBUG')
 
-TODAY = datetime.datetime.now()  # calculate a common time for all summary data
-DATETIME_OF_RUN = TODAY.strftime('%Y-%m-%d %H:%M:%S %Z')
+TODAY = datetime.datetime.utcnow()  # calculate a common time for all summary data
+DATETIME_OF_RUN = TODAY.strftime('%Y-%m-%d %H:%M:%S +0000')
 
 # a quick command to format quasi json output nicely
 #TODO (sf) figure out what this does and then find a better way
@@ -46,13 +46,16 @@ DATA = 'data'
 DATE = 'date'
 DAU = 'dau'
 DEVICE = 'device'
+DISPATCH = 'dispatch'
 DOMAIN = 'domain'
 DURATION = 'duration'
 ENDPOINTS = 'endpoints'
+ENTRY = 'entry'
 ERRORS = 'errors'
 EXCEPTION = 'exception'
 GEO = 'geo'
 GEOMODE = 'geoMode'
+GET = 'GET'
 GRAPH = 'graph'
 GROUPBY = 'groupBy'
 GROUPS = 'groups'
@@ -63,20 +66,29 @@ FAIL_RATE = 'failRate'
 FAILURE_RATE = 'failureRate'
 FILTERS = 'filters'
 HASH = 'hash'
+JSON = 'json'
 LABEL = 'label'
+LAST_APPS_CALL = 'last_apps_call'
+LAST_CRASH_DETAILS_CALL = 'last_crash_details_call'
+LAST_TRENDS_CALL = 'last_trends_call'
 LATENCY = 'latency'
 LIMIT = 'limit'
+LINKS = 'links'
 MEAN_DURATION = 'meanDuration'
 MEAN_FOREGROUND_TIME = 'meanForegroundTime'
 MONEY_VALUE = 'moneyValue'
 NAME = 'name'
 OS = 'os'
+OUTPUT_MODE = 'output_mode'
 PARAMS = 'params'
 PARSEDBREADCRUMBS = 'parsedBreadcrumbs'
+POST = 'POST'
 RATE = 'rate'
+RESULTS = 'results'
 SERIES = 'series'
 SERVICE = 'service'
 SERVICES = 'services'
+SID = 'sid'
 SLICES = 'slices'
 SORT = 'sort'
 START = 'start'
@@ -89,6 +101,7 @@ US = 'US'
 VALUE = 'value'
 VERSIONS = 'versions'
 VOLUME = 'volume'
+UNDERSCORE_TIME = '_time'
 
 SUMMARY_ATTRIBUTES = [
     'appName',
@@ -123,12 +136,14 @@ ALL_CALLS = []
 
 
 def apicall_with_response_code(uri, attribs=None):
-    """
-    Call the Apteligent API
+    """Call the Apteligent API
 
-    :param uri: string
-    :param attribs: dict
-    :return: status_code string and json object of data from the endpoint
+    Args:
+        uri: string
+        attribs: dict
+
+    Returns:
+        status_code string and json object of data from the endpoint
     """
     ALL_CALLS.append(uri)
 
@@ -164,23 +179,184 @@ def apicall_with_response_code(uri, attribs=None):
         return response.status_code, None
 
 
-def apicall(uri, attribs=None):
-    """
-    For API calls that do not need to know their http response code
+def splunk_api_call(uri, method, session_key):
+    """Connect to the local Splunk API
 
-    :param uri: string
-    :param attribs: dict
-    :return: json object of data from the endpoint
+    Args:
+        uri: string, Splunk API endpoint
+        method: string, either GET or POST
+        session_key: string, auth token for Splunk
+    Returns:
+        A dict of data from the response object
+    """
+    url = 'https://localhost:8089{}'.format(uri)
+    headers = {'Authorization': 'Splunk {}'.format(session_key)}
+    params = {OUTPUT_MODE: JSON}
+    splunk_response = None
+
+    try:
+        splunk_response = requests.request(method, url,
+                                           params=params,
+                                           headers=headers,
+                                           verify=False)
+    except requests.exceptions.Timeout as error:
+        print 'Connection timeout. Splunk API returned an error code:', error
+    except requests.exceptions.ConnectionError as error:
+        print 'Connection error. Splunk API returned an error code:', error
+    except requests.exceptions.HTTPError as error:
+        print 'HTTP error. Splunk API returned an error code:', error
+    except requests.exceptions.RequestException as error:
+        print 'Splunk API returned an error code:', error
+
+    return splunk_response.json()
+
+
+def run_splunk_search(search_name, session_key):
+    """Dispatches a saved search via Splunk's API and returns the results.
+
+    Args:
+        search_name: string, the name of the saved search
+        session_key: string, auth token for Splunk
+
+    Returns:
+        None or a dictionary of search results
+    """
+    saved_searches_uri = ('/servicesNS/admin/'
+                          'crittercism_integration/saved/searches')
+    search_jobs_uri = '/services/search/jobs/{}/results'
+    dispatch_url = None
+
+    all_saved_searches = splunk_api_call(saved_searches_uri, GET, session_key)
+
+    for entry in all_saved_searches[ENTRY]:
+        if entry[NAME] == search_name:
+            dispatch_url = entry[LINKS][DISPATCH]
+
+    if dispatch_url:
+        r = splunk_api_call(dispatch_url, POST, session_key)
+        sid = r[SID]
+        time.sleep(1)  # This lets Splunk finish running the search
+    else:
+        print (u'{} MessageType="ApteligentError" Error: '
+               u'No saved searches returned by Splunk'.format(DATETIME_OF_RUN))
+        return
+
+    if sid:
+        search_url = search_jobs_uri.format(sid)
+        search_results = splunk_api_call(search_url, GET, session_key)
+    else:
+        print (u'{} MessageType="ApteligentError" Error: '
+               u'Could not dispatch search'.format(DATETIME_OF_RUN))
+        return
+
+    return search_results
+
+
+def get_last_run_times(session_key):
+    """Retrieve the last time the connector ran from Splunk's API
+
+    Args:
+        session_key: string, auth token for Splunk
+
+    Returns:
+        datetime object, time of last run, or None
+    """
+
+    searches = {LAST_APPS_CALL: datetime.timedelta(days=0),
+                LAST_TRENDS_CALL: datetime.timedelta(days=0),
+                LAST_CRASH_DETAILS_CALL: datetime.timedelta(days=0)}
+
+    for search in searches.keys():
+        search_results = run_splunk_search(search, session_key)
+
+        if not search_results or not search_results.get(RESULTS):
+            print (u'{} MessageType="ApteligentError" Error: '
+                   u'Could not get last run time for {}'.format(
+                       DATETIME_OF_RUN,
+                       search)
+                   )
+        else:
+            last_run_string = search_results[RESULTS][0][UNDERSCORE_TIME]
+
+            try:
+                last_run_time = datetime.datetime.strptime(
+                    last_run_string,
+                    '%Y-%m-%dT%H:%M:%S.%f+00:00'
+                )
+                searches[search] = last_run_time
+            except Exception as e:
+                print (u'{} MessageType="ApteligentError" Error: '
+                       u'Time formatting error: {} formatting {}'.format(
+                        DATETIME_OF_RUN,
+                        e,
+                        last_run_string)
+                       )
+    return searches
+
+
+def call_manager(session_key):
+    """Make calls based on the time of the last run
+
+    Based on the last time the connector ran, figure out which calls should
+    be made to the Apteligent API
+
+    TODO: This function is a stub that will be hooked to factories for
+    Apteligent API calls, once those are built.
+
+    Args:
+        session_key: string, auth token for Splunk
+    """
+    last_runs = get_last_run_times(session_key)
+
+    if not last_runs.get(LAST_APPS_CALL):
+        calls_to_run = ['basic calls', 'hour calls', 'daily calls']
+        print (u'{} MessageType="ApteligentTimestamp" LastRunTimes="{}" '
+               u'Running {}'.format(
+                   DATETIME_OF_RUN,
+                   last_runs,
+                   calls_to_run)
+              )
+        return
+    else:
+        calls_to_run = ['basic calls']
+
+    if last_runs.get(LAST_TRENDS_CALL):
+        time_since_trends = TODAY - last_runs[LAST_TRENDS_CALL]
+        if time_since_trends > datetime.timedelta(hours=1):
+            calls_to_run.append('hour calls')
+
+    if last_runs.get(LAST_CRASH_DETAILS_CALL):
+        time_since_crash_details = TODAY - last_runs[LAST_CRASH_DETAILS_CALL]
+        if time_since_crash_details > datetime.timedelta(days=1):
+            calls_to_run.append('daily calls')
+
+    print (u'{} MessageType="ApteligentTimestamp" LastRunTime="{}" '
+           u'Running {}'.format(
+               DATETIME_OF_RUN,
+               last_runs,
+               calls_to_run)
+          )
+
+
+def apicall(uri, attribs=None):
+    """For API calls that do not need to know their http response code
+
+    Args:
+        uri: string
+        attribs: dict
+
+    Returns:
+        json object of data from the endpoint
     """
     _, data = apicall_with_response_code(uri, attribs)
     return data
 
 
 def scopetime():
-    """
-    return an ISO8601 timestring based on NOW - Interval
+    """Return an ISO8601 timestring based on NOW - Interval
 
-    :return: string, time in ISO format
+    Returns:
+        string, time in ISO format
     """
     newtime = (
         datetime.datetime.utcnow() -
@@ -191,12 +367,12 @@ def scopetime():
 
 
 def getAppSummary():
-    """
-    read app summary information.
-    Print out in Splunk KV format.
+    """Transmit app summary data
+    Read app summary information. Print out in Splunk KV format.
     Return a dict with appId and appName.
 
-    :return: dict
+    Returns:
+        dict
     """
 
 
@@ -225,13 +401,15 @@ def getAppSummary():
 
 
 def get_error_summary(app_id, app_name, error_type):
-    """
-    given an appID and an appName, produce a Splunk summary of the
-    errors for a given timeframe
-    :param app_id: string for API call
-    :param app_name: string for Splunk
-    :param error_type: string, either 'crash' or 'exception'
-    :return: None
+    """Transmit crash or exception summary data
+
+    Args:
+        app_id: string for API call
+        app_name: string for Splunk
+        error_type: string, either 'crash' or 'exception'
+
+    Returns:
+        dict of error hashes mapped to app IDs
     """
 
     start_time = scopetime()
@@ -522,12 +700,14 @@ def getCrashDetail(crash_hash, app_id, app_name):
 
 
 def getErrorSummary(appId, appName):
-    """
-    Grab the elements we need from errorMonitoring endpoints
+    """Grab the elements we need from errorMonitoring endpoints
 
-    :param appId:
-    :param appName:
-    :return:
+    Args:
+        appId:
+        appName:
+
+    Returns:
+        None
     """
     params = {
         APPID: appId,
@@ -668,14 +848,16 @@ def getAPMEndpoints(app_id, app_name, sort, message_type):
 
 
 def getAPMServices(app_id, app_name, sort, message_type):
-    """
-    Get APM services data
+    """Get APM services data
 
-    :param app_id: string
-    :param app_name: string
-    :param sort: string, sort metric for the API
-    :param message_type: string, message type to print
-    :return:
+    Args:
+        app_id: string
+        app_name: string
+        sort: string, sort metric for the API
+        message_type: string, message type to print
+
+    Returns:
+        None
     """
 
     params = {
@@ -796,10 +978,13 @@ def getGenericErrorMon(appId, appName, graph, groupby, messagetype):
 def getUserflowsSummary(app_id, app_name, message_type):
     """Calls the transactions summary endpoint for an app
 
-    :param app_id: (string) App ID used to request data from the API
-    :param app_name: (string) Human-readable app name
-    :param message_type: (string) Type of message (for sorting in Splunk)
-    :return: None
+    Args
+        app_id: (string) App ID used to request data from the API
+        app_name: (string) Human-readable app name
+        message_type: (string) Type of message (for sorting in Splunk)
+
+    Returns:
+        None
     """
     uri = 'transactions/{}/summary/'.format(app_id)
 
@@ -831,11 +1016,14 @@ def getUserflowsSummary(app_id, app_name, message_type):
 def getUserflowsRanked(app_id, app_name, category, message_type):
     """Calls the transactions ranked endpoint to get the top failed transactions
 
-    :param app_id: (string) App ID used to request data from the API
-    :param app_name: (string) Human-readable app name
-    :param category: (string) Kind of transaction to return (e.g. failed, succeeded)
-    :param message_type: (string) Type of message (for sorting in Splunk), equivalent to category
-    :return: None
+    Args:
+        app_id: (string) App ID used to request data from the API
+        app_name: (string) Human-readable app name
+        category: (string) Kind of transaction to return (e.g. failed, succeeded)
+        message_type: (string) Type of message (for sorting in Splunk), equivalent to category
+
+    Return:
+        None
     """
 
     uri = 'transactions/{}/ranked/{}/'.format(app_id, category)
@@ -866,9 +1054,12 @@ def getUserflowsRanked(app_id, app_name, category, message_type):
 def getUserflowsDetails(app_id, app_name):
     """Call the userflows details/change endpoint for an app
 
-    :param app_id: (string) App ID used to request data from the API
-    :param app_name: (string) Human-readable app name
-    :return: None
+    Args:
+        app_id: (string) App ID used to request data from the API
+        app_name: (string) Human-readable app name
+
+    Return:
+        None
     """
     uri = 'transactions/{}/details/change/P1M'.format(app_id)
     params = {'pageNum': 1,
@@ -900,9 +1091,11 @@ def getUserflowsDetails(app_id, app_name):
 def getUserflowsChangeDetails(app_id, app_name, userflow_dict):
     """Process the userflows details/change data for Splunk
 
-    :param app_id: (string) App ID used to request data from the API
-    :param app_name: (string) Human-readable app name
-    :return: None
+    Args:
+        app_id: (string) App ID used to request data from the API
+        app_name: (string) Human-readable app name
+    Return:
+        None
     """
 
     try:
@@ -934,10 +1127,12 @@ def getUserflowsChangeDetails(app_id, app_name, userflow_dict):
 def getUserflowsGroups(app_id, app_name, group):
     """Call the transactions group endpoint for a group
 
-    :param app_id: (string) App ID used to request data from the API
-    :param app_name: (string) Human-readable app name
-    :param group: (string) The name of a transactions group (e.g. Login)
-    :return: None
+    Args:
+        app_id: (string) App ID used to request data from the API
+        app_name: (string) Human-readable app name
+        group: (string) The name of a transactions group (e.g. Login)
+
+    Returns: None
     """
 
     uri = 'transactions/{}/group/{}'.format(app_id, group)
@@ -1034,11 +1229,17 @@ def getDailyCrashes(appId, appName):
 def getTrends(app_id, app_name):
     """Calls the trends endpoint for an app
 
-    :param app_id: (string) App ID used to request data from the API
-    :param app_name: (string) Human-readable app name
-    :return: None
+    Args:
+        app_id: (string) App ID used to request data from the API
+        app_name: (string) Human-readable app name
+
+    Return:
+        None
     """
-    print u'MessageType="ApteligentDebug" getTrends for {}'.format(app_id)
+    print u'{} MessageType="getTrends" for {}'.format(
+        DATETIME_OF_RUN,
+        app_id
+    )
 
     trends = apicall(u'trends/{}'.format(app_id))
 
@@ -1058,10 +1259,13 @@ def getTrends(app_id, app_name):
 def getTopValues(appId, appName, trendsData):
     """Pulls todayTopValues data out of the trends dictionary
     for specific trends, and prints to Splunk.
-    :param appId: (string) App ID
-    :param appName: (string) Human-readable app name
-    :param trendsData: (dict) A dictionary of trends data
-    :return: None
+
+    Args:
+        appId: (string) App ID
+        appName: (string) Human-readable app name
+        trendsData: (dict) A dictionary of trends data
+    Returns:
+        None
     """
 
     trend_names = ['appLoadsByVersion',
@@ -1094,10 +1298,14 @@ def getTopValues(appId, appName, trendsData):
 def getTimeseriesTrends(appId, appName, trendsData):
     """Pulls time series data out of the trends dictionary for
     crashes by version, and prints to Splunk.
-    :param appId: (string) App ID
-    :param appName: (string) Human-readable app name
-    :param trendsData: (dict) A dictionary of trends data
-    :return: None
+
+    Args:
+        appId: (string) App ID
+        appName: (string) Human-readable app name
+        trendsData: (dict) A dictionary of trends data
+
+    Returns:
+        None
     """
 
     for version in trendsData[SERIES][CRASHESBYVERSION][CATEGORIES].keys():
@@ -1122,13 +1330,15 @@ def getTimeseriesTrends(appId, appName, trendsData):
 
 
 def get_error_counts(app_id, app_name, error_type):
-    """
-    Get the number of daily crashes or handled exceptions for a given app.
+    """Get the number of daily crashes or handled exceptions for a given app.
 
-    :param app_id: string for API call
-    :param app_name: string for Splunk
-    :param error_type: string, either 'crash' or 'exception'
-    :return: None
+    Args:
+        app_id: string for API call
+        app_name: string for Splunk
+        error_type: string, either 'crash' or 'exception'
+
+    Returns:
+        None
     """
     if error_type == 'crash':
         error_data = apicall("app/crash/counts/{}".format(app_id))
@@ -1171,13 +1381,15 @@ def get_error_counts(app_id, app_name, error_type):
 
 
 def get_error_details(app_id, app_name, error_type):
-    """
-    Get paginated exception summary data and pass it to Splunk
+    """Get paginated exception summary data and pass it to Splunk
 
-    :param app_id: string
-    :param app_name: string
-    :param error_type: string, either 'crash' or 'exception'
-    :return: None
+    Args:
+        app_id: string
+        app_name: string
+        error_type: string, either 'crash' or 'exception'
+
+    Return:
+        None
     """
 
     if error_type == 'crash':
@@ -1284,6 +1496,7 @@ def getCredentials(sessionKey):
 
     return auth
 
+
 ###########
 
 
@@ -1316,122 +1529,125 @@ def main():
             ACCESS_TOKEN
         )
 
+    call_manager(sessionKey)
+
 # Get application summary information.
-    apps = getAppSummary()
-    for key in apps.keys():
-        crashes = get_error_summary(key, apps[key][NAME], CRASH)
+    all_apps = getAppSummary()
+
+    for app in all_apps.keys():
+        crashes = get_error_summary(app, all_apps[app][NAME], CRASH)
         if crashes:
             for ckey in crashes.keys():
-                getCrashDetail(ckey, key, apps[key][NAME])
+                getCrashDetail(ckey, app, all_apps[app][NAME])
 
-        getTrends(key, apps[key][NAME])
+        getTrends(app, all_apps[app][NAME])
 
-        getDailyAppLoads(key, apps[key][NAME])
-        getDailyCrashes(key, apps[key][NAME])
-        get_error_counts(key, apps[key][NAME], CRASH)
+        getDailyAppLoads(app, all_apps[app][NAME])
+        getDailyCrashes(app, all_apps[app][NAME])
+        get_error_counts(app, all_apps[app][NAME], CRASH)
 
-        get_error_counts(key, apps[key][NAME], EXCEPTION)
-        get_error_summary(key, apps[key][NAME], EXCEPTION)
-        get_error_details(key, apps[key][NAME], EXCEPTION)
+        get_error_counts(app, all_apps[app][NAME], EXCEPTION)
+        get_error_summary(app, all_apps[app][NAME], EXCEPTION)
+        get_error_details(app, all_apps[app][NAME], EXCEPTION)
 
         getGenericPerfMgmt(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             VOLUME,
             DEVICE,
             'DailyVolumeByDevice')
         getGenericPerfMgmt(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             ERRORS,
             SERVICE,
             'DailyServiceErrorRates')
-        getGenericPerfMgmt(key, apps[key][NAME], VOLUME, OS, 'DailyVolumeByOS')
+        getGenericPerfMgmt(app, all_apps[app][NAME], VOLUME, OS, 'DailyVolumeByOS')
         getGenericPerfMgmt(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             VOLUME,
             APPVERSION,
             'VolumeByAppVersion')
 
         getGenericErrorMon(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             CRASHES,
             DEVICE,
             'CrashesByDevice')
         getGenericErrorMon(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             CRASHPERCENT,
             DEVICE,
             'CrashPerByDevice')
-        getGenericErrorMon(key, apps[key][NAME], APPLOADS, OS, 'ApploadsByOs')
+        getGenericErrorMon(app, all_apps[app][NAME], APPLOADS, OS, 'ApploadsByOs')
         getGenericErrorMon(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             CRASHES,
             OS,
             'DailyCrashesByOs')
         getGenericErrorMon(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             CRASHPERCENT,
             OS,
             'CrashPerByOs')
         getGenericErrorMon(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             CRASHPERCENT,
             APPVERSION,
             'CrashPerByAppVersion')
         getGenericErrorMon(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             CRASHES,
             APPVERSION,
             'CrashByAppVersion')
         getGenericErrorMon(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             APPLOADS,
             APPVERSION,
             'LoadsByAppVersion')
         getGenericErrorMon(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             DAU,
             APPVERSION,
             'DauByAppVersion')
         getGenericErrorMon(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             APPLOADS,
             DEVICE,
             'ApploadsByDevice')
 
-        getAPMEndpoints(key, apps[key][NAME], LATENCY, 'ApmEndpointsLatency')
-        getAPMEndpoints(key, apps[key][NAME], VOLUME, 'ApmEndpointsVolume')
-        getAPMEndpoints(key, apps[key][NAME], ERRORS, 'ApmEndpointsErrors')
-        getAPMEndpoints(key, apps[key][NAME], DATA, 'ApmEndpointsData')
+        getAPMEndpoints(app, all_apps[app][NAME], LATENCY, 'ApmEndpointsLatency')
+        getAPMEndpoints(app, all_apps[app][NAME], VOLUME, 'ApmEndpointsVolume')
+        getAPMEndpoints(app, all_apps[app][NAME], ERRORS, 'ApmEndpointsErrors')
+        getAPMEndpoints(app, all_apps[app][NAME], DATA, 'ApmEndpointsData')
 
-        getAPMServices(key, apps[key][NAME], LATENCY, 'ApmServicesLatency')
-        getAPMServices(key, apps[key][NAME], VOLUME, 'ApmServicesVolume')
-        getAPMServices(key, apps[key][NAME], ERRORS, 'ApmServicesErrors')
-        getAPMServices(key, apps[key][NAME], DATA, 'ApmServicesData')
+        getAPMServices(app, all_apps[app][NAME], LATENCY, 'ApmServicesLatency')
+        getAPMServices(app, all_apps[app][NAME], VOLUME, 'ApmServicesVolume')
+        getAPMServices(app, all_apps[app][NAME], ERRORS, 'ApmServicesErrors')
+        getAPMServices(app, all_apps[app][NAME], DATA, 'ApmServicesData')
 
-        getAPMGeo(key, apps[key][NAME], LATENCY, 'ApmGeoLatency')
-        getAPMGeo(key, apps[key][NAME], VOLUME, 'ApmGeoVolume')
-        getAPMGeo(key, apps[key][NAME], ERRORS, 'ApmGeoErrors')
-        getAPMGeo(key, apps[key][NAME], DATA, 'ApmGeoData')
+        getAPMGeo(app, all_apps[app][NAME], LATENCY, 'ApmGeoLatency')
+        getAPMGeo(app, all_apps[app][NAME], VOLUME, 'ApmGeoVolume')
+        getAPMGeo(app, all_apps[app][NAME], ERRORS, 'ApmGeoErrors')
+        getAPMGeo(app, all_apps[app][NAME], DATA, 'ApmGeoData')
 
-        getUserflowsSummary(key, apps[key][NAME], 'UserflowsSummary')
+        getUserflowsSummary(app, all_apps[app][NAME], 'UserflowsSummary')
         getUserflowsRanked(
-            key,
-            apps[key][NAME],
+            app,
+            all_apps[app][NAME],
             FAILED,
             'UserflowsRankedFailed')
-        getUserflowsDetails(key, apps[key][NAME])
+        getUserflowsDetails(app, all_apps[app][NAME])
 
 if __name__ == '__main__':
     main()
