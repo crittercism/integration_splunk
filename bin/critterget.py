@@ -21,7 +21,7 @@ ACCESS_TOKEN = ''
 DEBUG = os.environ.get('CR_SPLUNK_DEBUG')
 
 TODAY = datetime.datetime.utcnow()  # calculate a common time for all summary data
-DATETIME_OF_RUN = TODAY.strftime('%Y-%m-%d %H:%M:%S')
+DATETIME_OF_RUN = TODAY.strftime('%Y-%m-%d %H:%M:%S +0000')
 
 # a quick command to format quasi json output nicely
 #TODO (sf) figure out what this does and then find a better way
